@@ -43,17 +43,17 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#08080a]/80 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-md transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-7 h-7 rounded-md bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-zinc-200 group-hover:border-white/20 transition-all">
+              <div className="w-7 h-7 rounded-md bg-zinc-900 flex items-center justify-center text-white transition-all shadow-2xs">
                 <Terminal className="w-3.5 h-3.5" />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold tracking-tight text-white text-sm font-sans">VibeCheck</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+                <span className="font-semibold tracking-tight text-zinc-950 text-sm font-sans">VibeCheck</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
               </div>
             </Link>
 
@@ -67,8 +67,8 @@ export function Navbar() {
                     href={link.href}
                     className={`px-3 py-1.5 rounded-md text-xs transition-colors ${
                       isActive
-                        ? "text-white font-medium bg-white/[0.06]"
-                        : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                        ? "text-zinc-950 font-semibold bg-zinc-100"
+                        : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50"
                     }`}
                   >
                     {link.name}
@@ -82,13 +82,13 @@ export function Navbar() {
           <div className="hidden lg:flex flex-1 max-w-xs">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs text-zinc-400 transition-all"
+              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100/80 text-xs text-zinc-500 transition-all shadow-2xs"
             >
               <span className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-zinc-500" />
+                <Search className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Search projects, experts...</span>
               </span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[10px] font-mono text-zinc-400">
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-zinc-200 text-[10px] font-mono text-zinc-500 shadow-2xs">
                 ⌘K
               </kbd>
             </button>
@@ -99,7 +99,7 @@ export function Navbar() {
             {/* Quick search on mobile/tablet */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+              className="lg:hidden p-2 rounded-lg text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
               aria-label="Search"
             >
               <Search className="w-4 h-4" />
@@ -114,16 +114,16 @@ export function Navbar() {
             {/* Dashboard shortcut */}
             <Link
               href="/dashboard"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 transition-colors"
               title="Creator Dashboard"
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
             </Link>
 
-            {/* Primary Submit CTA (Linear signature crisp white button) */}
+            {/* Primary Submit CTA */}
             <Link
               href="/projects/new"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-medium text-xs transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-xs transition-all shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Submit Project</span>
@@ -133,7 +133,7 @@ export function Navbar() {
             {/* Mobile menu trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-white"
+              className="md:hidden p-1.5 rounded-md text-zinc-600 hover:text-zinc-950"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -142,13 +142,13 @@ export function Navbar() {
 
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/[0.08] bg-[#08080a] p-4 space-y-2 animate-in slide-in-from-top-2">
+          <div className="md:hidden border-t border-zinc-200 bg-white p-4 space-y-2 animate-in slide-in-from-top-2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-white/[0.04]"
+                className="block px-3 py-2 rounded-lg text-sm text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50"
               >
                 {link.name}
               </Link>
@@ -156,7 +156,7 @@ export function Navbar() {
             <Link
               href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-white/[0.04]"
+              className="block px-3 py-2 rounded-lg text-sm text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50"
             >
               Dashboard
             </Link>

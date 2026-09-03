@@ -22,28 +22,28 @@ export function getScoreColor(score: number): {
 } {
   if (score >= 85) {
     return {
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400 font-bold",
-      border: "border-emerald-500/20",
-      badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-      accent: "#10b981",
+      bg: "bg-emerald-50",
+      text: "text-emerald-700 font-bold",
+      border: "border-emerald-200",
+      badge: "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs",
+      accent: "#059669",
     };
   }
   if (score >= 70) {
     return {
-      bg: "bg-amber-500/10",
-      text: "text-amber-400 font-bold",
-      border: "border-amber-500/20",
-      badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      accent: "#f59e0b",
+      bg: "bg-amber-50",
+      text: "text-amber-700 font-bold",
+      border: "border-amber-200",
+      badge: "bg-amber-50 text-amber-700 border-amber-200 shadow-2xs",
+      accent: "#d97706",
     };
   }
   return {
-    bg: "bg-rose-500/10",
-    text: "text-rose-400 font-bold",
-    border: "border-rose-500/20",
-    badge: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-    accent: "#f43f5e",
+    bg: "bg-rose-50",
+    text: "text-rose-700 font-bold",
+    border: "border-rose-200",
+    badge: "bg-rose-50 text-rose-700 border-rose-200 shadow-2xs",
+    accent: "#e11d48",
   };
 }
 
@@ -56,27 +56,27 @@ export function getSeverityBadge(severity: string): {
     case "CRITICAL":
       return {
         label: "Critical",
-        className: "bg-rose-500/10 text-rose-400 border-rose-500/20 font-medium",
+        className: "bg-rose-50 text-rose-700 border-rose-200 font-medium",
         dotColor: "bg-rose-500",
       };
     case "HIGH":
       return {
         label: "High",
-        className: "bg-orange-500/10 text-orange-400 border-orange-500/20 font-medium",
+        className: "bg-orange-50 text-orange-700 border-orange-200 font-medium",
         dotColor: "bg-orange-500",
       };
     case "MEDIUM":
       return {
         label: "Medium",
-        className: "bg-amber-500/10 text-amber-400 border-amber-500/20 font-medium",
+        className: "bg-amber-50 text-amber-700 border-amber-200 font-medium",
         dotColor: "bg-amber-500",
       };
     case "LOW":
     default:
       return {
         label: "Low",
-        className: "bg-blue-500/10 text-blue-400 border-blue-500/20 font-medium",
-        dotColor: "bg-blue-500",
+        className: "bg-sky-50 text-sky-700 border-sky-200 font-medium",
+        dotColor: "bg-sky-500",
       };
   }
 }
@@ -88,12 +88,6 @@ export function formatDate(dateString: string | Date): string {
     day: "numeric",
     year: "numeric",
   }).format(date);
-}
-
-export function truncate(str: string, length: number): string {
-  if (!str) return "";
-  if (str.length <= length) return str;
-  return str.slice(0, length) + "...";
 }
 
 export function formatTimeAgo(date: string | Date): string {
@@ -109,4 +103,10 @@ export function formatTimeAgo(date: string | Date): string {
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 30) return `${diffInDays}d ago`;
   return formatDate(date);
+}
+
+export function truncate(str: string, length: number): string {
+  if (!str) return "";
+  if (str.length <= length) return str;
+  return str.slice(0, length) + "...";
 }

@@ -33,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-[#08080a] text-white font-sans selection:bg-white/20 selection:text-white">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-[#fafafa] text-[#09090b] font-sans selection:bg-zinc-200 selection:text-black">
         <UserProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
