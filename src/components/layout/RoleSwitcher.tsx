@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useUser } from "@/lib/auth/UserContext";
-import { User, Shield, Check, ChevronDown, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Sparkles } from "lucide-react";
 
 export function RoleSwitcher() {
   const { currentUser, demoUsers, switchUser, isLoading } = useUser();
@@ -11,14 +11,14 @@ export function RoleSwitcher() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "ADMIN":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "EXPERT":
-        return "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
       case "REVIEWER":
-        return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "CREATOR":
       default:
-        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
     }
   };
 
@@ -27,27 +27,27 @@ export function RoleSwitcher() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-white/10 bg-slate-900/80 hover:bg-slate-800 text-xs text-slate-200 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs text-slate-800 transition-colors shadow-xs"
         title="Switch active persona to test different roles"
       >
-        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="font-medium text-slate-300 hidden sm:inline">Role:</span>
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${getRoleBadge(currentUser?.role || "CREATOR")}`}>
+        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="font-semibold text-slate-500 hidden sm:inline">Role:</span>
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getRoleBadge(currentUser?.role || "CREATOR")}`}>
           {currentUser?.role || "CREATOR"}
         </span>
-        <span className="text-slate-400 font-mono hidden md:inline">@{currentUser?.username || "alexrivera"}</span>
+        <span className="text-slate-500 font-mono hidden md:inline">@{currentUser?.username || "alexrivera"}</span>
         <ChevronDown className="w-3 h-3 text-slate-400" />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-72 rounded-lg border border-white/10 bg-slate-950 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-            <div className="px-2 py-1.5 border-b border-white/10 mb-1 flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-emerald-400" /> Switch Test Persona
+          <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="px-3 py-2 border-b border-slate-100 mb-1 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Switch Test Persona
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">1-click QA</span>
+              <span className="text-[10px] text-slate-400 font-mono">1-click QA</span>
             </div>
 
             <div className="space-y-1">
@@ -60,36 +60,36 @@ export function RoleSwitcher() {
                       await switchUser(user.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between p-2 rounded-md text-left transition-colors ${
-                      isActive ? "bg-emerald-500/10 border border-emerald-500/30" : "hover:bg-slate-900"
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-colors ${
+                      isActive ? "bg-indigo-50/80 border border-indigo-200" : "hover:bg-slate-50"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover border border-white/10" />
+                        <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-300">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-600 font-bold">
                           {user.name.slice(0, 1)}
                         </div>
                       )}
                       <div>
-                        <div className="text-xs font-medium text-slate-200 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                           {user.name}
-                          <span className={`px-1 py-0.2 rounded text-[9px] font-semibold border ${getRoleBadge(user.role)}`}>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${getRoleBadge(user.role)}`}>
                             {user.role}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono">@{user.username}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">@{user.username}</div>
                       </div>
                     </div>
 
-                    {isActive && <Check className="w-4 h-4 text-emerald-400" />}
+                    {isActive && <Check className="w-4 h-4 text-indigo-600" />}
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-2 pt-2 border-t border-white/10 px-2 text-[10px] text-slate-500 leading-relaxed">
+            <div className="mt-2 pt-2 border-t border-slate-100 px-2 text-[10px] text-slate-400 leading-relaxed">
               Switching personas updates permissions, navigation options, and dashboard context immediately.
             </div>
           </div>
