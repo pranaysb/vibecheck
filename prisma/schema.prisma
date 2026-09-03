@@ -1,0 +1,466 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CREATOR
+  REVIEWER
+  EXPERT
+  ADMIN
+}
+
+enum AIInvolvement {
+  MINIMAL
+  MODERATE
+  HEAVY
+  ALMOST_ENTIRELY
+}
+
+enum FindingCategory {
+  SECURITY
+  PERFORMANCE
+  ACCESSIBILITY
+  DEPENDENCY
+  CODE_QUALITY
+  SEO
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum FindingStatus {
+  OPEN
+  FIXED
+  FALSE_POSITIVE
+}
+
+enum Confidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum WouldShip {
+  YES
+  ALMOST
+  NOT_YET
+}
+
+enum ExpertVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  SUSPENDED
+}
+
+enum ExpertReviewStatus {
+  PENDING
+  ACCEPTED
+  IN_REVIEW
+  COMPLETED
+  DECLINED
+}
+
+enum ReviewPackage {
+  ESSENTIAL
+  STANDARD
+  DEEP_DIVE
+}
+
+enum ReportTargetType {
+  PROJECT
+  REVIEW
+  USER
+  COMMENT
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  MALICIOUS
+  MISLEADING
+  ABUSIVE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  REVIEW_RECEIVED
+  HELPFUL_VOTE
+  SCORE_IMPROVED
+  FINDING_FIXED
+  EXPERT_UPDATE
+  REPORT_STATUS
+  SYSTEM
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  username         String            @unique
+  email            String            @unique
+  avatar           String?
+  role             Role              @default(CREATOR)
+  reputationPoints Int               @default(0)
+  bio              String?
+  githubUrl        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  profile          Profile?
+  expertProfile    ExpertProfile?
+  projects         Project[]
+  reviews          Review[]
+  reviewComments   ReviewComment[]
+  reviewVotes      ReviewVote[]
+  notifications    Notification[]
+  reportsSubmitted Report[]          @relation("ReporterRelation")
+  challengeSubs    ChallengeSubmission[]
+  badges           UserBadge[]
+  expertReviewsAsExpert  ExpertReview[] @relation("ExpertUserRelation")
+  expertReviewsAsCreator ExpertReview[] @relation("CreatorUserRelation")
+
+  @@index([username])
+  @@index([email])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline        String?
+  bio             String?
+  experienceYears Int?
+  company         String?
+  location        String?
+  websiteUrl      String?
+  twitterUrl      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String
+  icon        String
+  category    String
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+model Project {
+  id                  String               @id @default(cuid())
+  slug                String               @unique
+  title               String
+  tagline             String
+  description         String
+  liveUrl             String
+  githubUrl           String?
+  aiInvolvement       AIInvolvement        @default(MODERATE)
+  aiTools             String[]
+  techStack           String[]
+  framework           String?
+  database            String?
+  hosting             String?
+  screenshotUrl       String?
+
+  whatBuilt           String?              @db.Text
+  whyBuilt            String?              @db.Text
+  problemSolved       String?              @db.Text
+  difficultParts      String?              @db.Text
+  unsureParts         String?              @db.Text
+  feedbackWanted      String?              @db.Text
+
+  vibeScore           Int                  @default(0)
+  scoreProduct        Int                  @default(0)
+  scoreUx             Int                  @default(0)
+  scoreEngineering    Int                  @default(0)
+  scoreSecurity       Int                  @default(0)
+  scorePerformance    Int                  @default(0)
+  scoreAccessibility  Int                  @default(0)
+  scoreDocumentation  Int                  @default(0)
+
+  isFeatured          Boolean              @default(false)
+  isPublished         Boolean              @default(true)
+  isArchived          Boolean              @default(false)
+  viewsCount          Int                  @default(0)
+
+  userId              String
+  creator             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  versions            ProjectVersion[]
+  findings            Finding[]
+  reviews             Review[]
+  analyses            Analysis[]
+  expertReviews       ExpertReview[]
+  challengeSubs       ChallengeSubmission[]
+
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([slug])
+  @@index([userId])
+  @@index([vibeScore])
+  @@index([isFeatured])
+}
+
+model ProjectVersion {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber String
+  vibeScore     Int
+  scoreDelta    Int       @default(0)
+  changelog     String    @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+}
+
+model Finding {
+  id                String          @id @default(cuid())
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionDiscovered String          @default("v1")
+  versionFixed      String?
+  fixedVersionId    String?
+  category          FindingCategory
+  severity          Severity
+  title             String
+  description       String          @db.Text
+  evidence          String?         @db.Text
+  recommendation    String          @db.Text
+  confidence        Confidence      @default(MEDIUM)
+  status            FindingStatus   @default(OPEN)
+  fixedAt           DateTime?
+  createdAt         DateTime        @default(now())
+
+  @@index([projectId])
+  @@index([status])
+  @@index([category])
+  @@index([severity])
+}
+
+model Analysis {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  triggerType String   @default("MANUAL_RERUN")
+  status      String   @default("COMPLETED")
+  rawResults  String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model Review {
+  id                String          @id @default(cuid())
+  projectId         String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId            String
+  author            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productScore      Int             @default(8)
+  designScore       Int             @default(8)
+  engineeringScore  Int             @default(8)
+  docScore          Int             @default(8)
+  wouldShip         WouldShip       @default(ALMOST)
+
+  whatLiked         String          @db.Text
+  whatToImprove     String          @db.Text
+  biggestIssue      String          @db.Text
+  bugReport         String?         @db.Text
+  suggestion        String?         @db.Text
+  helpfulVotesCount Int             @default(0)
+
+  comments          ReviewComment[]
+  votes             ReviewVote[]
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ReviewComment {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([reviewId])
+}
+
+model ReviewVote {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isHelpful Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+}
+
+model ExpertProfile {
+  id                 String                   @id @default(cuid())
+  userId             String                   @unique
+  user               User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String
+  yearsExperience    Int                      @default(5)
+  hourlyRateInr      Int                      @default(2500)
+  reviewRateInr      Int                      @default(2499)
+  specialties        String[]
+  bio                String                   @db.Text
+  rating             Float                    @default(4.9)
+  reviewsCount       Int                      @default(0)
+  verificationStatus ExpertVerificationStatus @default(VERIFIED)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+}
+
+model ExpertReview {
+  id              String             @id @default(cuid())
+  projectId       String
+  project         Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expertId        String
+  expert          User               @relation("ExpertUserRelation", fields: [expertId], references: [id], onDelete: Cascade)
+  creatorId       String
+  creator         User               @relation("CreatorUserRelation", fields: [creatorId], references: [id], onDelete: Cascade)
+  focusAreas      String[]
+  packageType     ReviewPackage      @default(STANDARD)
+  packagePriceInr Int                @default(2499)
+  notes           String?            @db.Text
+  status          ExpertReviewStatus @default(COMPLETED)
+  report          ExpertReviewReport?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([projectId])
+  @@index([expertId])
+  @@index([creatorId])
+}
+
+model ExpertReviewReport {
+  id                  String        @id @default(cuid())
+  expertReviewId      String        @unique
+  expertReview        ExpertReview  @relation(fields: [expertReviewId], references: [id], onDelete: Cascade)
+  overallScore        Int           @default(80)
+  executiveSummary    String        @db.Text
+  architectureScore   Int           @default(80)
+  securityScore       Int           @default(75)
+  performanceScore    Int           @default(85)
+  codeQualityScore    Int           @default(78)
+  scalabilityScore    Int           @default(70)
+  recommendations     String        @db.Text
+  wouldShip           WouldShip     @default(ALMOST)
+  createdAt           DateTime      @default(now())
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Challenge {
+  id               String                @id @default(cuid())
+  title            String
+  slug             String                @unique
+  description      String                @db.Text
+  requirements     String                @db.Text
+  deadline         DateTime
+  prize            String
+  submissionsCount Int                   @default(0)
+  isActive         Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  submissions      ChallengeSubmission[]
+
+  @@index([slug])
+}
+
+model ChallengeSubmission {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank        Int?
+  submittedAt DateTime  @default(now())
+
+  @@unique([challengeId, projectId])
+  @@index([challengeId])
+}
+
+model Report {
+  id          String           @id @default(cuid())
+  reporterId  String
+  reporter    User             @relation("ReporterRelation", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType  ReportTargetType
+  targetId    String
+  reason      ReportReason     @default(OTHER)
+  details     String?          @db.Text
+  status      ReportStatus     @default(PENDING)
+  resolvedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([status])
+  @@index([reporterId])
+}
+
+model ProductEvent {
+  id        String   @id @default(cuid())
+  eventName String
+  userId    String?
+  projectId String?
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([eventName])
+  @@index([createdAt])
+}

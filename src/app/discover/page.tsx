@@ -1,0 +1,206 @@
+import React from "react";
+import { prisma } from "@/lib/db";
+import { ProjectCard } from "@/components/project/ProjectCard";
+import Link from "next/link";
+import { Search, Filter, Sparkles, TrendingUp, ShieldCheck, Plus } from "lucide-react";
+
+export const revalidate = 0;
+
+interface DiscoverPageProps {
+  searchParams: Promise<{
+    filter?: string;
+    q?: string;
+    tech?: string;
+  }>;
+}
+
+export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {
+  const params = await searchParams;
+  const currentFilter = params.filter || "trending";
+  const searchQuery = params.q || "";
+  const techFilter = params.tech || "";
+
+  const where: any = { isPublished: true };
+
+  if (searchQuery) {
+    where.OR = [
+      { title: { contains: searchQuery, mode: "insensitive" } },
+      { tagline: { contains: searchQuery, mode: "insensitive" } },
+      { description: { contains: searchQuery, mode: "insensitive" } },
+    ];
+  }
+
+  if (techFilter) {
+    where.techStack = { has: techFilter };
+  }
+
+  if (currentFilter === "expert_reviewed") {
+    where.expertReviews = { some: { status: "COMPLETED" } };
+  } else if (currentFilter === "security_reviewed") {
+    where.findings = { some: { category: "SECURITY", status: "FIXED" } };
+  } else if (currentFilter === "ai_built") {
+    where.aiInvolvement = { in: ["HEAVY", "ALMOST_ENTIRELY"] };
+  } else if (currentFilter === "open_source") {
+    where.githubUrl = { not: null };
+  }
+
+  let orderBy: any = { createdAt: "desc" };
+  if (currentFilter === "trending") {
+    orderBy = [{ vibeScore: "desc" }, { viewsCount: "desc" }];
+  } else if (currentFilter === "highest_rated") {
+    orderBy = { vibeScore: "desc" };
+  } else if (currentFilter === "new") {
+    orderBy = { createdAt: "desc" };
+  }
+
+  const projects = await prisma.project.findMany({
+    where,
+    orderBy,
+    include: {
+      creator: { select: { name: true, username: true, avatar: true } },
+      versions: { orderBy: { createdAt: "desc" } },
+      reviews: { select: { id: true } },
+      expertReviews: { where: { status: "COMPLETED" }, select: { id: true } },
+      findings: { select: { id: true, severity: true, status: true } },
+    },
+  });
+
+  // Handle "most_improved" in memory: calculate total score jump
+  let finalProjects = projects;
+  if (currentFilter === "most_improved") {
+    finalProjects = [...projects].sort((a, b) => {
+      const deltaA = a.versions.reduce((sum, v) => sum + v.scoreDelta, 0);
+      const deltaB = b.versions.reduce((sum, v) => sum + v.scoreDelta, 0);
+      return deltaB - deltaA;
+    });
+  }
+
+  const filterTabs = [
+    { id: "trending", label: "Trending" },
+    { id: "new", label: "New" },
+    { id: "highest_rated", label: "Highest rated" },
+    { id: "most_improved", label: "Most improved" },
+    { id: "expert_reviewed", label: "Expert reviewed" },
+    { id: "security_reviewed", label: "Security reviewed" },
+    { id: "ai_built", label: "AI-built" },
+    { id: "open_source", label: "Open source" },
+  ];
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Header & Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 font-sans tracking-tight">
+            Discover Projects
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Explore applications built with AI assistance, verified by automated checks and peer reviews.
+          </p>
+        </div>
+
+        <Link
+          href="/projects/new"
+          className="self-start md:self-auto px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Submit Project</span>
+        </Link>
+      </div>
+
+      {/* Search Input Bar */}
+      <form method="GET" action="/discover" className="relative">
+        <input type="hidden" name="filter" value={currentFilter} />
+        <div className="relative flex items-center">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery}
+            placeholder="Search projects by name, problem solved, or description..."
+            className="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+        {filterTabs.map((tab) => {
+          const isActive = currentFilter === tab.id;
+          const queryParams = new URLSearchParams();
+          queryParams.set("filter", tab.id);
+          if (searchQuery) queryParams.set("q", searchQuery);
+
+          return (
+            <Link
+              key={tab.id}
+              href={`/discover?${queryParams.toString()}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${
+                isActive
+                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                  : "bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Projects Grid */}
+      {finalProjects.length === 0 ? (
+        <div className="p-16 text-center rounded-2xl border border-white/10 bg-slate-900/30 space-y-3">
+          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
+            <Search className="w-5 h-5" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-200">No projects found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            No projects matched the selected filters. Be the first developer to submit something in this category!
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/projects/new"
+              className="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs inline-block"
+            >
+              Submit your project
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {finalProjects.map((p) => {
+            const latestV = p.versions[0];
+            const totalDelta = p.versions.reduce((sum, v) => sum + v.scoreDelta, 0);
+            return (
+              <ProjectCard
+                key={p.id}
+                project={{
+                  id: p.id,
+                  slug: p.slug,
+                  title: p.title,
+                  tagline: p.tagline,
+                  vibeScore: p.vibeScore,
+                  techStack: p.techStack,
+                  aiInvolvement: p.aiInvolvement,
+                  creator: p.creator,
+                  reviewsCount: p.reviews.length,
+                  isExpertReviewed: p.expertReviews.length > 0,
+                  isSecurityReviewed: p.findings.some((f) => f.status === "FIXED"),
+                  scoreDelta: totalDelta > 0 ? totalDelta : undefined,
+                  latestVersion: latestV?.versionNumber,
+                  screenshotUrl: p.screenshotUrl,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
