@@ -2,6 +2,13 @@ import React from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { ProjectCard } from "@/components/project/ProjectCard";
+import { BackgroundBeams } from "@/components/motion/BackgroundBeams";
+import { FlipWords } from "@/components/motion/FlipWords";
+import { BorderBeam } from "@/components/motion/BorderBeam";
+import { NumberTicker } from "@/components/motion/NumberTicker";
+import { InfiniteMarquee } from "@/components/motion/InfiniteMarquee";
+import { SpotlightCard } from "@/components/motion/SpotlightCard";
+import { ShimmerBadge } from "@/components/motion/ShimmerBadge";
 import {
   ArrowRight,
   Sparkles,
@@ -120,19 +127,19 @@ export default async function LandingPage() {
       {/* Hero Section */}
       <section className="relative pt-16 sm:pt-24 pb-12 overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none" />
+        <BackgroundBeams className="opacity-80" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          {/* Animated Shimmer Badge */}
+          <ShimmerBadge icon={<span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}>
             <span>The Production Verification Layer for AI-Built Apps</span>
-          </div>
+          </ShimmerBadge>
 
-          {/* Core Headlines */}
-          <div className="space-y-2">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-100 font-sans">
-              You built it.
+          {/* Core Headlines with Dynamic Motion Word Flipper */}
+          <div className="space-y-3 pt-2">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-100 font-sans leading-tight">
+              You built it with <FlipWords words={["Cursor", "Claude Code", "Lovable", "Bolt.new", "v0", "Replit"]} />
             </h1>
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-emerald-400 font-sans">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 font-sans">
               Now prove it's good.
             </h1>
           </div>
@@ -160,7 +167,8 @@ export default async function LandingPage() {
 
           {/* Realistic Vibe Score Demo Showcase Card */}
           <div className="pt-12 max-w-2xl mx-auto">
-            <div className="rounded-2xl border border-white/15 bg-slate-950/80 p-6 sm:p-8 shadow-2xl backdrop-blur-md text-left space-y-6 relative group">
+            <div className="rounded-2xl border border-white/15 bg-slate-950/80 p-6 sm:p-8 shadow-2xl backdrop-blur-md text-left space-y-6 relative group overflow-hidden">
+              <BorderBeam size={260} duration={12} delay={0} colorFrom="#10b981" colorTo="#06b6d4" />
               <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-slate-900 border border-emerald-500/40 text-[11px] font-mono text-emerald-400 font-bold">
                 LIVE DEMO BENCHMARK
               </div>
@@ -177,7 +185,7 @@ export default async function LandingPage() {
                 </div>
 
                 <div className="flex items-baseline gap-2 bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl">
-                  <span className="text-4xl sm:text-5xl font-mono font-black text-emerald-400">82</span>
+                  <NumberTicker value={82} className="text-4xl sm:text-5xl font-mono font-black text-emerald-400" />
                   <span className="text-slate-400 font-mono text-xs">/ 100</span>
                 </div>
               </div>
