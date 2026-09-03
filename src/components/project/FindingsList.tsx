@@ -88,17 +88,17 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
   return (
     <div className="space-y-4">
       {/* Summary Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200/90 bg-white shadow-xs text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] text-xs">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
+          <div className="flex items-center gap-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
             <span className="w-2 h-2 rounded-full bg-rose-500" />
             <span className="font-bold font-mono">{criticalCount}</span> Critical
           </div>
-          <div className="flex items-center gap-1.5 text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
+          <div className="flex items-center gap-1.5 text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
             <span className="w-2 h-2 rounded-full bg-orange-500" />
             <span className="font-bold font-mono">{highCount}</span> High priority
           </div>
-          <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
+          <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="font-bold font-mono">{fixedCount}</span> Issues resolved
           </div>
@@ -109,7 +109,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-indigo-500 shadow-xs"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-zinc-300 font-medium focus:outline-none focus:border-white/20"
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open only</option>
@@ -118,7 +118,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-indigo-500 shadow-xs"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-zinc-300 font-medium focus:outline-none focus:border-white/20"
           >
             <option value="ALL">All categories</option>
             <option value="SECURITY">Security</option>
@@ -134,7 +134,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
       {/* Findings items */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center border border-slate-200 rounded-2xl bg-white text-xs text-slate-500 shadow-xs">
+          <div className="p-8 text-center border border-white/[0.08] rounded-2xl bg-[#0c0c0e] text-xs text-zinc-400">
             No findings match your current filter.
           </div>
         ) : (
@@ -151,20 +151,20 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
                     ? "border-emerald-200/80 bg-emerald-50/20"
                     : item.severity === "CRITICAL"
                     ? "border-rose-200/90 bg-rose-50/20"
-                    : "border-slate-200/90 bg-white"
+                    : "border-white/[0.08] bg-[#0c0c0e]"
                 }`}
               >
                 {/* Header Row */}
                 <div
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                  className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-50/60 transition-colors rounded-2xl"
+                  className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-white/[0.02] transition-colors rounded-2xl"
                 >
                   <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${sev.className}`}>
                         {sev.label}
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono font-medium border border-slate-200">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 font-mono text-[10px] border border-white/[0.06]">
                         {item.category}
                       </span>
                       {isFixed ? (
@@ -176,11 +176,11 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
                       )}
                     </div>
 
-                    <h4 className={`text-xs font-bold ${isFixed ? "line-through text-slate-400" : "text-slate-900"}`}>
+                    <h4 className={`text-xs font-bold ${isFixed ? "line-through text-slate-400" : "text-white"}`}>
                       {item.title}
                     </h4>
 
-                    <p className="text-[11px] text-slate-600 line-clamp-1 leading-relaxed">
+                    <p className="text-[11px] text-zinc-400 line-clamp-1 leading-relaxed">
                       {item.description}
                     </p>
                   </div>

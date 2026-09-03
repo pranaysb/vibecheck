@@ -107,7 +107,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-6 space-y-4 shadow-xs hover:border-slate-300 hover:shadow-md transition-all">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-6 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-white/[0.16] transition-all">
       {/* Author Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -115,18 +115,18 @@ export function ReviewCard({ review }: { review: ReviewData }) {
             <img
               src={review.author.avatar || "/placeholder-avatar.png"}
               alt={review.author.name}
-              className="w-10 h-10 rounded-full object-cover border border-slate-200"
+              className="w-10 h-10 rounded-full object-cover border border-white/[0.1]"
             />
           </Link>
           <div>
             <div className="flex items-center gap-2">
               <Link
                 href={`/users/${review.author.username}`}
-                className="font-bold text-sm text-slate-900 hover:text-indigo-600 transition-colors"
+                className="font-semibold text-sm text-white hover:text-zinc-300 transition-colors"
               >
                 {review.author.name}
               </Link>
-              <span className="text-xs text-slate-500 font-mono">@{review.author.username}</span>
+              <span className="text-xs text-zinc-500 font-mono">@{review.author.username}</span>
               {review.author.role === "EXPERT" && (
                 <span className="flex items-center gap-1 text-[10px] text-indigo-700 font-medium px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50">
                   <ShieldCheck className="w-3 h-3 text-indigo-600" /> Verified Expert
@@ -134,7 +134,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
               )}
             </div>
             <div className="text-xs text-slate-500 font-mono flex items-center gap-2 mt-0.5">
-              <span className="text-indigo-600 font-semibold">{review.author.reputationPoints.toLocaleString()} review points</span>
+              <span className="text-zinc-300 font-medium">{review.author.reputationPoints.toLocaleString()} review points</span>
               <span>•</span>
               <span>{formatTimeAgo(review.createdAt)}</span>
             </div>
@@ -153,22 +153,22 @@ export function ReviewCard({ review }: { review: ReviewData }) {
       </div>
 
       {/* Structured Category Scores Bar */}
-      <div className="grid grid-cols-4 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center text-xs">
+      <div className="grid grid-cols-4 gap-2 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center text-xs">
         <div>
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Product</div>
-          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.productScore}/10</div>
+          <div className="text-[10px] text-zinc-500 uppercase font-mono text-[10px]">Product</div>
+          <div className="font-mono font-bold text-white text-sm mt-0.5">{review.productScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Design / UX</div>
-          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.designScore}/10</div>
+          <div className="text-[10px] text-zinc-500 uppercase font-mono text-[10px]">Design / UX</div>
+          <div className="font-mono font-bold text-white text-sm mt-0.5">{review.designScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Engineering</div>
-          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.engineeringScore}/10</div>
+          <div className="text-[10px] text-zinc-500 uppercase font-mono text-[10px]">Engineering</div>
+          <div className="font-mono font-bold text-white text-sm mt-0.5">{review.engineeringScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Docs</div>
-          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.docScore}/10</div>
+          <div className="text-[10px] text-zinc-500 uppercase font-mono text-[10px]">Docs</div>
+          <div className="font-mono font-bold text-white text-sm mt-0.5">{review.docScore}/10</div>
         </div>
       </div>
 
@@ -217,7 +217,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
       </div>
 
       {/* Action footer: Helpful Vote + Reply Toggle */}
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
         <HelpfulVoteButton
           reviewId={review.id}
           initialVotes={review.helpfulVotesCount}
@@ -245,7 +245,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
                 </span>
                 <span className="text-slate-400 font-mono">{formatTimeAgo(c.createdAt)}</span>
               </div>
-              <p className="text-slate-700 leading-relaxed">{c.content}</p>
+              <p className="text-zinc-300 leading-relaxed">{c.content}</p>
             </div>
           ))}
 

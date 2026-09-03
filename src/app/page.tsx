@@ -7,20 +7,14 @@ import {
   Zap,
   TrendingUp,
   MessageSquare,
-  Sparkles,
   Users,
   CheckCircle2,
   Check,
   Cpu,
 } from "lucide-react";
 import { ProjectCard } from "@/components/project/ProjectCard";
-import { BackgroundBeams } from "@/components/motion/BackgroundBeams";
-import { FlipWords } from "@/components/motion/FlipWords";
-import { BorderBeam } from "@/components/motion/BorderBeam";
 import { NumberTicker } from "@/components/motion/NumberTicker";
 import { InfiniteMarquee } from "@/components/motion/InfiniteMarquee";
-import { SpotlightCard } from "@/components/motion/SpotlightCard";
-import { ShimmerBadge } from "@/components/motion/ShimmerBadge";
 
 export const revalidate = 0;
 
@@ -115,47 +109,50 @@ export default async function HomePage() {
   });
 
   return (
-    <div className="space-y-24 pb-20">
+    <div className="space-y-28 pb-24">
       {/* Hero Section */}
-      <section className="relative pt-20 sm:pt-28 pb-16 overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-white via-slate-50/50 to-white">
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
-        <BackgroundBeams className="opacity-90" />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
-          {/* Animated Shimmer Badge */}
-          <ShimmerBadge icon={<span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />}>
-            <span>The Production Verification Layer for AI-Built Apps</span>
-          </ShimmerBadge>
+      <section className="relative pt-24 sm:pt-32 pb-16 overflow-hidden">
+        {/* Ambient Top Spotlight (Linear signature) */}
+        <div 
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none opacity-50"
+          style={{
+            background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(120, 119, 198, 0.2), transparent 70%)",
+          }}
+        />
 
-          {/* Core Headlines with Dynamic Motion Word Flipper */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
+          {/* Minimalist Linear Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.03] text-zinc-400 text-xs font-mono backdrop-blur-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+            <span>The Verification Layer for AI-Assisted Software</span>
+          </div>
+
+          {/* Core Headlines */}
           <div className="space-y-2 pt-2">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 font-sans leading-tight">
-              You built it with{" "}
-              <FlipWords words={["Cursor", "Claude Code", "Lovable", "Bolt.new", "v0", "Replit"]} />
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-white font-sans leading-tight">
+              You built it with AI.
             </h1>
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 font-sans">
-              Now{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700">
-                prove it's good.
-              </span>
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-200 to-zinc-500 font-sans">
+              Now prove it's good.
             </h1>
           </div>
 
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-            VibeCheck gives AI-assisted developers honest feedback, automated checks, and expert engineering reviews before they ship.
+          <p className="max-w-2xl mx-auto text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
+            Automated security and accessibility auditing, structured developer reviews, and expert engineering sign-off for modern AI-assisted builders.
           </p>
 
-          {/* Primary & Secondary CTAs */}
+          {/* Primary & Secondary CTAs (Linear Signature) */}
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/projects/new"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-all shadow-md shadow-slate-900/10 hover:shadow-xl flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-medium text-xs transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center justify-center gap-2"
             >
               <span>Submit your project</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <Link
               href="/discover"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/[0.08] text-xs font-medium transition-all flex items-center justify-center gap-2"
             >
               <span>Explore projects</span>
             </Link>
@@ -163,72 +160,67 @@ export default async function HomePage() {
 
           {/* Realistic Vibe Score Demo Showcase Card */}
           <div className="pt-12 max-w-2xl mx-auto">
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-7 sm:p-9 shadow-2xl shadow-slate-200/60 text-left space-y-6 relative group overflow-hidden">
-              <BorderBeam size={280} duration={12} delay={0} colorFrom="#4f46e5" colorTo="#8b5cf6" />
-              <div className="absolute -top-3 left-6 px-3.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[10px] font-mono text-indigo-700 font-bold shadow-xs">
-                LIVE DEMO BENCHMARK
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-7 sm:p-8 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_25px_50px_-15px_rgba(0,0,0,0.9)] text-left space-y-6 relative overflow-hidden backdrop-blur-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
                 <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                    Aggregate Quality Rating
+                  <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider">
+                    Benchmark Audit
                   </span>
-                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">CampusConnect Vibe Score</h3>
-                  <div className="text-xs text-slate-500 font-mono mt-1">
-                    Updated after v3 release (35 automated checks + 4 peer reviews)
+                  <h3 className="text-lg font-semibold text-white mt-0.5 tracking-tight">CampusConnect Vibe Score</h3>
+                  <div className="text-xs text-zinc-500 font-mono mt-1">
+                    35 automated checks + 4 peer reviews
                   </div>
                 </div>
 
-                <div className="flex items-baseline gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl shadow-xs">
-                  <NumberTicker value={82} className="text-4xl sm:text-5xl font-mono font-black text-emerald-700" />
-                  <span className="text-slate-400 font-mono text-xs font-semibold">/ 100</span>
+                <div className="flex items-baseline gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-xl">
+                  <NumberTicker value={82} className="text-3xl sm:text-4xl font-mono font-bold text-emerald-400" />
+                  <span className="text-zinc-500 font-mono text-xs">/ 100</span>
                 </div>
               </div>
 
               {/* Category Scores Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Product</span>
-                  <span className="font-mono font-bold text-slate-900">91</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Product</span>
+                  <span className="font-mono font-bold text-white">91</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Design / UX</span>
-                  <span className="font-mono font-bold text-slate-900">86</span>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Design / UX</span>
+                  <span className="font-mono font-bold text-white">86</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Engineering</span>
-                  <span className="font-mono font-bold text-slate-900">78</span>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Engineering</span>
+                  <span className="font-mono font-bold text-zinc-300">78</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Security</span>
-                  <span className="font-mono font-bold text-slate-900">73</span>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Security</span>
+                  <span className="font-mono font-bold text-zinc-300">73</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Performance</span>
-                  <span className="font-mono font-bold text-slate-900">88</span>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Performance</span>
+                  <span className="font-mono font-bold text-white">88</span>
                 </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600 font-medium">Accessibility</span>
-                  <span className="font-mono font-bold text-slate-900">81</span>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between">
+                  <span className="text-zinc-400">Accessibility</span>
+                  <span className="font-mono font-bold text-white">81</span>
                 </div>
               </div>
 
               {/* What VibeCheck Found */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
-                <div className="text-xs font-bold text-slate-700">What VibeCheck found:</div>
-                <div className="flex flex-wrap items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1.5 text-rose-700 font-medium bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
-                    <strong>1</strong> critical issue
+              <div className="pt-3 border-t border-white/[0.06] space-y-2">
+                <div className="text-xs text-zinc-400 font-medium">Automated Findings:</div>
+                <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                  <span className="flex items-center gap-1.5 text-rose-400 font-mono text-[11px] bg-rose-500/10 px-2.5 py-0.5 rounded-md border border-rose-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    1 critical issue
                   </span>
-                  <span className="flex items-center gap-1.5 text-amber-700 font-medium bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <strong>4</strong> improvements
+                  <span className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px] bg-amber-500/10 px-2.5 py-0.5 rounded-md border border-amber-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    4 improvements
                   </span>
-                  <span className="flex items-center gap-1.5 text-emerald-700 font-medium bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <strong>21</strong> strengths
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px] bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    21 strengths
                   </span>
                 </div>
               </div>
@@ -237,8 +229,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Infinite Motion Marquee for AI Ecosystem */}
-      <section className="border-y border-slate-200/80 bg-white/70 py-3">
+      {/* Subtle Marquee */}
+      <section className="border-y border-white/[0.06] bg-white/[0.01] py-3">
         <InfiniteMarquee
           items={[
             { name: "Cursor", category: "AI IDE" },
@@ -251,46 +243,44 @@ export default async function HomePage() {
             { name: "Supabase", category: "Cloud Postgres" },
             { name: "Tailwind CSS", category: "Modern Styling" },
             { name: "TypeScript", category: "Type Integrity" },
-            { name: "Prisma ORM", category: "Data Layer" },
-            { name: "Zod", category: "Runtime Schema" },
           ]}
         />
       </section>
 
       {/* Core Loop Workflow */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3 mb-12">
-          <div className="text-xs font-mono text-indigo-600 uppercase tracking-wider font-bold">
-            How it works
+        <div className="text-center space-y-2 mb-12">
+          <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            Workflow
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            The Continuous Vibe Check Loop
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+            The Continuous Verification Loop
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
-            From your first Cursor or Claude Code prompt to a hardened, verified production release.
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto">
+            From initial prototype to a hardened, verifiable production release.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { step: "01", name: "BUILD", desc: "Build fast with Cursor, Claude Code, Lovable, or v0.", icon: <Cpu className="w-5 h-5 text-purple-600" /> },
-            { step: "02", name: "CHECK", desc: "Automated scanner audits headers, a11y, and speed.", icon: <Zap className="w-5 h-5 text-amber-600" /> },
-            { step: "03", name: "REVIEW", desc: "Community developers & verified experts stress-test UX.", icon: <Users className="w-5 h-5 text-indigo-600" /> },
-            { step: "04", name: "IMPROVE", desc: "Fix findings, bump your score, and record evolution.", icon: <TrendingUp className="w-5 h-5 text-emerald-600" /> },
-            { step: "05", name: "SHIP", desc: "Deploy with confidence and a verifiable quality badge.", icon: <CheckCircle2 className="w-5 h-5 text-cyan-600" /> },
+            { step: "01", name: "BUILD", desc: "Build fast with Cursor, Claude, or Lovable.", icon: <Cpu className="w-4 h-4 text-zinc-300" /> },
+            { step: "02", name: "AUDIT", desc: "Automated scan checks headers, security, and a11y.", icon: <Zap className="w-4 h-4 text-zinc-300" /> },
+            { step: "03", name: "REVIEW", desc: "Community developers stress-test UX and code.", icon: <Users className="w-4 h-4 text-zinc-300" /> },
+            { step: "04", name: "HARDEN", desc: "Fix findings, bump your score, record progress.", icon: <TrendingUp className="w-4 h-4 text-zinc-300" /> },
+            { step: "05", name: "SHIP", desc: "Deploy with a verifiable proof-of-quality badge.", icon: <CheckCircle2 className="w-4 h-4 text-zinc-300" /> },
           ].map((item) => (
             <div
               key={item.name}
-              className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2 relative group hover:border-indigo-300 hover:shadow-lg transition-all text-left shadow-xs"
+              className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-5 space-y-2 relative group hover:border-white/[0.18] transition-all text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-slate-400">{item.step}</span>
+                <span className="text-[10px] font-mono text-zinc-500">{item.step}</span>
                 {item.icon}
               </div>
-              <div className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
+              <div className="font-semibold text-xs text-white tracking-wide">
                 {item.name}
               </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -300,16 +290,16 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-xs font-mono text-indigo-600 uppercase tracking-wider font-bold">
-              Trending & Most Improved
+            <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+              Community Benchmarks
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
-              Featured Community Projects
+            <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight mt-1">
+              Featured Submissions
             </h2>
           </div>
           <Link
             href="/discover"
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
           >
             <span>View all projects</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -325,77 +315,77 @@ export default async function HomePage() {
 
       {/* Three Pillars: Community, Automated, Expert */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Pillar 1 */}
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-              <Users className="w-5 h-5" />
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-7 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-15px_rgba(0,0,0,0.8)]">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300">
+              <Users className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Community Feedback</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Real developers review your project across Product, UX, Engineering, and Documentation. Peer reviews include concrete bug reports and actionable suggestions.
+            <h3 className="text-base font-semibold text-white tracking-tight">Community Feedback</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Real developers review your project across Product, UX, Engineering, and Docs with concrete bug reports and actionable suggestions.
             </p>
-            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
+            <ul className="space-y-2 text-xs text-zinc-400 pt-3 border-t border-white/[0.06]">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-blue-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Structured 1-10 category breakdowns</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-blue-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>"Would you ship this?" peer consensus</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-blue-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Reputation-backed developer profiles</span>
               </li>
             </ul>
           </div>
 
           {/* Pillar 2 */}
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-              <Zap className="w-5 h-5" />
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-7 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-15px_rgba(0,0,0,0.8)]">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300">
+              <Zap className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Automated Analysis</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Automatically identify potential engineering, accessibility, performance, and security problems using our safe SSRF-protected scanner.
+            <h3 className="text-base font-semibold text-white tracking-tight">Automated Analysis</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Identify engineering, accessibility, and security problems using our safe SSRF-protected static and runtime scanner.
             </p>
-            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
+            <ul className="space-y-2 text-xs text-zinc-400 pt-3 border-t border-white/[0.06]">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Security headers (CSP, HSTS, X-Frame)</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>WCAG accessibility & screen reader checks</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Secret pattern detection & TTFB metrics</span>
               </li>
             </ul>
           </div>
 
           {/* Pillar 3 */}
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-7 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-15px_rgba(0,0,0,0.8)]">
+            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-300">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Expert Engineering Review</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Book verified senior software engineers (ex-Stripe, Staff Architects) for comprehensive written reports covering authorization, scalability, and code structure.
+            <h3 className="text-base font-semibold text-white tracking-tight">Expert Engineering Review</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Book verified senior engineers (ex-Stripe, Staff Architects) for comprehensive written reports on authorization, scalability, and code structure.
             </p>
-            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
+            <ul className="space-y-2 text-xs text-zinc-400 pt-3 border-t border-white/[0.06]">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-cyan-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Verified industry credentials</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-cyan-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Formal Engineering Review Report</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-cyan-600" />
+                <Check className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Transparent pricing from ₹999</span>
               </li>
             </ul>
@@ -405,24 +395,26 @@ export default async function HomePage() {
 
       {/* Final Strong CTA */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 pt-12">
-        <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/60 p-8 sm:p-14 space-y-6 shadow-xl">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-sans tracking-tight">
-            Stop wondering if your project is good.<br />
-            <span className="text-indigo-600">Find out.</span>
+        <div className="rounded-3xl border border-white/[0.08] bg-[#0c0c0e] p-8 sm:p-14 space-y-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_25px_50px_-15px_rgba(0,0,0,0.9)]">
+          <h2 className="text-3xl sm:text-4xl font-semibold text-white font-sans tracking-tight">
+            Stop guessing if your app is ready.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400">
+              Verify before you ship.
+            </span>
           </h2>
-          <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
-            Join hundreds of indie hackers and vibe-coded builders proving their work, catching critical vulnerabilities early, and shipping with confidence.
+          <p className="text-zinc-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+            Join developers using VibeCheck to audit code, improve scores across versions, and build a verifiable proof-of-quality portfolio.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/projects/new"
-              className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-all shadow-md shadow-slate-900/10 hover:shadow-xl hover:-translate-y-0.5"
+              className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black font-medium text-xs shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all"
             >
               Submit your project now
             </Link>
             <Link
               href="/discover"
-              className="px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold shadow-xs hover:-translate-y-0.5"
+              className="px-5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 text-xs font-medium transition-all"
             >
               Browse live submissions
             </Link>

@@ -22,28 +22,28 @@ export function getScoreColor(score: number): {
 } {
   if (score >= 85) {
     return {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700 font-bold",
-      border: "border-emerald-200",
-      badge: "bg-emerald-50/90 text-emerald-700 border-emerald-200/90 shadow-sm",
-      accent: "#059669",
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-400 font-bold",
+      border: "border-emerald-500/20",
+      badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      accent: "#10b981",
     };
   }
   if (score >= 70) {
     return {
-      bg: "bg-amber-50",
-      text: "text-amber-700 font-bold",
-      border: "border-amber-200",
-      badge: "bg-amber-50/90 text-amber-700 border-amber-200/90 shadow-sm",
-      accent: "#d97706",
+      bg: "bg-amber-500/10",
+      text: "text-amber-400 font-bold",
+      border: "border-amber-500/20",
+      badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      accent: "#f59e0b",
     };
   }
   return {
-    bg: "bg-rose-50",
-    text: "text-rose-700 font-bold",
-    border: "border-rose-200",
-    badge: "bg-rose-50/90 text-rose-700 border-rose-200/90 shadow-sm",
-    accent: "#e11d48",
+    bg: "bg-rose-500/10",
+    text: "text-rose-400 font-bold",
+    border: "border-rose-500/20",
+    badge: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+    accent: "#f43f5e",
   };
 }
 
@@ -56,49 +56,55 @@ export function getSeverityBadge(severity: string): {
     case "CRITICAL":
       return {
         label: "Critical",
-        className: "bg-rose-50 text-rose-700 border-rose-200/90 shadow-xs font-semibold",
+        className: "bg-rose-500/10 text-rose-400 border-rose-500/20 font-medium",
         dotColor: "bg-rose-500",
       };
     case "HIGH":
       return {
         label: "High",
-        className: "bg-orange-50 text-orange-700 border-orange-200/90 shadow-xs font-semibold",
+        className: "bg-orange-500/10 text-orange-400 border-orange-500/20 font-medium",
         dotColor: "bg-orange-500",
       };
     case "MEDIUM":
       return {
         label: "Medium",
-        className: "bg-amber-50 text-amber-700 border-amber-200/90 shadow-xs font-semibold",
+        className: "bg-amber-500/10 text-amber-400 border-amber-500/20 font-medium",
         dotColor: "bg-amber-500",
       };
     case "LOW":
     default:
       return {
         label: "Low",
-        className: "bg-blue-50 text-blue-700 border-blue-200/90 shadow-xs font-semibold",
+        className: "bg-blue-500/10 text-blue-400 border-blue-500/20 font-medium",
         dotColor: "bg-blue-500",
       };
   }
 }
 
-export function formatDate(date: Date | string): string {
-  const d = new Date(date);
-  return d.toLocaleDateString("en-US", {
+export function formatDate(dateString: string | Date): string {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  });
+  }).format(date);
 }
 
-export function formatTimeAgo(date: Date | string): string {
-  const d = new Date(date);
-  const now = new Date();
-  const diffInSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+export function truncate(str: string, length: number): string {
+  if (!str) return "";
+  if (str.length <= length) return str;
+  return str.slice(0, length) + "...";
+}
 
-  if (diffInSec < 60) return "just now";
-  const diffInMin = Math.floor(diffInSec / 60);
-  if (diffInMin < 60) return `${diffInMin}m ago`;
-  const diffInHours = Math.floor(diffInMin / 60);
+export function formatTimeAgo(date: string | Date): string {
+  const now = new Date();
+  const past = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "just now";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h ago`;
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 30) return `${diffInDays}d ago`;

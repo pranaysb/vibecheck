@@ -8,7 +8,6 @@ import { RoleSwitcher } from "./RoleSwitcher";
 import { NotificationBell } from "./NotificationBell";
 import { CommandPalette } from "./CommandPalette";
 import {
-  ShieldCheck,
   Search,
   Plus,
   LayoutDashboard,
@@ -44,17 +43,17 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#08080a]/80 backdrop-blur-md transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-100 transition-colors shadow-xs">
-                <Terminal className="w-4 h-4" />
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-7 h-7 rounded-md bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-zinc-200 group-hover:border-white/20 transition-all">
+                <Terminal className="w-3.5 h-3.5" />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold tracking-tight text-slate-900 text-base">VibeCheck</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                <span className="font-semibold tracking-tight text-white text-sm font-sans">VibeCheck</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
               </div>
             </Link>
 
@@ -66,10 +65,10 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-md text-xs transition-colors ${
                       isActive
-                        ? "text-indigo-600 bg-indigo-50 font-semibold"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                        ? "text-white font-medium bg-white/[0.06]"
+                        : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                     }`}
                   >
                     {link.name}
@@ -83,13 +82,13 @@ export function Navbar() {
           <div className="hidden lg:flex flex-1 max-w-xs">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 hover:bg-slate-100/80 text-xs text-slate-500 transition-all shadow-xs"
+              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-xs text-zinc-400 transition-all"
             >
               <span className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
+                <Search className="w-3.5 h-3.5 text-zinc-500" />
                 <span>Search projects, experts...</span>
               </span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-500 shadow-xs">
+              <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-[10px] font-mono text-zinc-400">
                 ⌘K
               </kbd>
             </button>
@@ -100,43 +99,31 @@ export function Navbar() {
             {/* Quick search on mobile/tablet */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-              title="Search (⌘K)"
+              className="lg:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+              aria-label="Search"
             >
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Notification Center */}
+            {/* Notification Bell */}
             <NotificationBell />
 
-            {/* Role Switcher for seamless QA */}
+            {/* Role Switcher */}
             <RoleSwitcher />
 
-            {/* Creator Dashboard */}
+            {/* Dashboard shortcut */}
             <Link
               href="/dashboard"
-              className={`p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors ${
-                pathname === "/dashboard" ? "bg-slate-100 text-indigo-600" : ""
-              }`}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-normal text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors"
               title="Creator Dashboard"
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-3.5 h-3.5" />
             </Link>
 
-            {/* Admin link if role is ADMIN */}
-            {currentUser?.role === "ADMIN" && (
-              <Link
-                href="/admin"
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold hover:bg-purple-100 transition-colors shadow-xs"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" /> Admin
-              </Link>
-            )}
-
-            {/* Submit Project CTA */}
+            {/* Primary Submit CTA (Linear signature crisp white button) */}
             <Link
               href="/projects/new"
-              className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 hover:shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black font-medium text-xs transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Submit Project</span>
@@ -146,46 +133,38 @@ export function Navbar() {
             {/* Mobile menu trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+              className="md:hidden p-1.5 rounded-md text-zinc-400 hover:text-white"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200/80 bg-white p-4 space-y-2 animate-in slide-in-from-top-2 duration-200 shadow-xl">
-            {navLinks.map((link) => {
-              const isActive = pathname.startsWith(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-lg text-sm font-medium ${
-                    isActive ? "bg-indigo-50 text-indigo-600 font-semibold" : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              );
-            })}
-            <div className="pt-2 border-t border-slate-100">
+          <div className="md:hidden border-t border-white/[0.08] bg-[#08080a] p-4 space-y-2 animate-in slide-in-from-top-2">
+            {navLinks.map((link) => (
               <Link
-                href="/projects/new"
+                key={link.href}
+                href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white font-semibold text-xs shadow-sm"
+                className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-white/[0.04]"
               >
-                <Plus className="w-4 h-4" />
-                <span>Submit New Project</span>
+                {link.name}
               </Link>
-            </div>
+            ))}
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm text-zinc-300 hover:text-white hover:bg-white/[0.04]"
+            >
+              Dashboard
+            </Link>
           </div>
         )}
       </header>
 
-      {/* Global Command Palette */}
+      {/* Global Search Palette */}
       <CommandPalette isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
