@@ -85,20 +85,20 @@ export default async function DashboardPage() {
       {/* Dashboard Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">
+          <span className="text-xs font-mono text-indigo-600 font-bold uppercase tracking-wider">
             Creator Dashboard
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-0.5 tracking-tight">
             Welcome back, {currentUser?.name || "Developer"}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 mt-1 font-normal">
             Monitoring health, version evolution, and community reviews across your submissions.
           </p>
         </div>
 
         <Link
           href="/projects/new"
-          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20 self-start sm:self-auto"
+          className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>New Project Submission</span>
@@ -107,40 +107,40 @@ export default async function DashboardPage() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-1">
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+        <div className="p-5 rounded-2xl border border-slate-200/90 bg-white space-y-1 shadow-xs">
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
             <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
             <span>Your projects</span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-100">{totalProjects}</div>
+          <div className="text-2xl font-bold font-mono text-slate-900">{totalProjects}</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-1">
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+        <div className="p-5 rounded-2xl border border-slate-200/90 bg-white space-y-1 shadow-xs">
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
             <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
             <span>Reviews received</span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-100">{totalReviews}</div>
+          <div className="text-2xl font-bold font-mono text-slate-900">{totalReviews}</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-1">
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+        <div className="p-5 rounded-2xl border border-slate-200/90 bg-white space-y-1 shadow-xs">
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-700" />
             <span>Issues found</span>
           </div>
           <div className="text-2xl font-bold font-mono text-rose-400">{totalIssuesFound}</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-1">
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+        <div className="p-5 rounded-2xl border border-slate-200/90 bg-white space-y-1 shadow-xs">
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
             <span>Issues fixed</span>
           </div>
           <div className="text-2xl font-bold font-mono text-emerald-400">{totalIssuesFixed}</div>
         </div>
 
-        <div className="p-4 rounded-xl border border-white/10 bg-slate-900/50 space-y-1 col-span-2 md:col-span-1">
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+        <div className="p-5 rounded-2xl border border-slate-200/90 bg-white space-y-1 shadow-xs col-span-2 md:col-span-1">
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
             <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
             <span>Average Vibe Score</span>
           </div>
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
 
       {/* Projects Needing Attention */}
       {projectsNeedingAttention.length > 0 && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-950/10 p-6 space-y-4">
+        <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-6 space-y-4">
           <div className="flex items-center gap-2 text-rose-400">
             <AlertTriangle className="w-4 h-4" />
             <h2 className="text-sm font-bold uppercase tracking-wider">Projects Needing Attention</h2>
@@ -162,11 +162,11 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={p.id}
-                  className="p-4 rounded-lg bg-slate-950/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-4 rounded-xl bg-white border border-rose-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Link href={`/projects/${p.slug}`} className="font-bold text-sm text-slate-100 hover:text-emerald-400">
+                      <Link href={`/projects/${p.slug}`} className="font-bold text-sm text-slate-900 hover:text-emerald-400">
                         {p.title}
                       </Link>
                       <span className={`px-2 py-0.2 rounded text-xs font-mono font-bold border ${sc.badge}`}>
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
 
                   <Link
                     href={`/projects/${p.slug}/manage`}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs transition-colors self-start sm:self-auto flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors self-start sm:self-auto flex items-center gap-1"
                   >
                     <span>Review findings</span>
                     <ArrowRight className="w-3 h-3" />
@@ -194,25 +194,25 @@ export default async function DashboardPage() {
 
       {/* Projects Grid */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-100">Your Projects</h2>
+        <h2 className="text-lg font-bold text-slate-900">Your Projects</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((p) => {
             const sc = getScoreColor(p.vibeScore);
             return (
               <div
                 key={p.id}
-                className="rounded-xl border border-white/10 bg-slate-900/40 p-5 space-y-4 flex flex-col justify-between"
+                className="rounded-xl border border-slate-200 bg-slate-900/40 p-5 space-y-4 flex flex-col justify-between"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between">
                     <div>
                       <Link
                         href={`/projects/${p.slug}`}
-                        className="font-bold text-base text-slate-100 hover:text-emerald-400 transition-colors"
+                        className="font-bold text-base text-slate-900 hover:text-emerald-400 transition-colors"
                       >
                         {p.title}
                       </Link>
-                      <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{p.tagline}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{p.tagline}</p>
                     </div>
                     <div className={`px-2 py-1 rounded text-xs font-mono font-bold border ${sc.badge}`}>
                       {p.vibeScore}
@@ -221,15 +221,15 @@ export default async function DashboardPage() {
 
                   <div className="flex flex-wrap gap-1 pt-1">
                     {p.techStack.slice(0, 3).map((t) => (
-                      <span key={t} className="text-[10px] px-1.5 py-0.2 rounded bg-slate-950 border border-white/5 text-slate-400 font-mono">
+                      <span key={t} className="text-[10px] px-1.5 py-0.2 rounded bg-slate-950 border border-slate-100 text-slate-500 font-mono">
                         {t}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-mono">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-mono">
                     {p.versions.length} {p.versions.length === 1 ? "version" : "versions"} • {p.reviews.length} reviews
                   </span>
                   <Link
@@ -248,8 +248,8 @@ export default async function DashboardPage() {
 
       {/* Expert Reviews Status */}
       {expertReviews.length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-slate-900/40 p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-900/40 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-cyan-400" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">
@@ -262,7 +262,7 @@ export default async function DashboardPage() {
             {expertReviews.map((er) => (
               <div
                 key={er.id}
-                className="p-3.5 rounded-lg bg-slate-950/60 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -270,11 +270,11 @@ export default async function DashboardPage() {
                     <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-mono">
                       {er.packageType}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-600 font-mono">
                       {er.status}
                     </span>
                   </div>
-                  <div className="text-slate-400 mt-0.5">
+                  <div className="text-slate-500 mt-0.5">
                     Assigned Expert: <strong className="text-slate-200">{er.expert.name}</strong>
                   </div>
                 </div>

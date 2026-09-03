@@ -22,28 +22,28 @@ export function getScoreColor(score: number): {
 } {
   if (score >= 85) {
     return {
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400",
-      border: "border-emerald-500/30",
-      badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-      accent: "#10b981",
+      bg: "bg-emerald-50",
+      text: "text-emerald-700 font-bold",
+      border: "border-emerald-200",
+      badge: "bg-emerald-50/90 text-emerald-700 border-emerald-200/90 shadow-sm",
+      accent: "#059669",
     };
   }
   if (score >= 70) {
     return {
-      bg: "bg-amber-500/10",
-      text: "text-amber-400",
-      border: "border-amber-500/30",
-      badge: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-      accent: "#f59e0b",
+      bg: "bg-amber-50",
+      text: "text-amber-700 font-bold",
+      border: "border-amber-200",
+      badge: "bg-amber-50/90 text-amber-700 border-amber-200/90 shadow-sm",
+      accent: "#d97706",
     };
   }
   return {
-    bg: "bg-rose-500/10",
-    text: "text-rose-400",
-    border: "border-rose-500/30",
-    badge: "bg-rose-500/15 text-rose-300 border-rose-500/40",
-    accent: "#f43f5e",
+    bg: "bg-rose-50",
+    text: "text-rose-700 font-bold",
+    border: "border-rose-200",
+    badge: "bg-rose-50/90 text-rose-700 border-rose-200/90 shadow-sm",
+    accent: "#e11d48",
   };
 }
 
@@ -56,26 +56,26 @@ export function getSeverityBadge(severity: string): {
     case "CRITICAL":
       return {
         label: "Critical",
-        className: "bg-rose-500/15 text-rose-300 border-rose-500/40",
+        className: "bg-rose-50 text-rose-700 border-rose-200/90 shadow-xs font-semibold",
         dotColor: "bg-rose-500",
       };
     case "HIGH":
       return {
         label: "High",
-        className: "bg-orange-500/15 text-orange-300 border-orange-500/40",
+        className: "bg-orange-50 text-orange-700 border-orange-200/90 shadow-xs font-semibold",
         dotColor: "bg-orange-500",
       };
     case "MEDIUM":
       return {
         label: "Medium",
-        className: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+        className: "bg-amber-50 text-amber-700 border-amber-200/90 shadow-xs font-semibold",
         dotColor: "bg-amber-500",
       };
     case "LOW":
     default:
       return {
         label: "Low",
-        className: "bg-blue-500/15 text-blue-300 border-blue-500/40",
+        className: "bg-blue-50 text-blue-700 border-blue-200/90 shadow-xs font-semibold",
         dotColor: "bg-blue-500",
       };
   }

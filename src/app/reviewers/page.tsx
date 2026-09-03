@@ -24,34 +24,34 @@ export default async function ReviewersPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono font-medium">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-xs text-xs font-mono font-medium">
           <Award className="w-3.5 h-3.5 text-amber-400" />
           <span>Community Reputation Leaderboard</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-100 font-sans tracking-tight mt-2">
+        <h1 className="text-3xl font-extrabold text-slate-900 font-sans tracking-tight mt-2">
           Top Reviewers & Quality Hunters
         </h1>
-        <p className="text-sm text-slate-400 mt-1 max-w-2xl">
+        <p className="text-sm text-slate-600 mt-1 max-w-2xl font-normal">
           Engineers earning community reputation points by providing rigorous, honest product and engineering feedback.
         </p>
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-xl border border-white/10 bg-slate-900/40 overflow-hidden">
-        <div className="p-4 border-b border-white/10 flex items-center justify-between text-xs text-slate-400 font-medium">
+      <div className="rounded-3xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500 font-semibold">
           <span>Rank & Reviewer</span>
           <span className="hidden sm:inline">Badges & Focus</span>
           <span>Reputation</span>
         </div>
 
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-slate-100">
           {reviewers.map((rev, idx) => {
             const totalHelpful = rev.reviews.reduce((sum, r) => sum + r.helpfulVotesCount, 0);
 
             return (
               <div
                 key={rev.id}
-                className="p-4 flex items-center justify-between gap-4 hover:bg-slate-900/80 transition-colors text-xs"
+                className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors text-xs"
               >
                 {/* Left: Rank, Avatar, Name */}
                 <div className="flex items-center gap-3.5">
@@ -62,13 +62,13 @@ export default async function ReviewersPage() {
                     <img
                       src={rev.avatar || "/placeholder-avatar.png"}
                       alt={rev.name}
-                      className="w-10 h-10 rounded-full object-cover border border-white/10"
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
                     />
                   </Link>
                   <div>
                     <Link
                       href={`/users/${rev.username}`}
-                      className="font-bold text-slate-200 hover:text-emerald-400 text-sm transition-colors flex items-center gap-1.5"
+                      className="font-bold text-slate-900 hover:text-indigo-600 text-sm transition-colors flex items-center gap-1.5"
                     >
                       <span>{rev.name}</span>
                       {rev.role === "EXPERT" && <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />}
@@ -84,7 +84,7 @@ export default async function ReviewersPage() {
                   {rev.badges.map((b) => (
                     <span
                       key={b.badge.id}
-                      className="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-white/10 text-slate-300 font-mono"
+                      className="text-[10px] px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium font-mono"
                     >
                       {b.badge.name}
                     </span>
@@ -96,7 +96,7 @@ export default async function ReviewersPage() {
 
                 {/* Right: Points */}
                 <div className="text-right">
-                  <div className="font-mono font-bold text-emerald-400 text-sm">
+                  <div className="font-mono font-bold text-indigo-600 text-sm">
                     {rev.reputationPoints.toLocaleString()} pts
                   </div>
                   <div className="text-[10px] text-slate-500 font-mono flex items-center justify-end gap-1">

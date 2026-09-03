@@ -10,9 +10,7 @@ import {
   Bug,
   Lightbulb,
   AlertOctagon,
-  CornerDownRight,
   Send,
-  Sparkles,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -99,17 +97,17 @@ export function ReviewCard({ review }: { review: ReviewData }) {
   const getShipBadge = (val: string) => {
     switch (val) {
       case "YES":
-        return "bg-emerald-500/15 text-emerald-300 border-emerald-500/40";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200/90";
       case "ALMOST":
-        return "bg-amber-500/15 text-amber-300 border-amber-500/40";
+        return "bg-amber-50 text-amber-700 border-amber-200/90";
       case "NOT_YET":
       default:
-        return "bg-rose-500/15 text-rose-300 border-rose-500/40";
+        return "bg-rose-50 text-rose-700 border-rose-200/90";
     }
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-900/50 p-5 space-y-4">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-6 space-y-4 shadow-xs hover:border-slate-300 hover:shadow-md transition-all">
       {/* Author Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -117,26 +115,26 @@ export function ReviewCard({ review }: { review: ReviewData }) {
             <img
               src={review.author.avatar || "/placeholder-avatar.png"}
               alt={review.author.name}
-              className="w-10 h-10 rounded-full object-cover border border-white/10"
+              className="w-10 h-10 rounded-full object-cover border border-slate-200"
             />
           </Link>
           <div>
             <div className="flex items-center gap-2">
               <Link
                 href={`/users/${review.author.username}`}
-                className="font-semibold text-sm text-slate-100 hover:text-emerald-400 transition-colors"
+                className="font-bold text-sm text-slate-900 hover:text-indigo-600 transition-colors"
               >
                 {review.author.name}
               </Link>
-              <span className="text-xs text-slate-400 font-mono">@{review.author.username}</span>
+              <span className="text-xs text-slate-500 font-mono">@{review.author.username}</span>
               {review.author.role === "EXPERT" && (
-                <span className="flex items-center gap-1 text-[10px] text-cyan-400 font-medium px-1.5 py-0.2 rounded border border-cyan-500/30 bg-cyan-500/10">
-                  <ShieldCheck className="w-3 h-3" /> Verified
+                <span className="flex items-center gap-1 text-[10px] text-indigo-700 font-medium px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50">
+                  <ShieldCheck className="w-3 h-3 text-indigo-600" /> Verified Expert
                 </span>
               )}
             </div>
-            <div className="text-xs text-slate-500 font-mono flex items-center gap-2">
-              <span className="text-emerald-400 font-semibold">{review.author.reputationPoints.toLocaleString()} review points</span>
+            <div className="text-xs text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+              <span className="text-indigo-600 font-semibold">{review.author.reputationPoints.toLocaleString()} review points</span>
               <span>•</span>
               <span>{formatTimeAgo(review.createdAt)}</span>
             </div>
@@ -145,64 +143,64 @@ export function ReviewCard({ review }: { review: ReviewData }) {
 
         {/* Would Ship Badge */}
         <div className="text-right">
-          <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-medium mb-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1">
             Would Ship?
           </span>
-          <span className={`px-2.5 py-0.5 rounded text-xs font-semibold border ${getShipBadge(review.wouldShip)}`}>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-xs ${getShipBadge(review.wouldShip)}`}>
             {review.wouldShip === "YES" ? "Ship it" : review.wouldShip === "ALMOST" ? "Almost ready" : "Not yet"}
           </span>
         </div>
       </div>
 
       {/* Structured Category Scores Bar */}
-      <div className="grid grid-cols-4 gap-2 p-2.5 rounded-lg bg-slate-950/70 border border-white/5 text-center text-xs">
+      <div className="grid grid-cols-4 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-center text-xs">
         <div>
-          <div className="text-[10px] text-slate-500 uppercase">Product</div>
-          <div className="font-mono font-bold text-slate-200">{review.productScore}/10</div>
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">Product</div>
+          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.productScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-500 uppercase">Design / UX</div>
-          <div className="font-mono font-bold text-slate-200">{review.designScore}/10</div>
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">Design / UX</div>
+          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.designScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-500 uppercase">Engineering</div>
-          <div className="font-mono font-bold text-slate-200">{review.engineeringScore}/10</div>
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">Engineering</div>
+          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.engineeringScore}/10</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-500 uppercase">Docs</div>
-          <div className="font-mono font-bold text-slate-200">{review.docScore}/10</div>
+          <div className="text-[10px] text-slate-400 uppercase font-semibold">Docs</div>
+          <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">{review.docScore}/10</div>
         </div>
       </div>
 
       {/* Detailed Written Feedback */}
-      <div className="space-y-3 text-xs leading-relaxed">
+      <div className="space-y-3.5 text-xs leading-relaxed">
         <div>
-          <span className="font-semibold text-emerald-400 uppercase tracking-wider text-[10px] block mb-0.5">
+          <span className="font-bold text-emerald-700 uppercase tracking-wider text-[10px] block mb-1">
             What did you like?
           </span>
-          <p className="text-slate-200">{review.whatLiked}</p>
+          <p className="text-slate-700">{review.whatLiked}</p>
         </div>
 
         <div>
-          <span className="font-semibold text-amber-400 uppercase tracking-wider text-[10px] block mb-0.5">
+          <span className="font-bold text-amber-700 uppercase tracking-wider text-[10px] block mb-1">
             What should be improved?
           </span>
-          <p className="text-slate-200">{review.whatToImprove}</p>
+          <p className="text-slate-700">{review.whatToImprove}</p>
         </div>
 
         <div>
-          <span className="font-semibold text-rose-400 uppercase tracking-wider text-[10px] block mb-0.5 flex items-center gap-1">
-            <AlertOctagon className="w-3 h-3" /> Biggest Issue
+          <span className="font-bold text-rose-700 uppercase tracking-wider text-[10px] block mb-1 flex items-center gap-1">
+            <AlertOctagon className="w-3 h-3 text-rose-600" /> Biggest Issue
           </span>
-          <p className="text-slate-300 bg-rose-950/20 p-2.5 rounded border border-rose-500/20">{review.biggestIssue}</p>
+          <p className="text-slate-800 bg-rose-50/70 p-3 rounded-xl border border-rose-200">{review.biggestIssue}</p>
         </div>
 
         {review.bugReport && (
           <div>
-            <span className="font-semibold text-orange-400 uppercase tracking-wider text-[10px] block mb-0.5 flex items-center gap-1">
-              <Bug className="w-3 h-3" /> Bug Report
+            <span className="font-bold text-orange-700 uppercase tracking-wider text-[10px] block mb-1 flex items-center gap-1">
+              <Bug className="w-3 h-3 text-orange-600" /> Bug Report
             </span>
-            <p className="text-slate-300 bg-slate-950 p-2.5 rounded font-mono text-[11px] border border-white/5">
+            <p className="text-emerald-300 bg-slate-900 p-3 rounded-xl font-mono text-[11px] shadow-inner">
               {review.bugReport}
             </p>
           </div>
@@ -210,16 +208,16 @@ export function ReviewCard({ review }: { review: ReviewData }) {
 
         {review.suggestion && (
           <div>
-            <span className="font-semibold text-blue-400 uppercase tracking-wider text-[10px] block mb-0.5 flex items-center gap-1">
-              <Lightbulb className="w-3 h-3" /> Concrete Suggestion
+            <span className="font-bold text-indigo-700 uppercase tracking-wider text-[10px] block mb-1 flex items-center gap-1">
+              <Lightbulb className="w-3 h-3 text-indigo-600" /> Concrete Suggestion
             </span>
-            <p className="text-slate-300">{review.suggestion}</p>
+            <p className="text-slate-700 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">{review.suggestion}</p>
           </div>
         )}
       </div>
 
       {/* Action footer: Helpful Vote + Reply Toggle */}
-      <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
         <HelpfulVoteButton
           reviewId={review.id}
           initialVotes={review.helpfulVotesCount}
@@ -228,7 +226,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
 
         <button
           onClick={() => setIsReplying(!isReplying)}
-          className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors"
+          className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1.5 transition-colors font-medium"
         >
           <MessageSquare className="w-3.5 h-3.5" />
           <span>Reply ({comments.length})</span>
@@ -237,17 +235,17 @@ export function ReviewCard({ review }: { review: ReviewData }) {
 
       {/* Reply Thread */}
       {(comments.length > 0 || isReplying) && (
-        <div className="pt-2 pl-4 border-l-2 border-white/10 space-y-3">
+        <div className="pt-3 pl-4 border-l-2 border-slate-200 space-y-3">
           {comments.map((c) => (
-            <div key={c.id} className="text-xs space-y-1 bg-slate-950/60 p-3 rounded-lg border border-white/5">
+            <div key={c.id} className="text-xs space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span className="font-bold text-slate-900 flex items-center gap-1.5">
                   {c.user.name}
                   <span className="text-[10px] text-slate-500 font-mono">@{c.user.username}</span>
                 </span>
-                <span className="text-slate-500 font-mono">{formatTimeAgo(c.createdAt)}</span>
+                <span className="text-slate-400 font-mono">{formatTimeAgo(c.createdAt)}</span>
               </div>
-              <p className="text-slate-300 leading-relaxed">{c.content}</p>
+              <p className="text-slate-700 leading-relaxed">{c.content}</p>
             </div>
           ))}
 
@@ -258,20 +256,20 @@ export function ReviewCard({ review }: { review: ReviewData }) {
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Write an engineering reply or clarify the implementation..."
                 rows={2}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs"
               />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsReplying(false)}
-                  className="px-3 py-1 rounded text-xs text-slate-400 hover:text-slate-200"
+                  className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-800 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingReply || !replyText.trim()}
-                  className="px-3 py-1 rounded text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <Send className="w-3 h-3" />
                   <span>Post Reply</span>

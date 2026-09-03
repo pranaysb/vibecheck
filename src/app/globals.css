@@ -2,17 +2,17 @@
 
 @layer base {
   :root {
-    --background: #090d16;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --card-hover: #131c33;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.16);
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --card-hover: #f1f5f9;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.16);
     --muted: #64748b;
-    --muted-foreground: #94a3b8;
-    --accent: #10b981;
-    --accent-foreground: #022c22;
+    --muted-foreground: #475569;
+    --accent: #4f46e5;
+    --accent-foreground: #ffffff;
   }
 
   * {
@@ -27,7 +27,7 @@
   }
 }
 
-/* Custom scrollbar */
+/* Custom delicate scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -36,24 +36,24 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.24);
 }
 
-/* Subtle grid pattern background utility */
+/* Stripe/Vercel Crisp Grid Pattern */
 .bg-grid-pattern {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
 }
 
 .bg-dot-pattern {
   background-size: 24px 24px;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
 }
 
 @keyframes border-beam {
@@ -80,17 +80,6 @@
   }
 }
 
-@keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
 .animate-border-beam {
   animation: border-beam calc(var(--duration)*1s) infinite linear;
 }
@@ -98,7 +87,7 @@
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 30s linear infinite;
+  animation: marquee 35s linear infinite;
 }
 
 .animate-marquee:hover {
@@ -106,7 +95,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%);
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(99,102,241,0.08) 50%, rgba(255,255,255,0) 100%);
   background-size: 200% 100%;
   animation: shimmer 2.5s infinite;
 }

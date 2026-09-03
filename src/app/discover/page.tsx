@@ -122,7 +122,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 
         <Link
           href="/projects/new"
-          className="self-start md:self-auto px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20"
+          className="self-start md:self-auto px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold shadow-xs text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20"
         >
           <Plus className="w-4 h-4" />
           <span>Submit Project</span>
@@ -139,11 +139,11 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
             name="q"
             defaultValue={searchQuery}
             placeholder="Search projects by name, problem solved, or description..."
-            className="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs"
           />
           <button
             type="submit"
-            className="absolute right-2 px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium"
+            className="absolute right-2 px-3 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs"
           >
             Search
           </button>
@@ -164,8 +164,8 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
               href={`/discover?${queryParams.toString()}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${
                 isActive
-                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                  : "bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                  ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold shadow-xs"
+                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-xs"
               }`}
             >
               {tab.label}
@@ -176,7 +176,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 
       {/* Projects Grid */}
       {finalProjects.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl border border-white/10 bg-slate-900/30 space-y-3">
+        <div className="p-16 text-center rounded-2xl border border-slate-200 bg-white space-y-3 shadow-xs">
           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
             <Search className="w-5 h-5" />
           </div>

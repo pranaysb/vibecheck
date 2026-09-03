@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Check, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
+import { Check, Sparkles, ArrowRight } from "lucide-react";
 import { formatInr } from "@/lib/utils";
 
 export default function PricingPage() {
@@ -61,51 +61,51 @@ export default function PricingPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
       <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-medium">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-200/90 bg-indigo-50 text-indigo-700 text-xs font-mono font-semibold shadow-xs">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Transparent Developer Pricing</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-100 font-sans tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-sans tracking-tight">
           Invest in Code Quality Before Shipping
         </h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-600 font-normal">
           Transparent plans for solo vibe-coders, funded indie teams, and commercial startups.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {tiers.map((tier) => (
           <div
             key={tier.name}
-            className={`rounded-2xl border p-8 flex flex-col justify-between space-y-6 relative transition-all ${
+            className={`rounded-3xl p-8 flex flex-col justify-between space-y-6 relative transition-all ${
               tier.popular
-                ? "border-emerald-500 bg-slate-900/80 shadow-2xl ring-1 ring-emerald-500"
-                : "border-white/10 bg-slate-900/40"
+                ? "border-2 border-indigo-600 bg-white shadow-2xl ring-4 ring-indigo-500/10 -translate-y-1.5"
+                : "border border-slate-200/90 bg-white shadow-xs hover:border-slate-300 hover:shadow-xl"
             }`}
           >
             {tier.popular && (
-              <span className="absolute -top-3 left-8 px-3 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px] font-mono uppercase tracking-wider">
+              <span className="absolute -top-3.5 left-8 px-3.5 py-0.5 rounded-full bg-indigo-600 text-white font-bold text-[10px] font-mono uppercase tracking-wider shadow-sm">
                 Most Popular
               </span>
             )}
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-100">{tier.name}</h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{tier.description}</p>
+                <h3 className="text-lg font-bold text-slate-900">{tier.name}</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{tier.description}</p>
               </div>
 
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black font-mono text-slate-100">
+                <span className="text-3xl sm:text-4xl font-black font-mono text-slate-900">
                   {tier.price === 0 ? "₹0" : formatInr(tier.price)}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">/ {tier.period}</span>
+                <span className="text-xs text-slate-500 font-mono">/ {tier.period}</span>
               </div>
 
-              <ul className="space-y-2.5 pt-4 border-t border-white/5 text-xs text-slate-300">
+              <ul className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-600">
                 {tier.features.map((feat) => (
                   <li key={feat} className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                     <span className="leading-relaxed">{feat}</span>
                   </li>
                 ))}
@@ -114,10 +114,10 @@ export default function PricingPage() {
 
             <Link
               href={tier.href}
-              className={`w-full py-2.5 rounded-lg text-xs font-bold text-center transition-colors flex items-center justify-center gap-1.5 ${
+              className={`w-full py-3 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                 tier.popular
-                  ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950"
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10"
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20 hover:shadow-md"
+                  : "bg-slate-900 hover:bg-slate-800 text-white"
               }`}
             >
               <span>{tier.cta}</span>

@@ -91,8 +91,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Top Banner / Hero Simulator */}
-      <div className="rounded-2xl border border-white/10 bg-slate-900/60 overflow-hidden relative shadow-2xl">
-        <div className="h-44 sm:h-52 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 flex flex-col justify-between border-b border-white/10 relative">
+      <div className="rounded-3xl border border-slate-200/90 bg-white overflow-hidden relative shadow-xl">
+        <div className="h-44 sm:h-52 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-slate-100/70 p-6 sm:p-8 flex flex-col justify-between border-b border-slate-200/80 relative">
           <div className="absolute inset-0 bg-grid-pattern opacity-25" />
 
           {/* Sub-navigation tabs */}
@@ -100,27 +100,27 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             <div className="flex items-center gap-1.5">
               <Link
                 href={`/projects/${project.slug}`}
-                className="px-3 py-1 rounded-md text-xs font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300"
+                className="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-xs"
               >
                 Overview
               </Link>
               <Link
                 href={`/projects/${project.slug}/reviews`}
-                className="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-colors flex items-center gap-1 shadow-xs"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Reviews ({project.reviews.length})</span>
               </Link>
               <Link
                 href={`/projects/${project.slug}/analysis`}
-                className="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-colors flex items-center gap-1 shadow-xs"
               >
                 <FileSearch className="w-3.5 h-3.5" />
                 <span>Analysis ({openFindingsCount} open)</span>
               </Link>
               <Link
                 href={`/projects/${project.slug}/versions`}
-                className="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-colors flex items-center gap-1 shadow-xs"
               >
                 <History className="w-3.5 h-3.5" />
                 <span>History ({project.versions.length} versions)</span>
@@ -129,7 +129,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
 
             {/* Score jump indicator */}
             {totalScoreDelta > 0 && (
-              <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
+              <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-indigo-600 text-xs font-mono font-bold">
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>+{totalScoreDelta} points since v1</span>
               </div>
@@ -140,7 +140,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 font-sans tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans tracking-tight">
                   {project.title}
                 </h1>
                 {project.expertReviews.length > 0 && (
@@ -149,14 +149,14 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-sm text-slate-600 max-w-2xl leading-relaxed font-normal">
                 {project.tagline}
               </p>
               <div className="flex items-center gap-2 text-xs text-slate-400">
                 <span>Created by</span>
                 <Link
                   href={`/users/${project.creator.username}`}
-                  className="font-medium text-slate-200 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  className="font-medium text-slate-800 hover:text-indigo-600 transition-colors flex items-center gap-1.5"
                 >
                   <img
                     src={project.creator.avatar || "/placeholder-avatar.png"}
@@ -174,7 +174,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
         </div>
 
         {/* Action Toolbar */}
-        <div className="p-4 sm:p-6 bg-slate-950/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <ProjectActionBar project={{ id: project.id, slug: project.slug, title: project.title, liveUrl: project.liveUrl, githubUrl: project.githubUrl, userId: project.creator.id }} />
 
           {/* Tech stack pills */}
@@ -182,7 +182,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             {project.techStack.map((tech) => (
               <span
                 key={tech}
-                className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-white/10 text-slate-300 font-mono"
+                className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-slate-200 text-slate-700 font-mono"
               >
                 {tech}
               </span>
@@ -203,50 +203,50 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           />
 
           {/* Project Story Write-up */}
-          <div className="rounded-xl border border-white/10 bg-slate-900/40 p-6 space-y-6">
-            <h2 className="text-base font-bold text-slate-100 flex items-center gap-2 border-b border-white/5 pb-3">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-6">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
               Project Story & Architecture
             </h2>
 
             {project.whatBuilt && (
               <div className="space-y-1.5 text-xs">
-                <span className="font-semibold text-slate-300 text-xs uppercase tracking-wider block">
+                <span className="font-semibold text-slate-700 text-xs uppercase tracking-wider block">
                   What did you build?
                 </span>
-                <p className="text-slate-300 leading-relaxed whitespace-pre-line">{project.whatBuilt}</p>
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{project.whatBuilt}</p>
               </div>
             )}
 
             {project.whyBuilt && (
               <div className="space-y-1.5 text-xs">
-                <span className="font-semibold text-slate-300 text-xs uppercase tracking-wider block">
+                <span className="font-semibold text-slate-700 text-xs uppercase tracking-wider block">
                   Why did you build it?
                 </span>
-                <p className="text-slate-300 leading-relaxed whitespace-pre-line">{project.whyBuilt}</p>
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{project.whyBuilt}</p>
               </div>
             )}
 
             {project.problemSolved && (
               <div className="space-y-1.5 text-xs">
-                <span className="font-semibold text-slate-300 text-xs uppercase tracking-wider block">
+                <span className="font-semibold text-slate-700 text-xs uppercase tracking-wider block">
                   What problem does it solve?
                 </span>
-                <p className="text-slate-300 leading-relaxed whitespace-pre-line">{project.problemSolved}</p>
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{project.problemSolved}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/5 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-xs">
               {project.difficultParts && (
-                <div className="space-y-1 bg-slate-950/60 p-3 rounded-lg border border-white/5">
+                <div className="space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <span className="font-semibold text-amber-400 text-[11px] block">What was difficult?</span>
-                  <p className="text-slate-300 leading-relaxed">{project.difficultParts}</p>
+                  <p className="text-slate-700 leading-relaxed">{project.difficultParts}</p>
                 </div>
               )}
               {project.unsureParts && (
-                <div className="space-y-1 bg-slate-950/60 p-3 rounded-lg border border-white/5">
+                <div className="space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <span className="font-semibold text-rose-400 text-[11px] block">What are you unsure about?</span>
-                  <p className="text-slate-300 leading-relaxed">{project.unsureParts}</p>
+                  <p className="text-slate-700 leading-relaxed">{project.unsureParts}</p>
                 </div>
               )}
             </div>
@@ -265,14 +265,14 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-slate-100">Automated Findings</h2>
+                <h2 className="text-base font-bold text-slate-900">Automated Findings</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Safe static & header inspection results ({fixedFindingsCount} fixed, {openFindingsCount} open).
                 </p>
               </div>
               <Link
                 href={`/projects/${project.slug}/analysis`}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                className="text-xs text-indigo-600 hover:text-emerald-300 font-semibold flex items-center gap-1"
               >
                 <span>Full analysis deep-dive</span>
                 <ArrowRight className="w-3 h-3" />
@@ -283,18 +283,18 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           </div>
 
           {/* Version Evolution Section */}
-          <div className="rounded-xl border border-white/10 bg-slate-900/40 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <History className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <History className="w-4 h-4 text-indigo-600" />
                   Project Evolution History
                 </h2>
                 <p className="text-xs text-slate-400">Verifiable record of score improvements after feedback.</p>
               </div>
               <Link
                 href={`/projects/${project.slug}/versions`}
-                className="text-xs text-emerald-400 hover:underline font-medium"
+                className="text-xs text-indigo-600 hover:underline font-medium"
               >
                 View Changelog →
               </Link>
@@ -304,17 +304,17 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
               {project.versions.map((ver, idx) => (
                 <div
                   key={ver.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-950/60 border border-white/5 text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-slate-200 px-2 py-0.5 rounded bg-slate-800 border border-white/5">
+                    <span className="font-mono font-bold text-slate-200 px-2 py-0.5 rounded bg-slate-800 border border-slate-100">
                       {ver.versionNumber}
                     </span>
-                    <span className="text-slate-300">{ver.changelog}</span>
+                    <span className="text-slate-700">{ver.changelog}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {ver.scoreDelta > 0 && (
-                      <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-mono font-bold text-indigo-600 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
                         +{ver.scoreDelta}
                       </span>
                     )}
@@ -329,14 +329,14 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-slate-100">Community Feedback</h2>
+                <h2 className="text-base font-bold text-slate-900">Community Feedback</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {project.reviews.length} structured peer reviews from verified developers.
                 </p>
               </div>
               <Link
                 href={`/projects/${project.slug}/reviews`}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
+                className="text-xs text-indigo-600 hover:text-emerald-300 font-semibold flex items-center gap-1"
               >
                 <span>Read all reviews</span>
                 <ArrowRight className="w-3 h-3" />
@@ -379,7 +379,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                 </span>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed italic">
+              <p className="text-xs text-slate-700 leading-relaxed italic">
                 "{project.expertReviews[0].report.executiveSummary.slice(0, 180)}..."
               </p>
 
@@ -396,8 +396,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           )}
 
           {/* Build Details */}
-          <div className="rounded-xl border border-white/10 bg-slate-900/40 p-5 space-y-3 text-xs">
-            <h3 className="font-semibold text-slate-200 uppercase tracking-wider text-xs border-b border-white/5 pb-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 border border-slate-200/90 shadow-xs space-y-3 text-xs">
+            <h3 className="font-semibold text-slate-900 uppercase tracking-wider text-xs border-b border-slate-100 pb-2">
               Build Metadata
             </h3>
             <div className="space-y-2 text-slate-400">
@@ -419,7 +419,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
               </div>
               <div className="flex justify-between">
                 <span>Total Versions</span>
-                <span className="text-emerald-400 font-mono font-bold">{project.versions.length}</span>
+                <span className="text-indigo-600 font-mono font-bold">{project.versions.length}</span>
               </div>
             </div>
           </div>

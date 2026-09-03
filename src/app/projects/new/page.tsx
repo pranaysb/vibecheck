@@ -152,7 +152,7 @@ export default function NewProjectPage() {
         <div className="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">
           New Submission
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
           Submit Your Project for Vibe Check
         </h1>
         <p className="text-xs sm:text-sm text-slate-400">
@@ -178,8 +178,8 @@ export default function NewProjectPage() {
                 isCurrent
                   ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 font-bold"
                   : isDone
-                  ? "border-white/10 bg-slate-900/60 text-slate-300 cursor-pointer"
-                  : "border-white/5 bg-slate-950 text-slate-600"
+                  ? "border-slate-200 bg-slate-900/60 text-slate-300 cursor-pointer"
+                  : "border-slate-100 bg-slate-50 text-slate-600"
               }`}
             >
               <div className="text-[10px] font-mono">Step {s.num}</div>
@@ -190,25 +190,25 @@ export default function NewProjectPage() {
       </div>
 
       {/* Form Card */}
-      <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 sm:p-8 space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-slate-900/50 p-6 sm:p-8 space-y-6">
         {/* STEP 1: Basic Information */}
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in duration-150 text-xs">
             <div className="space-y-1">
-              <label className="block text-slate-200 font-semibold">Project Name *</label>
+              <label className="block text-slate-800 font-semibold">Project Name *</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="e.g. CampusConnect"
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500 text-sm"
                 required
               />
             </div>
 
             <div className="space-y-1">
-              <label className="block text-slate-200 font-semibold">Custom Slug</label>
-              <div className="flex items-center bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-400">
+              <label className="block text-slate-800 font-semibold">Custom Slug</label>
+              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-400">
                 <span>vibecheck.dev/projects/</span>
                 <input
                   type="text"
@@ -220,31 +220,31 @@ export default function NewProjectPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-slate-200 font-semibold">Tagline *</label>
+              <label className="block text-slate-800 font-semibold">Tagline *</label>
               <input
                 type="text"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="One sentence that summarizes the core value."
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500"
                 required
               />
             </div>
 
             <div className="space-y-1">
-              <label className="block text-slate-200 font-semibold">Description</label>
+              <label className="block text-slate-800 font-semibold">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Brief summary of who it is for and what it accomplishes."
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-slate-200 font-semibold flex items-center gap-1.5">
+                <label className="block text-slate-800 font-semibold flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-emerald-400" />
                   Live Web URL *
                 </label>
@@ -253,14 +253,14 @@ export default function NewProjectPage() {
                   value={liveUrl}
                   onChange={(e) => setLiveUrl(e.target.value)}
                   placeholder="https://myproject.vercel.app"
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500"
                   required
                 />
                 <span className="text-[10px] text-slate-500">Must be public & reachable for automated analysis</span>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-slate-200 font-semibold flex items-center gap-1.5">
+                <label className="block text-slate-800 font-semibold flex items-center gap-1.5">
                   <GithubIcon className="w-3.5 h-3.5 text-slate-400" />
                   GitHub Repository URL (Optional)
                 </label>
@@ -269,7 +269,7 @@ export default function NewProjectPage() {
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
                   placeholder="https://github.com/user/project"
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500"
                 />
                 <span className="text-[10px] text-slate-500">Enables dependency & static hygiene checks</span>
               </div>
@@ -281,13 +281,13 @@ export default function NewProjectPage() {
         {step === 2 && (
           <div className="space-y-5 animate-in fade-in duration-150 text-xs">
             <div className="space-y-1">
-              <label className="block text-slate-200 font-semibold">Tech Stack (comma separated)</label>
+              <label className="block text-slate-800 font-semibold">Tech Stack (comma separated)</label>
               <input
                 type="text"
                 value={techStackInput}
                 onChange={(e) => setTechStackInput(e.target.value)}
                 placeholder="Next.js, TypeScript, Tailwind CSS, Prisma, PostgreSQL"
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500 font-mono"
               />
             </div>
 
@@ -299,7 +299,7 @@ export default function NewProjectPage() {
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   placeholder="Next.js 14"
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-200"
                 />
               </div>
               <div>
@@ -309,7 +309,7 @@ export default function NewProjectPage() {
                   value={database}
                   onChange={(e) => setDatabase(e.target.value)}
                   placeholder="PostgreSQL / Supabase"
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-200"
                 />
               </div>
               <div>
@@ -319,14 +319,14 @@ export default function NewProjectPage() {
                   value={hosting}
                   onChange={(e) => setHosting(e.target.value)}
                   placeholder="Vercel / Cloudflare"
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-200"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-200"
                 />
               </div>
             </div>
 
             {/* AI Tools Used */}
             <div className="space-y-2">
-              <label className="block text-slate-200 font-semibold flex items-center gap-1.5">
+              <label className="block text-slate-800 font-semibold flex items-center gap-1.5">
                 <Bot className="w-4 h-4 text-purple-400" />
                 AI Tools Used
               </label>
@@ -341,7 +341,7 @@ export default function NewProjectPage() {
                       className={`px-3 py-1.5 rounded-lg border text-xs font-mono transition-colors ${
                         isSel
                           ? "border-purple-500/50 bg-purple-500/15 text-purple-300 font-semibold"
-                          : "border-white/10 bg-slate-950 text-slate-400 hover:text-slate-200"
+                          : "border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-200"
                       }`}
                     >
                       {tool}
@@ -352,8 +352,8 @@ export default function NewProjectPage() {
             </div>
 
             {/* AI Involvement Level */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
-              <label className="block text-slate-200 font-semibold">
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="block text-slate-800 font-semibold">
                 How heavily did you use AI?
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -369,7 +369,7 @@ export default function NewProjectPage() {
                     className={`p-3 rounded-lg border cursor-pointer transition-all ${
                       aiInvolvement === inv.id
                         ? "border-emerald-500 bg-emerald-950/20 text-emerald-300 ring-1 ring-emerald-500"
-                        : "border-white/10 bg-slate-950 hover:bg-slate-900 text-slate-400"
+                        : "border-slate-200 bg-slate-50 hover:bg-slate-900 text-slate-400"
                     }`}
                   >
                     <div className="font-semibold text-slate-200">{inv.title}</div>
@@ -388,35 +388,35 @@ export default function NewProjectPage() {
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in duration-150 text-xs">
             <div>
-              <label className="block text-slate-200 font-semibold mb-1">What did you build? *</label>
+              <label className="block text-slate-800 font-semibold mb-1">What did you build? *</label>
               <textarea
                 value={whatBuilt}
                 onChange={(e) => setWhatBuilt(e.target.value)}
                 placeholder="Describe your project's main feature set and architecture..."
                 rows={3}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-slate-200 font-semibold mb-1">Why did you build it? *</label>
+              <label className="block text-slate-800 font-semibold mb-1">Why did you build it? *</label>
               <textarea
                 value={whyBuilt}
                 onChange={(e) => setWhyBuilt(e.target.value)}
                 placeholder="What personal frustration or market gap inspired this build?"
                 rows={2}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-slate-200 font-semibold mb-1">What problem does it solve?</label>
+              <label className="block text-slate-800 font-semibold mb-1">What problem does it solve?</label>
               <textarea
                 value={problemSolved}
                 onChange={(e) => setProblemSolved(e.target.value)}
                 placeholder="How does this improve the user's workflow or save time?"
                 rows={2}
-                className="w-full bg-slate-950 border border-white/10 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
@@ -428,7 +428,7 @@ export default function NewProjectPage() {
                   onChange={(e) => setDifficultParts(e.target.value)}
                   placeholder="Handling race conditions, CSS layouts..."
                   rows={2}
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-900 placeholder-slate-400 focus:outline-none"
                 />
               </div>
               <div>
@@ -438,13 +438,13 @@ export default function NewProjectPage() {
                   onChange={(e) => setUnsureParts(e.target.value)}
                   placeholder="Auth verification, database query performance..."
                   rows={2}
-                  className="w-full bg-slate-950 border border-white/10 rounded-lg p-2 text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-900 placeholder-slate-400 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-200 font-semibold mb-1">
+              <label className="block text-slate-800 font-semibold mb-1">
                 What kind of feedback do you want most?
               </label>
               <input
@@ -452,7 +452,7 @@ export default function NewProjectPage() {
                 value={feedbackWanted}
                 onChange={(e) => setFeedbackWanted(e.target.value)}
                 placeholder="e.g. Stress-test trade checkout, check accessibility for screen readers..."
-                className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
@@ -471,13 +471,13 @@ export default function NewProjectPage() {
             </div>
 
             {/* Live Card Preview */}
-            <div className="rounded-xl border border-white/15 bg-slate-950 p-6 space-y-4">
+            <div className="rounded-xl border border-white/15 bg-slate-50 p-6 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-100">{title || "Untitled Project"}</h2>
+                  <h2 className="text-xl font-bold text-slate-900">{title || "Untitled Project"}</h2>
                   <p className="text-slate-400 text-xs mt-1">{tagline || "Your project tagline here."}</p>
                 </div>
-                <div className="px-3 py-1 rounded bg-slate-900 border border-white/10 text-slate-400 font-mono text-xs font-bold">
+                <div className="px-3 py-1 rounded bg-slate-900 border border-slate-200 text-slate-400 font-mono text-xs font-bold">
                   Score Pending Scan
                 </div>
               </div>
@@ -489,14 +489,14 @@ export default function NewProjectPage() {
 
               <div className="flex flex-wrap gap-1">
                 {techStackInput.split(",").map((t) => (
-                  <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-white/5 text-slate-400 font-mono">
+                  <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-100 text-slate-400 font-mono">
                     {t.trim()}
                   </span>
                 ))}
               </div>
 
               {whatBuilt && (
-                <div className="pt-2 border-t border-white/5 space-y-1">
+                <div className="pt-2 border-t border-slate-100 space-y-1">
                   <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider block">
                     What was built:
                   </span>
@@ -506,7 +506,7 @@ export default function NewProjectPage() {
             </div>
 
             {isSubmitting && (
-              <div className="p-4 rounded-xl border border-emerald-500/40 bg-slate-950 text-center space-y-2 animate-pulse">
+              <div className="p-4 rounded-xl border border-emerald-500/40 bg-slate-50 text-center space-y-2 animate-pulse">
                 <Zap className="w-6 h-6 text-emerald-400 mx-auto animate-bounce" />
                 <div className="text-sm font-bold text-emerald-300">Analyzing your project...</div>
                 <div className="text-xs text-slate-400 font-mono">{scanStep}</div>
@@ -516,13 +516,13 @@ export default function NewProjectPage() {
         )}
 
         {/* Wizard Footer Navigation */}
-        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep(step - 1)}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg border border-white/10 text-slate-300 hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-300 hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
@@ -540,7 +540,7 @@ export default function NewProjectPage() {
                 }
                 setStep(step + 1);
               }}
-              className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5"
+              className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center gap-1.5"
             >
               Next Step <ArrowRight className="w-3.5 h-3.5" />
             </button>

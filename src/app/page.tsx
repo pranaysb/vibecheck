@@ -178,7 +178,7 @@ export default async function LandingPage() {
                   <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Aggregate Rating
                   </span>
-                  <h3 className="text-lg font-bold text-slate-100">CampusConnect Vibe Score</h3>
+                  <h3 className="text-lg font-bold text-slate-900">CampusConnect Vibe Score</h3>
                   <div className="text-xs text-slate-400 font-mono mt-0.5">
                     Updated after v3 release (35 automated checks + 4 peer reviews)
                   </div>
@@ -244,13 +244,13 @@ export default async function LandingPage() {
       {/* Core Loop Workflow */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center space-y-3 mb-12">
-          <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider font-semibold">
+          <div className="text-xs font-mono text-indigo-600 uppercase tracking-wider font-bold">
             How it works
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-100">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             The Continuous Vibe Check Loop
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
             From your first Cursor or Claude Code prompt to a hardened, verified production release.
           </p>
         </div>
@@ -265,16 +265,16 @@ export default async function LandingPage() {
           ].map((item, idx) => (
             <div
               key={item.name}
-              className="rounded-xl border border-white/10 bg-slate-900/40 p-4 space-y-2 relative group hover:border-emerald-500/40 transition-colors text-left"
+              className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2 relative group hover:border-indigo-300 hover:shadow-lg transition-all text-left shadow-xs"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold text-slate-500">{item.step}</span>
                 {item.icon}
               </div>
-              <div className="font-bold text-sm text-slate-100 group-hover:text-emerald-400 transition-colors">
+              <div className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
                 {item.name}
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{item.desc}</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -287,11 +287,11 @@ export default async function LandingPage() {
             <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider font-semibold">
               Trending & Most Improved
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 mt-1">Featured Community Projects</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">Featured Community Projects</h2>
           </div>
           <Link
             href="/discover"
-            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
           >
             <span>View all 11+ projects</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -309,15 +309,15 @@ export default async function LandingPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Pillar 1 */}
-          <div className="rounded-2xl border border-white/10 bg-slate-900/30 p-6 space-y-4">
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
               <Users className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-100">Community Feedback</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-lg font-bold text-slate-900">Community Feedback</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
               Real developers review your project across Product, UX, Engineering, and Documentation. Peer reviews include concrete bug reports and actionable suggestions.
             </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-2 border-t border-white/5">
+            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-400" />
                 <span>Structured 1-10 category breakdowns</span>
@@ -334,15 +334,15 @@ export default async function LandingPage() {
           </div>
 
           {/* Pillar 2 */}
-          <div className="rounded-2xl border border-white/10 bg-slate-900/30 p-6 space-y-4">
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Zap className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-100">Automated Analysis</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-lg font-bold text-slate-900">Automated Analysis</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
               Automatically identify potential engineering, accessibility, performance, and security problems using our safe SSRF-protected scanner.
             </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-2 border-t border-white/5">
+            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Security headers (CSP, HSTS, X-Frame)</span>
@@ -359,15 +359,15 @@ export default async function LandingPage() {
           </div>
 
           {/* Pillar 3 */}
-          <div className="rounded-2xl border border-white/10 bg-slate-900/30 p-6 space-y-4">
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-7 space-y-4 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all">
             <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-100">Expert Engineering Review</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-lg font-bold text-slate-900">Expert Engineering Review</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
               Book verified senior software engineers (ex-Stripe, Staff Architects) for comprehensive written reports covering authorization, scalability, and code structure.
             </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-2 border-t border-white/5">
+            <ul className="space-y-2 text-xs text-slate-700 pt-3 border-t border-slate-100">
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Verified industry credentials</span>
@@ -387,24 +387,24 @@ export default async function LandingPage() {
 
       {/* Final Strong CTA */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 pt-12">
-        <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-slate-900/80 via-slate-950 to-slate-950 p-8 sm:p-12 space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-100 font-sans tracking-tight">
+        <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/60 p-8 sm:p-14 space-y-6 shadow-xl">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-sans tracking-tight">
             Stop wondering if your project is good.<br />
-            <span className="text-emerald-400">Find out.</span>
+            <span className="text-indigo-600">Find out.</span>
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+          <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
             Join hundreds of indie hackers and vibe-coded builders proving their work, catching critical vulnerabilities early, and shipping with confidence.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/projects/new"
-              className="px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20"
+              className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-all shadow-md shadow-slate-900/10 hover:shadow-xl hover:-translate-y-0.5"
             >
               Submit your project now
             </Link>
             <Link
               href="/discover"
-              className="px-6 py-3 rounded-lg border border-white/10 bg-slate-900 text-slate-200 text-sm font-semibold hover:bg-slate-800"
+              className="px-6 py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold shadow-xs hover:-translate-y-0.5"
             >
               Browse live submissions
             </Link>

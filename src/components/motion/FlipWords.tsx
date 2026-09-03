@@ -57,7 +57,7 @@ export function FlipWords({
           position: "absolute",
         }}
         className={cn(
-          "z-10 inline-block relative text-left text-emerald-400 font-extrabold px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shadow-sm shadow-emerald-500/10",
+          "z-10 inline-block relative text-left text-indigo-600 font-extrabold px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200/90 shadow-xs",
           className
         )}
       >

@@ -88,17 +88,17 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
   return (
     <div className="space-y-4">
       {/* Summary Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-lg border border-white/10 bg-slate-900/60 text-xs">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-rose-400">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200/90 bg-white shadow-xs text-xs">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
             <span className="w-2 h-2 rounded-full bg-rose-500" />
             <span className="font-bold font-mono">{criticalCount}</span> Critical
           </div>
-          <div className="flex items-center gap-1.5 text-orange-400">
+          <div className="flex items-center gap-1.5 text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
             <span className="w-2 h-2 rounded-full bg-orange-500" />
             <span className="font-bold font-mono">{highCount}</span> High priority
           </div>
-          <div className="flex items-center gap-1.5 text-emerald-400">
+          <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-medium shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="font-bold font-mono">{fixedCount}</span> Issues resolved
           </div>
@@ -109,7 +109,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-slate-950 border border-white/10 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-indigo-500 shadow-xs"
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open only</option>
@@ -118,7 +118,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-950 border border-white/10 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-indigo-500 shadow-xs"
           >
             <option value="ALL">All categories</option>
             <option value="SECURITY">Security</option>
@@ -132,9 +132,9 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
       </div>
 
       {/* Findings items */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center border border-white/10 rounded-lg bg-slate-900/30 text-xs text-slate-500">
+          <div className="p-8 text-center border border-slate-200 rounded-2xl bg-white text-xs text-slate-500 shadow-xs">
             No findings match your current filter.
           </div>
         ) : (
@@ -146,41 +146,41 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
             return (
               <div
                 key={item.id}
-                className={`rounded-lg border transition-all ${
+                className={`rounded-2xl border transition-all shadow-xs hover:shadow-md ${
                   isFixed
-                    ? "border-emerald-500/20 bg-emerald-950/10 opacity-80"
+                    ? "border-emerald-200/80 bg-emerald-50/20"
                     : item.severity === "CRITICAL"
-                    ? "border-rose-500/40 bg-rose-950/15"
-                    : "border-white/10 bg-slate-900/50"
+                    ? "border-rose-200/90 bg-rose-50/20"
+                    : "border-slate-200/90 bg-white"
                 }`}
               >
                 {/* Header Row */}
                 <div
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                  className="p-3.5 flex items-start justify-between gap-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                  className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-50/60 transition-colors rounded-2xl"
                 >
-                  <div className="space-y-1 flex-1">
+                  <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${sev.className}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${sev.className}`}>
                         {sev.label}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono border border-white/5">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono font-medium border border-slate-200">
                         {item.category}
                       </span>
                       {isFixed ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                           <Check className="w-2.5 h-2.5" /> Fixed in {item.versionFixed || "latest"}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-500 font-mono">Found in {item.versionDiscovered}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">Found in {item.versionDiscovered}</span>
                       )}
                     </div>
 
-                    <h4 className={`text-xs font-semibold ${isFixed ? "line-through text-slate-400" : "text-slate-100"}`}>
+                    <h4 className={`text-xs font-bold ${isFixed ? "line-through text-slate-400" : "text-slate-900"}`}>
                       {item.title}
                     </h4>
 
-                    <p className="text-[11px] text-slate-400 line-clamp-1 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 line-clamp-1 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
@@ -193,16 +193,16 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
                           toggleStatus(item);
                         }}
                         disabled={updatingId === item.id}
-                        className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
+                        className={`px-3 py-1 rounded-lg text-[11px] font-semibold border transition-all shadow-xs ${
                           isFixed
-                            ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                            : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                            ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            : "border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
                         }`}
                       >
                         {isFixed ? "Reopen" : "Mark as fixed"}
                       </button>
                     )}
-                    <button className="text-slate-400 p-1">
+                    <button className="text-slate-400 p-1 hover:text-slate-600">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </div>
@@ -210,35 +210,35 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="px-3.5 pb-4 pt-1 border-t border-white/5 space-y-3 text-xs animate-in fade-in duration-100">
+                  <div className="px-4 pb-5 pt-2 border-t border-slate-100 space-y-3.5 text-xs animate-in fade-in duration-100">
                     <div>
-                      <span className="font-semibold text-slate-300 text-[11px] uppercase tracking-wider block mb-1">
+                      <span className="font-semibold text-slate-900 text-[11px] uppercase tracking-wider block mb-1">
                         Full Description
                       </span>
-                      <p className="text-slate-300 text-xs leading-relaxed">{item.description}</p>
+                      <p className="text-slate-700 text-xs leading-relaxed">{item.description}</p>
                     </div>
 
                     {item.evidence && (
                       <div>
-                        <span className="font-semibold text-slate-400 text-[11px] uppercase tracking-wider block mb-1">
-                          Evidence / Diagnostic
+                        <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider block mb-1">
+                          Evidence / Diagnostic Probe
                         </span>
-                        <pre className="p-2.5 rounded bg-black/50 border border-white/10 text-[11px] font-mono text-emerald-300 overflow-x-auto">
+                        <pre className="p-3 rounded-xl bg-slate-900 text-emerald-300 text-[11px] font-mono overflow-x-auto shadow-inner">
                           {item.evidence}
                         </pre>
                       </div>
                     )}
 
-                    <div className="p-3 rounded bg-slate-950/80 border border-white/5 space-y-1">
-                      <span className="font-semibold text-emerald-400 text-[11px] uppercase tracking-wider block">
-                        Actionable Recommendation
+                    <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 space-y-1">
+                      <span className="font-semibold text-indigo-900 text-[11px] uppercase tracking-wider block">
+                        Actionable Engineering Recommendation
                       </span>
-                      <p className="text-slate-300 text-xs leading-relaxed">{item.recommendation}</p>
+                      <p className="text-slate-700 text-xs leading-relaxed">{item.recommendation}</p>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                      <span>Confidence: <strong className="text-slate-400">{item.confidence}</strong></span>
-                      <span>Requires manual verification</span>
+                      <span>Confidence: <strong className="text-slate-700">{item.confidence}</strong></span>
+                      <span>Requires verification</span>
                     </div>
                   </div>
                 )}

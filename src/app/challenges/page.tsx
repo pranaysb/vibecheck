@@ -56,14 +56,14 @@ export default async function ChallengesPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-mono font-medium">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shadow-xs text-xs font-mono font-medium">
           <Trophy className="w-3.5 h-3.5 text-purple-400" />
           <span>VibeCheck Sprints & Competitions</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-100 font-sans tracking-tight mt-2">
+        <h1 className="text-3xl font-extrabold text-slate-900 font-sans tracking-tight mt-2">
           Community Challenges
         </h1>
-        <p className="text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+        <p className="text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed font-normal">
           Put your AI-assisted build skills to the test. Build, submit, get community peer reviews, and compete for verified engineering audit packages.
         </p>
       </div>
@@ -72,16 +72,16 @@ export default async function ChallengesPage() {
         {challenges.map((c) => (
           <div
             key={c.id}
-            className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 sm:p-8 space-y-6 shadow-xl"
+            className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 space-y-6 shadow-xl"
           >
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/5 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-4">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold text-slate-100">{c.title}</h2>
-                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">{c.description}</p>
+                <h2 className="text-xl font-bold text-slate-900">{c.title}</h2>
+                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">{c.description}</p>
               </div>
 
-              <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 p-3 rounded-xl bg-slate-950 border border-white/5 text-xs shrink-0">
-                <span className="flex items-center gap-1 text-purple-300 font-bold font-mono">
+              <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80 shadow-xs text-xs shrink-0">
+                <span className="flex items-center gap-1 text-purple-700 font-bold font-mono">
                   <Clock className="w-3.5 h-3.5 text-purple-400" />
                   <span>Ends {formatDate(c.deadline)}</span>
                 </span>
@@ -94,31 +94,31 @@ export default async function ChallengesPage() {
 
             {/* Requirements & Prize */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3.5 rounded-lg bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px] block">
                   Challenge Rules
                 </span>
-                <p className="text-slate-300 leading-relaxed">{c.requirements}</p>
+                <p className="text-slate-700 leading-relaxed">{c.requirements}</p>
               </div>
-              <div className="p-3.5 rounded-lg bg-purple-950/20 border border-purple-500/30 space-y-1">
+              <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-1">
                 <span className="font-semibold text-purple-300 uppercase tracking-wider text-[10px] block flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Grand Prize
                 </span>
-                <p className="text-slate-200 font-semibold leading-relaxed">{c.prize}</p>
+                <p className="text-slate-900 font-semibold leading-relaxed">{c.prize}</p>
               </div>
             </div>
 
             {/* Submissions Leaderboard */}
             {c.submissions.length > 0 && (
               <div className="space-y-3 pt-2">
-                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   Top Submissions Leaderboard
                 </h3>
                 <div className="space-y-2">
                   {c.submissions.map((sub: any) => (
                     <div
                       key={sub.id}
-                      className="p-3 rounded-lg bg-slate-950/60 border border-white/5 flex items-center justify-between gap-3 text-xs hover:bg-slate-900 transition-colors"
+                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-3 text-xs hover:bg-slate-100/70 transition-colors shadow-xs"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-6 text-center font-mono font-bold text-amber-400">
@@ -127,7 +127,7 @@ export default async function ChallengesPage() {
                         <div>
                           <Link
                             href={`/projects/${sub.project.slug}`}
-                            className="font-bold text-slate-200 hover:text-emerald-400"
+                            className="font-bold text-slate-900 hover:text-indigo-600"
                           >
                             {sub.project.title}
                           </Link>
@@ -138,7 +138,7 @@ export default async function ChallengesPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                        <span className="font-mono font-bold text-emerald-700 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 shadow-xs">
                           {sub.project.vibeScore} / 100
                         </span>
                         <Link
