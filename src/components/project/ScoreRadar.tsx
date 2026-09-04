@@ -29,23 +29,23 @@ export function ScoreRadar({
   documentation,
 }: ScoreRadarProps) {
   const categories: CategoryScore[] = [
-    { name: "Product & Clarity", score: product, icon: <Sparkles className="w-3.5 h-3.5 text-zinc-400" />, weight: "15%" },
-    { name: "UX & Interaction", score: ux, icon: <Layers className="w-3.5 h-3.5 text-zinc-400" />, weight: "15%" },
-    { name: "Engineering Rigor", score: engineering, icon: <Cpu className="w-3.5 h-3.5 text-zinc-400" />, weight: "20%" },
-    { name: "Security & Headers", score: security, icon: <ShieldAlert className="w-3.5 h-3.5 text-zinc-400" />, weight: "20%" },
-    { name: "Performance & LCP", score: performance, icon: <Zap className="w-3.5 h-3.5 text-zinc-400" />, weight: "15%" },
-    { name: "Accessibility (a11y)", score: accessibility, icon: <Eye className="w-3.5 h-3.5 text-zinc-400" />, weight: "10%" },
-    { name: "Documentation", score: documentation, icon: <BookOpen className="w-3.5 h-3.5 text-zinc-400" />, weight: "5%" },
+    { name: "Product & Clarity", score: product, icon: <Sparkles className="w-3.5 h-3.5 text-indigo-600" />, weight: "15%" },
+    { name: "UX & Interaction", score: ux, icon: <Layers className="w-3.5 h-3.5 text-indigo-600" />, weight: "15%" },
+    { name: "Engineering Rigor", score: engineering, icon: <Cpu className="w-3.5 h-3.5 text-indigo-600" />, weight: "20%" },
+    { name: "Security & Headers", score: security, icon: <ShieldAlert className="w-3.5 h-3.5 text-indigo-600" />, weight: "20%" },
+    { name: "Performance & LCP", score: performance, icon: <Zap className="w-3.5 h-3.5 text-indigo-600" />, weight: "15%" },
+    { name: "Accessibility (a11y)", score: accessibility, icon: <Eye className="w-3.5 h-3.5 text-indigo-600" />, weight: "10%" },
+    { name: "Documentation", score: documentation, icon: <BookOpen className="w-3.5 h-3.5 text-indigo-600" />, weight: "5%" },
   ];
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-5 space-y-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-white font-mono">Category Breakdown</h3>
-        <span className="text-[11px] text-zinc-500 font-mono">Weighted aggregate</span>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs text-left">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">Category Breakdown</h3>
+        <span className="text-[11px] text-slate-500 font-mono">Weighted aggregate</span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {categories.map((cat) => {
           const sc = getScoreColor(cat.score);
           return (
@@ -53,23 +53,19 @@ export function ScoreRadar({
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   {cat.icon}
-                  <span className="font-medium text-zinc-300">{cat.name}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">({cat.weight})</span>
+                  <span className="font-semibold text-slate-800">{cat.name}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">({cat.weight})</span>
                 </div>
                 <div className="flex items-center gap-1 font-mono font-bold">
                   <span className={sc.text}>{cat.score}</span>
-                  <span className="text-zinc-600 text-[10px]">/ 100</span>
+                  <span className="text-[10px] text-slate-400 font-normal">/ 100</span>
                 </div>
               </div>
 
-              {/* Progress Bar Track */}
-              <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${cat.score}%`,
-                    backgroundColor: sc.accent,
-                  }}
+                  style={{ width: `${cat.score}%`, backgroundColor: sc.accent }}
                 />
               </div>
             </div>

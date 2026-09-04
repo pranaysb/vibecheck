@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
   Check,
   Filter,
 } from "lucide-react";
@@ -59,14 +58,23 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
         setFindings((prev) =>
           prev.map((f) =>
             f.id === finding.id
-              ? { ...f, status: nextStatus, fixedAt: nextStatus === "FIXED" ? new Date() : null }
+              ? {
+                  ...f,
+                  status: nextStatus as FindingStatus,
+                  versionFixed: nextStatus === "FIXED" ? "v2" : null,
+                  fixedAt: nextStatus === "FIXED" ? new Date() : null,
+                }
               : f
           )
         );
-        toast.success(nextStatus === "FIXED" ? "Finding marked as fixed!" : "Finding reopened.");
+        toast.success(
+          nextStatus === "FIXED"
+            ? "Issue marked as resolved! Project score recalculated."
+            : "Issue reopened."
+        );
         if (onStatusChange) onStatusChange(finding.id, nextStatus as FindingStatus);
       } else {
-        toast.error("Failed to update status");
+        toast.error("Failed to update status.");
       }
     } catch {
       toast.error("Network error");
@@ -81,26 +89,21 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
     return true;
   });
 
-  const criticalCount = findings.filter((f) => f.severity === "CRITICAL" && f.status === "OPEN").length;
-  const highCount = findings.filter((f) => f.severity === "HIGH" && f.status === "OPEN").length;
+  const openCount = findings.filter((f) => f.status === "OPEN").length;
   const fixedCount = findings.filter((f) => f.status === "FIXED").length;
 
   return (
-    <div className="space-y-4">
-      {/* Summary Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-white/[0.08] bg-[#0c0c0e] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] text-xs">
+    <div className="space-y-4 text-left">
+      {/* Top summary & filters bar */}
+      <div className="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-            <span className="font-bold font-mono">{criticalCount}</span> Critical
+          <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <span>{openCount} Open issues</span>
           </div>
-          <div className="flex items-center gap-1.5 text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
-            <span className="w-2 h-2 rounded-full bg-orange-500" />
-            <span className="font-bold font-mono">{highCount}</span> High priority
-          </div>
-          <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md font-mono text-[11px]">
+          <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="font-bold font-mono">{fixedCount}</span> Issues resolved
+            <span>{fixedCount} Resolved</span>
           </div>
         </div>
 
@@ -109,7 +112,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-zinc-300 font-medium focus:outline-none focus:border-white/20"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open only</option>
@@ -118,7 +121,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] text-zinc-300 font-medium focus:outline-none focus:border-white/20"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
           >
             <option value="ALL">All categories</option>
             <option value="SECURITY">Security</option>
@@ -134,7 +137,7 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
       {/* Findings items */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center border border-white/[0.08] rounded-2xl bg-[#0c0c0e] text-xs text-zinc-400">
+          <div className="p-8 text-center border border-slate-200 rounded-2xl bg-white text-xs text-slate-500">
             No findings match your current filter.
           </div>
         ) : (
@@ -146,25 +149,25 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
             return (
               <div
                 key={item.id}
-                className={`rounded-2xl border transition-all shadow-xs hover:shadow-md ${
+                className={`rounded-2xl border transition-all shadow-xs hover:shadow-sm ${
                   isFixed
-                    ? "border-emerald-200/80 bg-emerald-50/20"
+                    ? "border-emerald-200 bg-emerald-50/20"
                     : item.severity === "CRITICAL"
-                    ? "border-rose-200/90 bg-rose-50/20"
-                    : "border-white/[0.08] bg-[#0c0c0e]"
+                    ? "border-rose-200 bg-rose-50/30"
+                    : "border-slate-200 bg-white"
                 }`}
               >
                 {/* Header Row */}
                 <div
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                  className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-white/[0.02] transition-colors rounded-2xl"
+                  className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-50/50 transition-colors rounded-2xl"
                 >
                   <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${sev.className}`}>
                         {sev.label}
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 font-mono text-[10px] border border-white/[0.06]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono border border-slate-200">
                         {item.category}
                       </span>
                       {isFixed ? (
@@ -176,33 +179,34 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
                       )}
                     </div>
 
-                    <h4 className={`text-xs font-bold ${isFixed ? "line-through text-slate-400" : "text-white"}`}>
+                    <h4 className={`text-xs font-bold ${isFixed ? "line-through text-slate-400" : "text-slate-900"}`}>
                       {item.title}
                     </h4>
 
-                    <p className="text-[11px] text-zinc-400 line-clamp-1 leading-relaxed">
+                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
                       {item.description}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isCreator && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleStatus(item);
-                        }}
-                        disabled={updatingId === item.id}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-semibold border transition-all shadow-xs ${
-                          isFixed
-                            ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                            : "border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
-                        }`}
-                      >
-                        {isFixed ? "Reopen" : "Mark as fixed"}
-                      </button>
-                    )}
-                    <button className="text-slate-400 p-1 hover:text-slate-600">
+                  <div className="flex items-center gap-3">
+                    {/* Mark as Fixed Simulator */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStatus(item);
+                      }}
+                      disabled={updatingId === item.id}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        isFixed
+                          ? "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+                      }`}
+                    >
+                      {updatingId === item.id ? "Updating..." : isFixed ? "Reopen" : "Mark as Fixed"}
+                    </button>
+
+                    <button className="text-slate-400 hover:text-slate-600 p-1">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </div>
@@ -210,35 +214,25 @@ export function FindingsList({ findings: initialFindings, isCreator = false, onS
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="px-4 pb-5 pt-2 border-t border-slate-100 space-y-3.5 text-xs animate-in fade-in duration-100">
-                    <div>
-                      <span className="font-semibold text-slate-900 text-[11px] uppercase tracking-wider block mb-1">
-                        Full Description
-                      </span>
-                      <p className="text-slate-700 text-xs leading-relaxed">{item.description}</p>
-                    </div>
-
+                  <div className="p-4 border-t border-slate-100 space-y-3 bg-slate-50/50 rounded-b-2xl text-xs">
                     {item.evidence && (
-                      <div>
-                        <span className="font-semibold text-slate-500 text-[11px] uppercase tracking-wider block mb-1">
-                          Evidence / Diagnostic Probe
+                      <div className="space-y-1">
+                        <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px] block">
+                          Inspection Evidence & Header Context:
                         </span>
-                        <pre className="p-3 rounded-xl bg-slate-900 text-emerald-300 text-[11px] font-mono overflow-x-auto shadow-inner">
+                        <pre className="p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-[11px] overflow-x-auto">
                           {item.evidence}
                         </pre>
                       </div>
                     )}
 
-                    <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 space-y-1">
-                      <span className="font-semibold text-indigo-900 text-[11px] uppercase tracking-wider block">
-                        Actionable Engineering Recommendation
+                    <div className="space-y-1">
+                      <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px] block">
+                        Remediation Recommendation:
                       </span>
-                      <p className="text-slate-700 text-xs leading-relaxed">{item.recommendation}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                      <span>Confidence: <strong className="text-slate-700">{item.confidence}</strong></span>
-                      <span>Requires verification</span>
+                      <p className="text-slate-700 leading-relaxed bg-white p-3 rounded-lg border border-slate-200">
+                        {item.recommendation}
+                      </p>
                     </div>
                   </div>
                 )}

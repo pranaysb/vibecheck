@@ -14,8 +14,8 @@ import {
   Eye,
   CheckCircle2,
   Globe,
-   
   Zap,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GithubIcon } from "@/components/ui/Icons";
@@ -25,8 +25,9 @@ export default function NewProjectPage() {
   const router = useRouter();
   const { currentUser } = useUser();
   const [step, setStep] = useState(1);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Step 1: Basic
+  // Step 1: Basic Information
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [tagline, setTagline] = useState("");
@@ -34,7 +35,7 @@ export default function NewProjectPage() {
   const [liveUrl, setLiveUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
 
-  // Step 2: Build
+  // Step 2: Build & Stack
   const [techStackInput, setTechStackInput] = useState("Next.js, TypeScript, Tailwind CSS");
   const [framework, setFramework] = useState("Next.js App Router");
   const [database, setDatabase] = useState("PostgreSQL");
@@ -58,6 +59,54 @@ export default function NewProjectPage() {
     if (!slug || slug === title.toLowerCase().replace(/[^a-z0-9]+/g, "-")) {
       setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 32));
     }
+    if (formErrors.title) {
+      setFormErrors((prev) => ({ ...prev, title: "" }));
+    }
+  };
+
+  const validateStep1 = () => {
+    const errors: Record<string, string> = {};
+    if (!title.trim()) errors.title = "Project name is required";
+    if (!tagline.trim()) errors.tagline = "Tagline is required";
+    if (!liveUrl.trim()) {
+      errors.liveUrl = "Live URL is required";
+    } else {
+      try {
+        const url = new URL(liveUrl);
+        if (!["http:", "https:"].includes(url.protocol)) {
+          errors.liveUrl = "URL must start with http:// or https://";
+        }
+      } catch {
+        errors.liveUrl = "Please enter a valid web URL (e.g. https://myapp.vercel.app)";
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const errors: Record<string, string> = {};
+    if (!techStackInput.trim()) {
+      errors.techStack = "Please specify at least one primary technology";
+    }
+    if (selectedAITools.length === 0) {
+      errors.aiTools = "Please select at least one AI tool used";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (step === 1 && !validateStep1()) {
+      toast.error("Please resolve the required fields before proceeding.");
+      return;
+    }
+    if (step === 2 && !validateStep2()) {
+      toast.error("Please complete the required stack selections.");
+      return;
+    }
+    setFormErrors({});
+    setStep((prev) => prev + 1);
   };
 
   const aiToolOptions = [
@@ -79,6 +128,9 @@ export default function NewProjectPage() {
     } else {
       setSelectedAITools([...selectedAITools, tool]);
     }
+    if (formErrors.aiTools) {
+      setFormErrors((prev) => ({ ...prev, aiTools: "" }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -86,8 +138,7 @@ export default function NewProjectPage() {
       toast.error("Please select a test persona or sign in.");
       return;
     }
-    if (!title || !liveUrl) {
-      toast.error("Please provide at least a project title and live URL.");
+    if (!validateStep1()) {
       setStep(1);
       return;
     }
@@ -96,8 +147,29 @@ export default function NewProjectPage() {
     setScanStep("Resolving domain & verifying SSRF safety...");
 
     try {
+      // Execute REAL /api/scan endpoint
+      let realScanResult: any = null;
+      try {
+        setScanStep("Connecting to live target & inspecting HTTP security headers...");
+        const scanRes = await fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: liveUrl.trim() }),
+        });
+        if (scanRes.ok) {
+          realScanResult = await scanRes.json();
+          setScanStep(
+            `Live scan completed! TTFB: ${realScanResult.ttfbMs}ms • Real Score: ${realScanResult.vibeScore}/100`
+          );
+        } else {
+          setScanStep("Automated scanner reported fallback mode. Synthesizing preliminary metrics...");
+        }
+      } catch (scanErr) {
+        console.warn("Scan warning:", scanErr);
+      }
+
       await new Promise((r) => setTimeout(r, 600));
-      setScanStep("Running automated security, a11y & performance analyzers...");
+      setScanStep("Persisting verified project record & audit findings...");
 
       const techStack = techStackInput
         .split(",")
@@ -127,6 +199,7 @@ export default function NewProjectPage() {
           unsureParts,
           feedbackWanted,
           userId: currentUser.id,
+          realScanResult,
         }),
       });
 
@@ -146,202 +219,187 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8 text-left">
       {/* Wizard Header */}
-      <div className="text-center space-y-2">
-        <div className="text-xs font-mono text-emerald-400 font-semibold uppercase tracking-wider">
-          New Submission
+      <div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-mono font-medium shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Project Submission Wizard</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          Submit Your Project for Vibe Check
+        <h1 className="text-3xl font-extrabold text-slate-900 font-sans tracking-tight mt-2">
+          Submit Your AI-Assisted Build
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-500">
-          Get automated security & performance analysis and structured community feedback.
+        <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+          Step {step} of 4:{" "}
+          {step === 1 && "Core Information & Live Deployment"}
+          {step === 2 && "Tech Stack & AI Transparency"}
+          {step === 3 && "Project Context & Story (Optional)"}
+          {step === 4 && "Review & Automated Verification"}
         </p>
       </div>
 
-      {/* Steps Progression Bar */}
-      <div className="grid grid-cols-4 gap-2 text-center text-xs">
-        {[
-          { num: 1, label: "Basic Info" },
-          { num: 2, label: "Build & AI" },
-          { num: 3, label: "Write-up" },
-          { num: 4, label: "Preview" },
-        ].map((s) => {
-          const isDone = step > s.num;
-          const isCurrent = step === s.num;
-          return (
-            <div
-              key={s.num}
-              onClick={() => !isSubmitting && s.num < step && setStep(s.num)}
-              className={`p-2.5 rounded-lg border transition-all ${
-                isCurrent
-                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300 font-bold"
-                  : isDone
-                  ? "border-slate-200 bg-slate-900/60 text-slate-300 cursor-pointer"
-                  : "border-slate-100 bg-slate-50 text-slate-600"
-              }`}
-            >
-              <div className="text-[10px] font-mono">Step {s.num}</div>
-              <div className="truncate">{s.label}</div>
-            </div>
-          );
-        })}
+      {/* Step Indicators */}
+      <div className="grid grid-cols-4 gap-2">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1.5 rounded-full transition-all ${
+              i <= step ? "bg-indigo-600" : "bg-slate-200"
+            }`}
+          />
+        ))}
       </div>
 
-      {/* Form Card */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-900/50 p-6 sm:p-8 space-y-6">
+      {/* Wizard Container */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
         {/* STEP 1: Basic Information */}
         {step === 1 && (
-          <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-            <div className="space-y-1">
-              <label className="block text-zinc-300 font-medium text-xs">Project Name *</label>
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-indigo-600" />
+              <span>Project Identity & Live URL</span>
+            </h2>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Project Name *
+              </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder="e.g. CampusConnect"
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors text-sm"
-                required
+                placeholder="CampusConnect"
+                className={`w-full bg-white border rounded-lg px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none ${
+                  formErrors.title
+                    ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                    : "border-slate-300 focus:border-indigo-500"
+                }`}
               />
+              {formErrors.title && (
+                <p className="text-xs text-rose-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{formErrors.title}</span>
+                </p>
+              )}
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-zinc-300 font-medium text-xs">Custom Slug</label>
-              <div className="flex items-center bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-xs font-mono text-zinc-500">
-                <span>vibecheck.dev/projects/</span>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className="bg-transparent text-emerald-400 focus:outline-none flex-1 font-mono"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-zinc-300 font-medium text-xs">Tagline *</label>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                One-line Tagline *
+              </label>
               <input
                 type="text"
                 value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                placeholder="One sentence that summarizes the core value."
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
-                required
+                onChange={(e) => {
+                  setTagline(e.target.value);
+                  if (formErrors.tagline) setFormErrors((p) => ({ ...p, tagline: "" }));
+                }}
+                placeholder="Student peer-to-peer textbook and dorm essentials marketplace."
+                className={`w-full bg-white border rounded-lg px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none ${
+                  formErrors.tagline
+                    ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                    : "border-slate-300 focus:border-indigo-500"
+                }`}
               />
+              {formErrors.tagline && (
+                <p className="text-xs text-rose-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{formErrors.tagline}</span>
+                </p>
+              )}
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-zinc-300 font-medium text-xs">Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Brief summary of who it is for and what it accomplishes."
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Live Deployment URL *
+              </label>
+              <input
+                type="url"
+                value={liveUrl}
+                onChange={(e) => {
+                  setLiveUrl(e.target.value);
+                  if (formErrors.liveUrl) setFormErrors((p) => ({ ...p, liveUrl: "" }));
+                }}
+                placeholder="https://myapp.vercel.app"
+                className={`w-full bg-white border rounded-lg px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none ${
+                  formErrors.liveUrl
+                    ? "border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                    : "border-slate-300 focus:border-indigo-500"
+                }`}
               />
+              {formErrors.liveUrl && (
+                <p className="text-xs text-rose-600 mt-1 font-medium flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{formErrors.liveUrl}</span>
+                </p>
+              )}
+              <p className="text-[11px] text-slate-500 mt-1">
+                Our remote scanner will audit this URL for CSP, HSTS, X-Frame-Options, and server TTFB latency.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-zinc-300 font-medium text-xs flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                  Live Web URL *
-                </label>
-                <input
-                  type="url"
-                  value={liveUrl}
-                  onChange={(e) => setLiveUrl(e.target.value)}
-                  placeholder="https://myproject.vercel.app"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
-                  required
-                />
-                <span className="text-[10px] text-slate-500">Must be public & reachable for automated analysis</span>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-zinc-300 font-medium text-xs flex items-center gap-1.5">
-                  <GithubIcon className="w-3.5 h-3.5 text-zinc-500" />
-                  GitHub Repository URL (Optional)
-                </label>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                GitHub Repository (Optional)
+              </label>
+              <div className="relative">
+                <GithubIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="url"
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder="https://github.com/user/project"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
+                  placeholder="https://github.com/username/repository"
+                  className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
                 />
-                <span className="text-[10px] text-slate-500">Enables dependency & static hygiene checks</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 2: Build & AI Tools */}
+        {/* STEP 2: Stack & AI Tools */}
         {step === 2 && (
-          <div className="space-y-5 animate-in fade-in duration-150 text-xs">
-            <div className="space-y-1">
-              <label className="block text-zinc-300 font-medium text-xs">Tech Stack (comma separated)</label>
+          <div className="space-y-5">
+            <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Bot className="w-4 h-4 text-indigo-600" />
+              <span>Technology Stack & AI Transparency</span>
+            </h2>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Primary Technologies (comma-separated) *
+              </label>
               <input
                 type="text"
                 value={techStackInput}
-                onChange={(e) => setTechStackInput(e.target.value)}
-                placeholder="Next.js, TypeScript, Tailwind CSS, Prisma, PostgreSQL"
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors font-mono"
+                onChange={(e) => {
+                  setTechStackInput(e.target.value);
+                  if (formErrors.techStack) setFormErrors((p) => ({ ...p, techStack: "" }));
+                }}
+                className={`w-full bg-white border rounded-lg px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none ${
+                  formErrors.techStack ? "border-rose-500" : "border-slate-300 focus:border-indigo-500"
+                }`}
               />
+              {formErrors.techStack && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{formErrors.techStack}</p>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-zinc-500 font-medium mb-1">Framework</label>
-                <input
-                  type="text"
-                  value={framework}
-                  onChange={(e) => setFramework(e.target.value)}
-                  placeholder="Next.js 14"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2 text-slate-200"
-                />
-              </div>
-              <div>
-                <label className="block text-zinc-500 font-medium mb-1">Database</label>
-                <input
-                  type="text"
-                  value={database}
-                  onChange={(e) => setDatabase(e.target.value)}
-                  placeholder="PostgreSQL / Supabase"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2 text-slate-200"
-                />
-              </div>
-              <div>
-                <label className="block text-zinc-500 font-medium mb-1">Hosting</label>
-                <input
-                  type="text"
-                  value={hosting}
-                  onChange={(e) => setHosting(e.target.value)}
-                  placeholder="Vercel / Cloudflare"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2 text-slate-200"
-                />
-              </div>
-            </div>
-
-            {/* AI Tools Used */}
             <div className="space-y-2">
-              <label className="block text-zinc-300 font-medium text-xs flex items-center gap-1.5">
-                <Bot className="w-4 h-4 text-purple-400" />
-                AI Tools Used
+              <label className="block text-xs font-bold text-slate-700">
+                AI Coding Tools Used *
               </label>
               <div className="flex flex-wrap gap-2">
                 {aiToolOptions.map((tool) => {
-                  const isSel = selectedAITools.includes(tool);
+                  const isSelected = selectedAITools.includes(tool);
                   return (
                     <button
                       key={tool}
                       type="button"
                       onClick={() => toggleAITool(tool)}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono transition-colors ${
-                        isSel
-                          ? "border-purple-500/50 bg-purple-500/15 text-purple-300 font-semibold"
-                          : "border-slate-200 bg-slate-50 text-zinc-500 hover:text-slate-200"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-indigo-600 text-white font-semibold shadow-xs"
+                          : "bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200/70"
                       }`}
                     >
                       {tool}
@@ -349,180 +407,135 @@ export default function NewProjectPage() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* AI Involvement Level */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="block text-zinc-300 font-medium text-xs">
-                How heavily did you use AI?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {[
-                  { id: "MINIMAL", title: "Minimal", desc: "Autocomplete or quick syntax lookups" },
-                  { id: "MODERATE", title: "Moderate", desc: "Generated boilerplate and isolated functions" },
-                  { id: "HEAVY", title: "Heavy", desc: "Scaffolded major components & API routes" },
-                  { id: "ALMOST_ENTIRELY", title: "Almost entirely AI-assisted", desc: "Prompt-driven from zero to functional app" },
-                ].map((inv) => (
-                  <div
-                    key={inv.id}
-                    onClick={() => setAiInvolvement(inv.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      aiInvolvement === inv.id
-                        ? "border-emerald-500 bg-emerald-950/20 text-emerald-300 ring-1 ring-emerald-500"
-                        : "border-slate-200 bg-slate-50 hover:bg-slate-900 text-zinc-500"
-                    }`}
-                  >
-                    <div className="font-semibold text-slate-200">{inv.title}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">{inv.desc}</div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-[11px] text-slate-500 italic pt-1">
-                This is transparent disclosure, not a penalty. We evaluate the resulting product quality.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Write-up Story */}
-        {step === 3 && (
-          <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-            <div>
-              <label className="block text-zinc-300 font-medium text-xs mb-1">What did you build? *</label>
-              <textarea
-                value={whatBuilt}
-                onChange={(e) => setWhatBuilt(e.target.value)}
-                placeholder="Describe your project's main feature set and architecture..."
-                rows={3}
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-zinc-300 font-medium text-xs mb-1">Why did you build it? *</label>
-              <textarea
-                value={whyBuilt}
-                onChange={(e) => setWhyBuilt(e.target.value)}
-                placeholder="What personal frustration or market gap inspired this build?"
-                rows={2}
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-zinc-300 font-medium text-xs mb-1">What problem does it solve?</label>
-              <textarea
-                value={problemSolved}
-                onChange={(e) => setProblemSolved(e.target.value)}
-                placeholder="How does this improve the user's workflow or save time?"
-                rows={2}
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2.5 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">What was difficult?</label>
-                <textarea
-                  value={difficultParts}
-                  onChange={(e) => setDifficultParts(e.target.value)}
-                  placeholder="Handling race conditions, CSS layouts..."
-                  rows={2}
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2 text-white placeholder-slate-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">What are you unsure about?</label>
-                <textarea
-                  value={unsureParts}
-                  onChange={(e) => setUnsureParts(e.target.value)}
-                  placeholder="Auth verification, database query performance..."
-                  rows={2}
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg p-2 text-white placeholder-slate-400 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-zinc-300 font-medium text-xs mb-1">
-                What kind of feedback do you want most?
-              </label>
-              <input
-                type="text"
-                value={feedbackWanted}
-                onChange={(e) => setFeedbackWanted(e.target.value)}
-                placeholder="e.g. Stress-test trade checkout, check accessibility for screen readers..."
-                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: Preview & Publish */}
-        {step === 4 && (
-          <div className="space-y-6 animate-in fade-in duration-150 text-xs">
-            <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/10 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                <Sparkles className="w-4 h-4" /> Ready to Publish
-              </div>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                Publishing will trigger VibeCheck's automated analysis engine to audit your security headers, accessibility landmarks, and response latency.
-              </p>
-            </div>
-
-            {/* Live Card Preview */}
-            <div className="rounded-xl border border-white/15 bg-slate-50 p-6 space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-white">{title || "Untitled Project"}</h2>
-                  <p className="text-zinc-500 text-xs mt-1">{tagline || "Your project tagline here."}</p>
-                </div>
-                <div className="px-3 py-1 rounded bg-slate-900 border border-slate-200 text-zinc-500 font-mono text-xs font-bold">
-                  Score Pending Scan
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 text-slate-300 text-[11px]">
-                <span className="font-mono text-emerald-400">URL: {liveUrl || "Not specified"}</span>
-                {githubUrl && <span className="font-mono text-zinc-500">GitHub: {githubUrl}</span>}
-              </div>
-
-              <div className="flex flex-wrap gap-1">
-                {techStackInput.split(",").map((t) => (
-                  <span key={t} className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-100 text-zinc-500 font-mono">
-                    {t.trim()}
-                  </span>
-                ))}
-              </div>
-
-              {whatBuilt && (
-                <div className="pt-2 border-t border-slate-100 space-y-1">
-                  <span className="font-semibold text-zinc-500 text-[10px] uppercase tracking-wider block">
-                    What was built:
-                  </span>
-                  <p className="text-slate-300 line-clamp-3 leading-relaxed">{whatBuilt}</p>
-                </div>
+              {formErrors.aiTools && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{formErrors.aiTools}</p>
               )}
             </div>
 
-            {isSubmitting && (
-              <div className="p-4 rounded-xl border border-emerald-500/40 bg-slate-50 text-center space-y-2 animate-pulse">
-                <Zap className="w-6 h-6 text-emerald-400 mx-auto animate-bounce" />
-                <div className="text-sm font-bold text-emerald-300">Analyzing your project...</div>
-                <div className="text-xs text-zinc-500 font-mono">{scanStep}</div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Level of AI Involvement
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "MINIMAL", label: "Minimal", desc: "Autofill & snippets" },
+                  { id: "MODERATE", label: "Moderate", desc: "Feature scaffolding" },
+                  { id: "HEAVY", label: "Heavy", desc: "Most files AI-assisted" },
+                  { id: "ALMOST_ENTIRELY", label: "Full Vibe", desc: "Prompt-to-app" },
+                ].map((inv) => (
+                  <button
+                    key={inv.id}
+                    type="button"
+                    onClick={() => setAiInvolvement(inv.id)}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      aiInvolvement === inv.id
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-950 font-bold shadow-xs"
+                        : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                    }`}
+                  >
+                    <div className="text-xs font-bold">{inv.label}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{inv.desc}</div>
+                  </button>
+                ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Context & Story */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <Code2 className="w-4 h-4 text-indigo-600" />
+              <span>Project Context & Honest Story</span>
+            </h2>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                What did you build?
+              </label>
+              <textarea
+                value={whatBuilt}
+                onChange={(e) => setWhatBuilt(e.target.value)}
+                rows={2}
+                placeholder="Briefly explain what features are live right now."
+                className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                What part was difficult or are you unsure about?
+              </label>
+              <textarea
+                value={difficultParts}
+                onChange={(e) => setDifficultParts(e.target.value)}
+                rows={2}
+                placeholder="e.g. Supabase RLS policies, mobile viewport keyboard bouncing, webhook validation."
+                className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Targeted feedback wanted from reviewers
+              </label>
+              <textarea
+                value={feedbackWanted}
+                onChange={(e) => setFeedbackWanted(e.target.value)}
+                rows={2}
+                placeholder="What specific checks or tests do you want community reviewers to focus on?"
+                className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Review & Automated Scan */}
+        {step === 4 && (
+          <div className="space-y-5">
+            <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Review Submission & Ready for Live Scan</span>
+            </h2>
+
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs text-slate-700">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Project Name:</span>
+                <span className="font-bold text-slate-900">{title}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Target URL:</span>
+                <span className="font-mono text-indigo-700 font-semibold">{liveUrl}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">AI Tools:</span>
+                <span>{selectedAITools.join(", ")}</span>
+              </div>
+            </div>
+
+            {isSubmitting ? (
+              <div className="p-5 rounded-2xl border border-indigo-200 bg-indigo-50/50 text-center space-y-2 animate-pulse">
+                <Zap className="w-6 h-6 text-indigo-600 mx-auto animate-bounce" />
+                <div className="text-sm font-bold text-indigo-900">Executing Live Audit Scan...</div>
+                <div className="text-xs text-slate-600 font-mono">{scanStep}</div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Clicking "Publish & Run Scan" will invoke our real remote scanning engine against your URL to verify TLS, CSP, HSTS, X-Frame-Options, and server latency.
+              </p>
             )}
           </div>
         )}
 
-        {/* Wizard Footer Navigation */}
-        <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+        {/* Footer Navigation */}
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
           {step > 1 ? (
             <button
               type="button"
-              onClick={() => setStep(step - 1)}
+              onClick={() => setStep((p) => p - 1)}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-300 hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
@@ -533,26 +546,21 @@ export default function NewProjectPage() {
           {step < 4 ? (
             <button
               type="button"
-              onClick={() => {
-                if (step === 1 && (!title || !liveUrl)) {
-                  toast.error("Title and Live URL are required.");
-                  return;
-                }
-                setStep(step + 1);
-              }}
-              className="px-5 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black font-medium shadow-[0_0_15px_rgba(255,255,255,0.1)] text-xs transition-colors flex items-center gap-1.5"
+              onClick={handleNextStep}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5"
             >
-              Next Step <ArrowRight className="w-3.5 h-3.5" />
+              <span>Next Step</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-xs flex items-center gap-2 disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? "Publishing & Scanning..." : "Publish Project"}</span>
+              <span>{isSubmitting ? "Publishing & Scanning..." : "Publish & Run Scan"}</span>
             </button>
           )}
         </div>

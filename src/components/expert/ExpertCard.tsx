@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShieldCheck, Star, Sparkles } from "lucide-react";
-import { formatInr } from "@/lib/utils";
+import { ShieldCheck, Star } from "lucide-react";
 import { RequestReviewModal } from "./RequestReviewModal";
 import Link from "next/link";
 
@@ -30,23 +29,23 @@ export function ExpertCard({ expert }: { expert: ExpertCardData }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] p-6 space-y-4 hover:border-white/[0.18] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_20px_40px_-15px_rgba(0,0,0,0.8)] transition-all flex flex-col justify-between">
-        <div className="space-y-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5 hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between shadow-xs">
+        <div className="space-y-3.5">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <img
                 src={expert.avatar || "/placeholder-avatar.png"}
                 alt={expert.name}
-                className="w-12 h-12 rounded-full object-cover border border-white/[0.1]"
+                className="w-12 h-12 rounded-full object-cover border border-slate-200"
               />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-bold text-white">{expert.name}</h3>
-                  <span title="Verified Engineer"><ShieldCheck className="w-4 h-4 text-cyan-400" /></span>
+                  <h3 className="text-sm font-bold text-slate-900">{expert.name}</h3>
+                  <span title="Verified Engineer"><ShieldCheck className="w-4 h-4 text-indigo-600" /></span>
                 </div>
-                <div className="text-xs text-zinc-500">{expert.expertProfile.title}</div>
-                <div className="text-[11px] text-zinc-500 font-mono">
+                <div className="text-xs text-slate-600 font-medium">{expert.expertProfile.title}</div>
+                <div className="text-[11px] text-slate-400 font-mono">
                   {expert.expertProfile.yearsExperience} yrs exp • @{expert.username}
                 </div>
               </div>
@@ -63,16 +62,16 @@ export function ExpertCard({ expert }: { expert: ExpertCardData }) {
             </div>
           </div>
 
-          <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
             {expert.expertProfile.bio}
           </p>
 
           {/* Specialties */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {expert.expertProfile.specialties.map((spec) => (
               <span
                 key={spec}
-                className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.06] text-zinc-400 font-mono"
+                className="text-[10px] px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-mono font-medium"
               >
                 {spec}
               </span>
@@ -80,27 +79,31 @@ export function ExpertCard({ expert }: { expert: ExpertCardData }) {
           </div>
         </div>
 
-        {/* Pricing & CTA */}
-        <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+        {/* Footer with reconciled From ₹999 pricing */}
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
           <div>
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono text-[10px]">Per Review</div>
-            <div className="text-sm font-mono font-bold text-white">
-              {formatInr(expert.expertProfile.reviewRateInr)}
-            </div>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
+              Audit Rate
+            </span>
+            <span className="text-xs font-bold text-slate-900 font-mono">
+              From ₹999 <span className="text-[11px] text-slate-500 font-normal">/ review</span>
+            </span>
+            <span className="text-[10px] text-slate-400 block">
+              (Essential ₹999 • Full-Stack ₹2,499)
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href={`/users/${expert.username}`}
-              className="px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:text-white hover:bg-white/[0.06] text-xs font-medium transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-colors shadow-2xs"
             >
               Profile
             </Link>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-medium transition-all shadow-sm flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5"
             >
-              <Sparkles className="w-3 h-3 text-zinc-600" />
               <span>Request Review</span>
             </button>
           </div>

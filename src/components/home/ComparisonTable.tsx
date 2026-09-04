@@ -11,7 +11,7 @@ export function ComparisonTable() {
     },
     {
       feature: "Cost per Evaluation",
-      traditional: "$3,500 – $10,000+",
+      traditional: "₹2,50,000+ ($3,500+)",
       social: "Free (Zero structure)",
       vibecheck: "₹0 Free / ₹999 Expert Review",
     },
@@ -62,7 +62,7 @@ export function ComparisonTable() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-xs text-left border-collapse">
+        <table className="w-full min-w-[600px] text-xs text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/50">
               <th className="p-4 font-semibold text-slate-700 w-2/5">Capability</th>

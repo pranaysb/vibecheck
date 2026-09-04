@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ExternalLink,   MessageSquare, Sparkles, Settings, Share2, Check } from "lucide-react";
+import { ExternalLink, MessageSquare, Sparkles, Settings, Share2, Check } from "lucide-react";
 import { GithubIcon } from "@/components/ui/Icons";
 import { ReviewFormModal } from "@/components/review/ReviewFormModal";
 import { RequestReviewModal } from "@/components/expert/RequestReviewModal";
@@ -28,7 +28,7 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
   const [isExpertOpen, setIsExpertOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const isCreator = currentUser?.id === project.userId || currentUser?.role === "ADMIN";
+  const isCreator = currentUser?.id === project.userId;
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -45,7 +45,7 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
           href={project.liveUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/20"
+          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           <span>Open live site</span>
@@ -57,7 +57,7 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
             href={project.githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
           >
             <GithubIcon className="w-3.5 h-3.5" />
             <span>View GitHub</span>
@@ -67,35 +67,35 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
         {/* Review Project */}
         <button
           onClick={() => setIsReviewOpen(true)}
-          className="px-3 py-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
         >
-          <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+          <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
           <span>Review project</span>
         </button>
 
         {/* Request Expert Review */}
         <button
           onClick={() => setIsExpertOpen(true)}
-          className="px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-lg border border-cyan-300 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
         >
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
           <span>Request Expert Review</span>
         </button>
 
         {/* Share Button */}
         <button
           onClick={handleShare}
-          className="p-1.5 rounded-lg border border-white/10 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs transition-colors"
+          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs transition-colors shadow-2xs"
           title="Share Project"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
         </button>
 
         {/* Creator Management Link */}
         {isCreator && (
           <Link
             href={`/projects/${project.slug}/manage`}
-            className="px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-950/20 hover:bg-purple-950/40 text-purple-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs"
           >
             <Settings className="w-3.5 h-3.5" />
             <span>Manage Project</span>
@@ -106,6 +106,7 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
       <ReviewFormModal
         projectId={project.id}
         projectTitle={project.title}
+        projectCreatorId={project.userId}
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
         onReviewSubmitted={() => router.refresh()}
@@ -113,10 +114,10 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
 
       <RequestReviewModal
         expert={{
-          id: "sarahchen_id", // Default to Sarah Chen
+          id: "sarahchen_id",
           name: "Sarah Chen",
           title: "Senior Software Engineer (Ex-Stripe)",
-          reviewRateInr: 2499,
+          reviewRateInr: 999,
           specialties: ["Backend", "Security", "System Design"],
         }}
         isOpen={isExpertOpen}

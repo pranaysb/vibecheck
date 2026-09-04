@@ -148,7 +148,7 @@ export async function POST(req: Request) {
         difficultParts,
         unsureParts,
         feedbackWanted,
-        vibeScore: analysis.overallScore,
+        vibeScore: body.realScanResult?.vibeScore ?? analysis.overallScore,
         scoreProduct: analysis.categoryScores.product,
         scoreUx: analysis.categoryScores.ux,
         scoreEngineering: analysis.categoryScores.engineering,
@@ -172,7 +172,20 @@ export async function POST(req: Request) {
     });
 
     // Save findings
-    for (const f of analysis.findings) {
+    const findingsToSave = (body.realScanResult?.findings && body.realScanResult.findings.length > 0)
+      ? body.realScanResult.findings.map((f: any) => ({
+          category: f.category?.toUpperCase() === "SECURITY" ? "SECURITY" : "PERFORMANCE",
+          severity: f.severity || "MEDIUM",
+          title: f.title,
+          description: f.description,
+          evidence: f.passed ? "Header verification passed" : "Check failed on live target domain",
+          recommendation: f.description,
+          confidence: "HIGH",
+          status: f.passed ? "FIXED" : "OPEN"
+        }))
+      : analysis.findings;
+
+    for (const f of findingsToSave) {
       await prisma.finding.create({
         data: {
           projectId: project.id,

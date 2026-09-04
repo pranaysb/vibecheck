@@ -112,17 +112,17 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-white font-sans tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans tracking-tight">
             Discover Projects
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1 font-normal">
+          <p className="text-xs sm:text-sm text-slate-600 mt-1 font-normal">
             Explore applications built with AI assistance, verified by automated checks and peer reviews.
           </p>
         </div>
 
         <Link
           href="/projects/new"
-          className="self-start md:self-auto px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black font-medium text-xs transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] flex items-center gap-1.5"
+          className="self-start md:self-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" />
           <span>Submit Project</span>
@@ -139,11 +139,11 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
             name="q"
             defaultValue={searchQuery}
             placeholder="Search projects by name, problem solved, or description..."
-            className="w-full bg-[#0c0c0e] border border-white/[0.08] rounded-xl pl-10 pr-24 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/[0.2] transition-colors"
+            className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs transition-colors"
           />
           <button
             type="submit"
-            className="absolute right-2 px-3 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-zinc-200 text-xs font-medium border border-white/[0.08]"
+            className="absolute right-2 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-2xs"
           >
             Search
           </button>
@@ -162,10 +162,10 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
             <Link
               key={tab.id}
               href={`/discover?${queryParams.toString()}`}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
                 isActive
-                  ? "bg-white/[0.1] border-white/[0.18] text-white font-medium shadow-sm"
-                  : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                  ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold shadow-xs"
+                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               {tab.label}
@@ -176,18 +176,18 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
 
       {/* Projects Grid */}
       {finalProjects.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl border border-white/[0.08] bg-[#0c0c0e] space-y-3">
+        <div className="p-16 text-center rounded-2xl border border-slate-200 bg-white space-y-3">
           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
             <Search className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-semibold text-slate-200">No projects found</h3>
+          <h3 className="text-base font-semibold text-slate-900">No projects found</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             No projects matched the selected filters. Be the first developer to submit something in this category!
           </p>
           <div className="pt-2">
             <Link
               href="/projects/new"
-              className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black font-medium text-xs inline-block"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs inline-block shadow-xs"
             >
               Submit your project
             </Link>

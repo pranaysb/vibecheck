@@ -91,8 +91,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Top Banner / Hero Simulator */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e] overflow-hidden relative shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_20px_40px_-15px_rgba(0,0,0,0.8)]">
-        <div className="h-44 sm:h-52 bg-gradient-to-r from-white/[0.03] to-white/[0.01] p-6 sm:p-8 flex flex-col justify-between border-b border-white/[0.06] relative">
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden relative shadow-sm">
+        <div className="h-44 sm:h-52 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-slate-50 p-6 sm:p-8 flex flex-col justify-between border-b border-slate-200 relative">
           <div className="absolute inset-0 bg-grid-pattern opacity-25" />
 
           {/* Sub-navigation tabs */}
@@ -100,27 +100,27 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             <div className="flex items-center gap-1.5">
               <Link
                 href={`/projects/${project.slug}`}
-                className="px-3 py-1 rounded-lg text-xs font-semibold bg-white/[0.1] border border-white/[0.18] text-white"
+                className="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold"
               >
                 Overview
               </Link>
               <Link
                 href={`/projects/${project.slug}/reviews`}
-                className="px-3 py-1 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-colors flex items-center gap-1"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Reviews ({project.reviews.length})</span>
               </Link>
               <Link
                 href={`/projects/${project.slug}/analysis`}
-                className="px-3 py-1 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-colors flex items-center gap-1"
               >
                 <FileSearch className="w-3.5 h-3.5" />
                 <span>Analysis ({openFindingsCount} open)</span>
               </Link>
               <Link
                 href={`/projects/${project.slug}/versions`}
-                className="px-3 py-1 rounded-lg text-xs font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-1"
+                className="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-colors flex items-center gap-1"
               >
                 <History className="w-3.5 h-3.5" />
                 <span>History ({project.versions.length} versions)</span>
@@ -140,7 +140,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-semibold text-white font-sans tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans tracking-tight">
                   {project.title}
                 </h1>
                 {project.expertReviews.length > 0 && (
@@ -149,7 +149,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed font-normal">
+              <p className="text-sm text-slate-600 max-w-2xl leading-relaxed font-normal">
                 {project.tagline}
               </p>
               <div className="flex items-center gap-2 text-xs text-zinc-400">
@@ -174,7 +174,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
         </div>
 
         {/* Action Toolbar */}
-        <div className="p-4 sm:p-6 bg-white/[0.01] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 bg-slate-50/70 p-4 sm:p-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <ProjectActionBar project={{ id: project.id, slug: project.slug, title: project.title, liveUrl: project.liveUrl, githubUrl: project.githubUrl, userId: project.creator.id }} />
 
           {/* Tech stack pills */}
@@ -182,7 +182,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             {project.techStack.map((tech) => (
               <span
                 key={tech}
-                className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-white/[0.08] text-slate-700 font-mono"
+                className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-slate-200 text-slate-700 font-mono"
               >
                 {tech}
               </span>
@@ -203,8 +203,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           />
 
           {/* Project Story Write-up */}
-          <div className="rounded-2xl border border-white/[0.08]/90 bg-white p-6 shadow-xs space-y-6">
-            <h2 className="text-base font-bold text-white flex items-center gap-2 border-b border-white/[0.06] pb-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-6">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Sparkles className="w-4 h-4 text-indigo-600" />
               Project Story & Architecture
             </h2>
@@ -236,15 +236,15 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/[0.06] text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-xs">
               {project.difficultParts && (
-                <div className="space-y-1 bg-white/[0.02] p-3 rounded-lg border border-white/[0.06]">
+                <div className="space-y-1 bg-white/[0.02] p-3 rounded-lg border border-slate-100">
                   <span className="font-semibold text-amber-400 text-[11px] block">What was difficult?</span>
                   <p className="text-slate-700 leading-relaxed">{project.difficultParts}</p>
                 </div>
               )}
               {project.unsureParts && (
-                <div className="space-y-1 bg-white/[0.02] p-3 rounded-lg border border-white/[0.06]">
+                <div className="space-y-1 bg-white/[0.02] p-3 rounded-lg border border-slate-100">
                   <span className="font-semibold text-rose-400 text-[11px] block">What are you unsure about?</span>
                   <p className="text-slate-700 leading-relaxed">{project.unsureParts}</p>
                 </div>
@@ -256,7 +256,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                 <span className="font-semibold text-emerald-300 text-[11px] uppercase tracking-wider block">
                   Targeted Feedback Requested:
                 </span>
-                <p className="text-slate-200">{project.feedbackWanted}</p>
+                <p className="text-slate-800">{project.feedbackWanted}</p>
               </div>
             )}
           </div>
@@ -265,7 +265,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-white">Automated Findings</h2>
+                <h2 className="text-base font-bold text-slate-900">Automated Findings</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Safe static & header inspection results ({fixedFindingsCount} fixed, {openFindingsCount} open).
                 </p>
@@ -283,10 +283,10 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           </div>
 
           {/* Version Evolution Section */}
-          <div className="rounded-2xl border border-white/[0.08]/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <History className="w-4 h-4 text-indigo-600" />
                   Project Evolution History
                 </h2>
@@ -304,10 +304,10 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
               {project.versions.map((ver, idx) => (
                 <div
                   key={ver.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-slate-100 text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-slate-200 px-2 py-0.5 rounded bg-slate-800 border border-white/[0.06]">
+                    <span className="font-mono font-bold text-slate-200 px-2 py-0.5 rounded bg-slate-800 border border-slate-100">
                       {ver.versionNumber}
                     </span>
                     <span className="text-slate-700">{ver.changelog}</span>
@@ -329,7 +329,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-white">Community Feedback</h2>
+                <h2 className="text-base font-bold text-slate-900">Community Feedback</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   {project.reviews.length} structured peer reviews from verified developers.
                 </p>
@@ -396,8 +396,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           )}
 
           {/* Build Details */}
-          <div className="rounded-xl border border-white/[0.08] bg-white p-5 border border-white/[0.08]/90 shadow-xs space-y-3 text-xs">
-            <h3 className="font-semibold text-white uppercase tracking-wider text-xs border-b border-white/[0.06] pb-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 border border-slate-200/90 shadow-xs space-y-3 text-xs">
+            <h3 className="font-bold text-slate-900 uppercase tracking-wider text-xs border-b border-slate-100 pb-2">
               Build Metadata
             </h3>
             <div className="space-y-2 text-zinc-400">

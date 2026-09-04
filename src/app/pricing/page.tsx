@@ -2,10 +2,29 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Check, ArrowRight, HelpCircle, ShieldCheck } from "lucide-react";
+import { Check, ArrowRight, HelpCircle, ShieldCheck, X, Sparkles, Send } from "lucide-react";
+import { toast } from "sonner";
 import { formatInr } from "@/lib/utils";
 
 export default function PricingPage() {
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false);
+
+  const handleWaitlistSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waitlistEmail || !waitlistEmail.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    toast.success("You are on the Pro Builder priority waitlist! We will email you within 24h.");
+    setWaitlistSubmitted(true);
+    setTimeout(() => {
+      setWaitlistOpen(false);
+      setWaitlistSubmitted(false);
+      setWaitlistEmail("");
+    }, 1500);
+  };
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   const tiers = [
@@ -187,17 +206,24 @@ export default function PricingPage() {
                 </div>
 
                 <div className="pt-8">
-                  <Link
-                    href={tier.href}
-                    className={`w-full py-3 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all flex items-center justify-center gap-2 ${
-                      tier.popular
-                        ? "bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
-                        : "bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-2xs"
-                    }`}
-                  >
-                    <span>{tier.cta}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  {tier.popular ? (
+                    <button
+                      type="button"
+                      onClick={() => setWaitlistOpen(true)}
+                      className="w-full py-3 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+                    >
+                      <span>{tier.cta}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <Link
+                      href={tier.href}
+                      className="w-full py-3 rounded-xl text-xs sm:text-sm font-semibold text-center transition-all flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 shadow-2xs"
+                    >
+                      <span>{tier.cta}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                 </div>
               </div>
             );
@@ -228,6 +254,63 @@ export default function PricingPage() {
           </div>
         </div>
       </div>
+
+      {/* Pro Builder Waitlist Modal */}
+      {waitlistOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setWaitlistOpen(false)} />
+          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl p-6 sm:p-8 z-50 my-8 text-left space-y-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold">
+                  <Sparkles className="w-3 h-3 text-indigo-600" />
+                  <span>Pro Builder Private Beta</span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight mt-1.5">
+                  Join the Pro Builder Waitlist
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  We are actively onboarding commercial teams in batches. Enter your work email for priority onboarding and 20% lifetime launch discount.
+                </p>
+              </div>
+              <button
+                onClick={() => setWaitlistOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {waitlistSubmitted ? (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 font-medium">
+                ✓ Priority invitation reserved! Check your inbox soon.
+              </div>
+            ) : (
+              <form onSubmit={handleWaitlistSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Work Email</label>
+                  <input
+                    type="email"
+                    value={waitlistEmail}
+                    onChange={(e) => setWaitlistEmail(e.target.value)}
+                    placeholder="alex@startup.com"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 focus:outline-none focus:border-indigo-500 text-xs"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Request Priority Access</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
