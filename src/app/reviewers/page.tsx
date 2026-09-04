@@ -25,7 +25,7 @@ export default async function ReviewersPage() {
   }
 
   // Realistic mock reviewers with mathematical consistency if DB empty
-  if (reviewers.length === 0) {
+  if (reviewers.length < 4) {
     reviewers = [
       {
         id: "rev-1",
