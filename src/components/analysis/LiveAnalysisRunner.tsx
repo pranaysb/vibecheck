@@ -1,13 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Zap, CheckCircle2, ShieldCheck, ArrowRight, RefreshCw, AlertTriangle, Layers } from "lucide-react";
+import { Zap, CheckCircle2, ShieldCheck, ArrowRight, RefreshCw, AlertTriangle, Layers, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
-import { motion, AnimatePresence } from "motion/react";
-import { BorderBeam } from "@/components/motion/BorderBeam";
-import { SpotlightCard } from "@/components/motion/SpotlightCard";
 
 interface LiveAnalysisRunnerProps {
   projectId: string;
@@ -26,30 +23,30 @@ export function LiveAnalysisRunner({
 }: LiveAnalysisRunnerProps) {
   const router = useRouter();
   const [isScanning, setIsScanning] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-
-  const scanStages = [
-    "Website reachability & SSRF security verification",
-    "Security headers (CSP, HSTS, X-Frame, cookies)",
-    "Performance metrics (TTFB, payload compression)",
-    "WCAG accessibility (alt tags, button labels, landmarks)",
-    "Repository hygiene & secret pattern scanning",
-  ];
+  const [scanResult, setScanResult] = useState<any>(null);
 
   const handleRunScan = async () => {
     setIsScanning(true);
-    setCurrentStep(0);
-    setCompletedSteps([]);
-
-    for (let i = 0; i < scanStages.length; i++) {
-      setCurrentStep(i);
-      await new Promise((r) => setTimeout(r, 450));
-      setCompletedSteps((prev) => [...prev, i]);
-    }
+    setScanResult(null);
 
     try {
-      const res = await fetch("/api/analyze", {
+      // Connect directly to /api/scan as specified in Phase 3.3
+      const scanRes = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: liveUrl }),
+      });
+
+      if (!scanRes.ok) {
+        const errData = await scanRes.json();
+        throw new Error(errData.error || "Failed to scan target");
+      }
+
+      const scanData = await scanRes.json();
+      setScanResult(scanData);
+
+      // Persist real scan results via analyze endpoint
+      await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -60,106 +57,74 @@ export function LiveAnalysisRunner({
         }),
       });
 
-      if (res.ok) {
-        confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
-        toast.success("Automated scan complete! Scores updated.");
-        router.refresh();
-      } else {
-        toast.error("Analysis completed with fallback parameters.");
-      }
-    } catch {
-      toast.error("Network error during analysis.");
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      toast.success(`Automated scan complete! Measured TTFB: ${scanData.ttfbMs}ms • Real Score: ${scanData.vibeScore}/100`);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Network error during analysis.");
     } finally {
       setIsScanning(false);
     }
   };
 
   return (
-    <SpotlightCard className="relative p-6 sm:p-8 space-y-6 overflow-hidden">
-      {isScanning && (
-        <BorderBeam size={280} duration={6} delay={0} colorFrom="#10b981" colorTo="#06b6d4" />
-      )}
-
-      {/* Futuristic Laser Scanner Overlay */}
-      {isScanning && (
-        <motion.div
-          initial={{ top: "-10%" }}
-          animate={{ top: "110%" }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="pointer-events-none absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#10b981] z-20"
-        />
-      )}
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-xs text-left">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-emerald-400 font-bold uppercase tracking-wider">
+            <span className="text-xs font-mono text-indigo-600 font-bold uppercase tracking-wider">
               Diagnostic Engine v1.0
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
           </div>
-          <h2 className="text-lg font-bold text-slate-100 mt-1">Automated Architecture & Security Audit</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Target URL: <span className="font-mono text-emerald-300 font-medium">{liveUrl}</span>
+          <h2 className="text-lg font-bold text-slate-900 mt-1">Automated Security & Performance Audit</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Target URL: <span className="font-mono text-indigo-700 font-semibold">{liveUrl}</span>
           </p>
         </div>
 
         <button
           onClick={handleRunScan}
           disabled={isScanning}
-          className="px-4 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 self-start sm:self-auto hover:scale-105 active:scale-95"
+          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all flex items-center gap-2 shadow-xs disabled:opacity-50 self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? "animate-spin" : ""}`} />
-          <span>{isScanning ? "Scanning Target..." : "Re-run Automated Scan"}</span>
+          <span>{isScanning ? "Scanning Target via /api/scan..." : "Re-run Automated Scan"}</span>
         </button>
       </div>
 
-      {/* Progress Stepper during scan */}
+      {/* Progress / Results Banner */}
       {isScanning && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3 p-5 rounded-xl bg-slate-950/90 border border-emerald-500/30 relative z-10 shadow-inner"
-        >
-          <div className="flex items-center justify-between text-xs text-emerald-400 font-semibold">
-            <span className="flex items-center gap-2">
-              <Zap className="w-4 h-4 animate-bounce text-emerald-400" />
-              <span>Executing active diagnostic probes...</span>
+        <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs text-indigo-900 flex items-center gap-3 animate-pulse">
+          <Zap className="w-4 h-4 text-indigo-600 animate-bounce" />
+          <span>Connecting to remote deployment & inspecting CSP, HSTS, XFO headers and TTFB latency...</span>
+        </div>
+      )}
+
+      {scanResult && (
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <span className="font-bold text-slate-900 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Real Live Scan Findings</span>
             </span>
-            <span className="font-mono">{completedSteps.length} / {scanStages.length}</span>
+            <span className="font-mono text-slate-600 font-bold">
+              TTFB: {scanResult.ttfbMs}ms • Score: {scanResult.vibeScore}/100
+            </span>
           </div>
 
-          <div className="space-y-2.5">
-            {scanStages.map((stage, idx) => {
-              const isPassed = completedSteps.includes(idx);
-              const isCurrent = currentStep === idx && !isPassed;
-              return (
-                <div
-                  key={stage}
-                  className={`flex items-center gap-2.5 text-xs font-mono transition-all duration-200 ${
-                    isPassed
-                      ? "text-emerald-300"
-                      : isCurrent
-                      ? "text-amber-300 font-semibold translate-x-1"
-                      : "text-slate-600"
-                  }`}
-                >
-                  {isPassed ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    </motion.div>
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border border-current shrink-0 flex items-center justify-center text-[10px]">
-                      {idx + 1}
-                    </div>
-                  )}
-                  <span>{stage}</span>
-                </div>
-              );
-            })}
+          <div className="space-y-1.5">
+            {scanResult.findings?.map((f: any) => (
+              <div key={f.id} className="flex items-center justify-between text-[11px] p-2 rounded bg-white border border-slate-200">
+                <span className="text-slate-800">{f.title}</span>
+                <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] ${f.passed ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"}`}>
+                  {f.passed ? "PASSED" : "FAILED"}
+                </span>
+              </div>
+            ))}
           </div>
-        </motion.div>
+        </div>
       )}
-    </SpotlightCard>
+    </div>
   );
 }
