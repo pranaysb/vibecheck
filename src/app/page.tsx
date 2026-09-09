@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Server,
   Activity,
+  Terminal,
 } from "lucide-react";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { HeroProductWindow } from "@/components/home/HeroProductWindow";
@@ -123,6 +124,14 @@ export default async function HomePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />
               <span>Continuous Security & Quality Verification</span>
             </div>
+            <Link
+              href="/ci-gate"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-800 text-xs font-mono font-medium hover:bg-blue-100 transition-colors"
+            >
+              <Terminal className="w-3.5 h-3.5 text-blue-700" />
+              <span>Interactive CI / PR Gate Demo</span>
+              <ArrowRight className="w-3 h-3 text-blue-700" />
+            </Link>
             <Link
               href="/security/self-audit"
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-mono font-medium hover:bg-emerald-100 transition-colors"

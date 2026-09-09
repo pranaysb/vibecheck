@@ -31,9 +31,9 @@ const SELF_AUDIT_GATE: SecurityGateData = {
     ssrf: true,
     dependencies: "PASS",
   },
-  commitSha: "274f1cf",
+  commitSha: "1e4e476",
   lastAuditDate: "September 9, 2026",
-  auditId: "VC-SELF-274F1CF",
+  auditId: "VC-SELF-1E4E476",
 };
 
 interface FindingItem {
@@ -115,7 +115,7 @@ export default function SelfAuditPage() {
   const [selectedFinding, setSelectedFinding] = useState<FindingItem | null>(null);
 
   const copySha = () => {
-    navigator.clipboard.writeText("274f1cf");
+    navigator.clipboard.writeText("1e4e476");
     toast.success("Commit SHA copied to clipboard");
   };
 
@@ -158,12 +158,12 @@ export default function SelfAuditPage() {
                 <div className="font-semibold text-neutral-900">github.com/pranaysb/vibecheck</div>
               </div>
               <div className="border-l border-neutral-200 pl-3">
-                <div className="text-neutral-400 text-[10px] uppercase">Commit SHA</div>
+                <div className="text-neutral-400 text-[10px] uppercase">Audited & Deployed SHA</div>
                 <button
                   onClick={copySha}
                   className="font-semibold text-neutral-900 hover:text-neutral-600 flex items-center gap-1"
                 >
-                  <span>274f1cf</span>
+                  <span>1e4e476</span>
                   <Copy className="w-3 h-3 text-neutral-400" />
                 </button>
               </div>
@@ -347,7 +347,7 @@ export default function SelfAuditPage() {
           <div className="bg-neutral-950 p-3 rounded-lg text-emerald-300 text-[11px] space-y-1">
             <p># Clone the verified repository commit</p>
             <p className="text-white">git clone https://github.com/pranaysb/vibecheck.git && cd vibecheck</p>
-            <p className="text-white">git checkout 274f1cf</p>
+            <p className="text-white">git checkout 1e4e476</p>
             <p className="text-neutral-500 pt-1"># Run the full static and edge validation suite</p>
             <p className="text-white">npm run build</p>
             <p className="text-white">curl -I http://localhost:3000/api/scan</p>

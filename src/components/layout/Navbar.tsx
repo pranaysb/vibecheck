@@ -39,6 +39,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "Directory", href: "/discover" },
+    { name: "CI Gate", href: "/ci-gate" },
     { name: "Benchmarks", href: "/challenges" },
     { name: "Staff Experts", href: "/experts" },
     { name: "Reviewers", href: "/reviewers" },
