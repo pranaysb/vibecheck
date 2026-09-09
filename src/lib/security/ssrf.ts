@@ -48,16 +48,36 @@ function parseNumericIpv4(hostname: string): string | null {
  * Verifies whether an IP address belongs to reserved, private, loopback, or cloud metadata ranges.
  */
 export function isForbiddenIp(ip: string): boolean {
-  // Normalize IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1 -> 127.0.0.1)
+  // Normalize IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1 -> 127.0.0.1 or ::ffff:7f00:1)
+  let cleanIp = ip;
   const mappedMatch = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
-  const cleanIp = mappedMatch ? mappedMatch[1] : ip;
+  if (mappedMatch) {
+    cleanIp = mappedMatch[1];
+  } else if (/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/i.test(ip)) {
+    // Hex IPv4-mapped IPv6 e.g. ::ffff:7f00:1 or ::ffff:7f00:0001
+    const parts = ip.slice(7).split(":");
+    const high = parseInt(parts[0], 16);
+    const low = parseInt(parts[1], 16);
+    const b0 = (high >>> 8) & 255;
+    const b1 = high & 255;
+    const b2 = (low >>> 8) & 255;
+    const b3 = low & 255;
+    cleanIp = `${b0}.${b1}.${b2}.${b3}`;
+  }
 
   // IPv6 loopback & private checks
   if (cleanIp === "::1" || cleanIp === "::") return true;
   if (cleanIp.toLowerCase().startsWith("fe80:")) return true; // Link-local
-  if (cleanIp.toLowerCase().startsWith("fc00:") || cleanIp.toLowerCase().startsWith("fd00:")) return true; // Unique local
+  if (cleanIp.toLowerCase().startsWith("fc00:") || cleanIp.toLowerCase().startsWith("fd00:")) return true; // Unique local (RFC 4193)
+  if (cleanIp.toLowerCase().startsWith("ff00:") || cleanIp.toLowerCase().startsWith("ff02:")) return true; // IPv6 Multicast
+  if (cleanIp.toLowerCase().startsWith("2001:db8:")) return true; // Documentation prefix
 
-  // If not IPv4, reject by default for safe scanning
+  // If valid IPv6 and passed private checks, it is an allowed public IPv6 address
+  if (net.isIPv6(cleanIp)) {
+    return false;
+  }
+
+  // If not IPv4 either, reject unrecognized format
   if (!net.isIPv4(cleanIp)) {
     return true;
   }

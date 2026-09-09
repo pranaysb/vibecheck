@@ -3,8 +3,10 @@ import { validateTargetDestination } from '@/lib/security/ssrf';
 
 export async function POST(req: Request) {
   try {
-    const { url } = await req.json();
-    if (!url) return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    const body = await req.json();
+    const rawUrl = body.url || body.targetUrl;
+    if (!rawUrl) return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    const url = rawUrl;
 
     // 1. Initial Destination Validation (DNS A/AAAA, numeric IP, and subnet checks)
     const validation = await validateTargetDestination(url);
