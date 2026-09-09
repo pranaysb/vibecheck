@@ -308,8 +308,8 @@ export default function NewProjectPage() {
             </FormField>
 
             <FormField
-              label="Source Code Repository (Optional)"
-              helperText="Public repository inspected by reviewers for static code review."
+              label="Source Code Repository (Recommended for Deep Audit)"
+              helperText="Enables AST static analysis, route discovery, and secret leak detection."
             >
               <div className="relative">
                 <GithubIcon className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-2.5" />
@@ -322,6 +322,18 @@ export default function NewProjectPage() {
                 />
               </div>
             </FormField>
+
+            <div className="p-3.5 rounded-lg border border-neutral-200 bg-neutral-50 text-xs text-neutral-600 space-y-1.5">
+              <div className="font-semibold text-neutral-900 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Deep Audit Capability</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Supplying both a live target URL and a repository unlocks the complete verification pipeline:
+                <strong className="text-neutral-900"> Live URL ➔ AST Route Discovery ➔ Auth Matrix ➔ Anti-SSRF Sandbox ➔ Hard Security Gate</strong>.
+                Live URL alone runs instant HTTP header and TLS hygiene checks.
+              </p>
+            </div>
           </div>
         )}
 

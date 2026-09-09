@@ -227,10 +227,13 @@ export default async function ExpertReportPage({ params }: ReportPageProps) {
           <span className="font-bold text-slate-800">Verification Hash:</span>{" "}
           <span>{report.verificationHash || "0x4f89a712bc9d6e810432f7a909ce2a14"}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+        <Link
+          href="/verify/campusconnect"
+          className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-bold underline underline-offset-2 transition-colors"
+        >
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>Cryptographically Signed</span>
-        </div>
+          <span>Verify Ed25519 Signature & Payload Attestation →</span>
+        </Link>
       </div>
     </div>
   );

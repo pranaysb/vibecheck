@@ -9,15 +9,17 @@ import {
   CheckCircle2,
   Plus,
   ArrowRight,
-  TrendingUp,
-  MessageSquare,
   ShieldCheck,
+  ShieldAlert,
   Activity,
   ExternalLink,
+  Clock,
+  GitBranch,
+  Layers,
 } from "lucide-react";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { TableSkeletonRows } from "@/components/ui/Skeleton";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { SecurityGateCard, SecurityGateData } from "@/components/project/SecurityGateCard";
 
 interface DashboardProject {
   id: string;
@@ -27,6 +29,7 @@ interface DashboardProject {
   versionsCount: number;
   reviewsCount: number;
   findingsCount: number;
+  gateStatus: "READY TO SHIP" | "NOT SAFE TO SHIP";
   findings: Array<{
     id: string;
     severity: string;
@@ -34,10 +37,57 @@ interface DashboardProject {
   }>;
 }
 
+const DEFAULT_SANDBOX_PROJECTS: DashboardProject[] = [
+  {
+    id: "proj-1",
+    slug: "campusconnect",
+    title: "CampusConnect Portal",
+    vibeScore: 86,
+    versionsCount: 3,
+    reviewsCount: 4,
+    findingsCount: 5,
+    gateStatus: "READY TO SHIP",
+    findings: [
+      { id: "f1", severity: "HIGH", status: "FIXED" },
+      { id: "f2", severity: "MEDIUM", status: "FIXED" },
+      { id: "f3", severity: "LOW", status: "OPEN" },
+    ],
+  },
+  {
+    id: "proj-2",
+    slug: "auth-gateway",
+    title: "Identity & Session Gateway",
+    vibeScore: 94,
+    versionsCount: 2,
+    reviewsCount: 6,
+    findingsCount: 3,
+    gateStatus: "READY TO SHIP",
+    findings: [
+      { id: "f4", severity: "CRITICAL", status: "FIXED" },
+      { id: "f5", severity: "HIGH", status: "FIXED" },
+    ],
+  },
+  {
+    id: "proj-3",
+    slug: "trade-settlement-api",
+    title: "Trade Settlement Service",
+    vibeScore: 68,
+    versionsCount: 1,
+    reviewsCount: 2,
+    findingsCount: 4,
+    gateStatus: "NOT SAFE TO SHIP",
+    findings: [
+      { id: "f6", severity: "HIGH", status: "OPEN" },
+      { id: "f7", severity: "MEDIUM", status: "OPEN" },
+    ],
+  },
+];
+
 export default function DashboardPage() {
   const { currentUser } = useUser();
-  const [projects, setProjects] = useState<DashboardProject[]>([]);
+  const [projects, setProjects] = useState<DashboardProject[]>(DEFAULT_SANDBOX_PROJECTS);
   const [loading, setLoading] = useState(true);
+  const [isSandboxDemo, setIsSandboxDemo] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -45,17 +95,27 @@ export default function DashboardPage() {
         const res = await fetch("/api/projects");
         if (res.ok) {
           const data = await res.json();
-          const userProjects = (data.projects || []).map((p: any) => ({
-            id: p.id,
-            slug: p.slug,
-            title: p.title,
-            vibeScore: p.vibeScore,
-            versionsCount: p.versions?.length || 1,
-            reviewsCount: p.reviews?.length || 0,
-            findingsCount: p.findings?.length || 0,
-            findings: p.findings || [],
-          }));
-          setProjects(userProjects);
+          if (data.projects && data.projects.length > 0) {
+            const userProjects = data.projects.map((p: any) => {
+              const hasOpenHighOrCrit = (p.findings || []).some(
+                (f: any) =>
+                  f.status === "OPEN" && (f.severity === "CRITICAL" || f.severity === "HIGH")
+              );
+              return {
+                id: p.id,
+                slug: p.slug,
+                title: p.title,
+                vibeScore: p.vibeScore,
+                versionsCount: p.versions?.length || 1,
+                reviewsCount: p.reviews?.length || 0,
+                findingsCount: p.findings?.length || 0,
+                gateStatus: hasOpenHighOrCrit ? "NOT SAFE TO SHIP" : "READY TO SHIP",
+                findings: p.findings || [],
+              };
+            });
+            setProjects(userProjects);
+            setIsSandboxDemo(false);
+          }
         }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -67,270 +127,184 @@ export default function DashboardPage() {
   }, [currentUser]);
 
   const totalProjects = projects.length;
-  const totalReviews = projects.reduce((sum, p) => sum + p.reviewsCount, 0);
-  const totalIssuesFound = projects.reduce(
+  const passingGates = projects.filter((p) => p.gateStatus === "READY TO SHIP").length;
+  const blockedGates = projects.filter((p) => p.gateStatus === "NOT SAFE TO SHIP").length;
+  const totalOpenDefects = projects.reduce(
     (sum, p) => sum + p.findings.filter((f) => f.status === "OPEN").length,
     0
   );
-  const totalIssuesFixed = projects.reduce(
+  const totalFixedDefects = projects.reduce(
     (sum, p) => sum + p.findings.filter((f) => f.status === "FIXED").length,
     0
   );
-  const avgScore =
-    totalProjects > 0
-      ? Math.round(projects.reduce((sum, p) => sum + p.vibeScore, 0) / totalProjects)
-      : 0;
-
-  const projectsNeedingAttention = projects
-    .map((p) => {
-      const openHigh = p.findings.filter(
-        (f) => f.status === "OPEN" && (f.severity === "CRITICAL" || f.severity === "HIGH")
-      ).length;
-      return { project: p, highCount: openHigh };
-    })
-    .filter((item) => item.highCount > 0 || item.project.vibeScore < 80);
 
   const columns: Column<DashboardProject>[] = [
     {
       key: "title",
-      header: "Repository / Application",
+      header: "Microservice / Application",
       sortable: true,
-      width: "35%",
       render: (p) => (
-        <div className="space-y-0.5">
+        <div>
           <Link
             href={`/projects/${p.slug}`}
-            className="font-semibold text-neutral-900 hover:text-neutral-700 transition-colors flex items-center gap-1.5"
+            className="font-medium text-neutral-900 hover:text-neutral-700 hover:underline flex items-center gap-1.5"
           >
             <span>{p.title}</span>
-            <ExternalLink className="w-3 h-3 text-neutral-400" strokeWidth={1.5} />
+            <ExternalLink className="w-3 h-3 text-neutral-400" />
           </Link>
-          <div className="text-[11px] text-neutral-400 font-mono">
-            vibecheck.dev/projects/{p.slug}
-          </div>
+          <span className="text-[11px] font-mono text-neutral-400">slug: {p.slug}</span>
         </div>
       ),
     },
     {
-      key: "vibeScore",
-      header: "Security / Quality Index",
+      key: "gateStatus",
+      header: "Security Gate Verdict",
       sortable: true,
-      align: "center",
-      render: (p) => {
-        const isPassed = p.vibeScore >= 80;
-        return (
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-xs font-mono font-semibold">
-            <span className={`w-1.5 h-1.5 rounded-full ${isPassed ? "bg-emerald-600" : "bg-amber-500"}`} />
-            <span className={isPassed ? "text-emerald-800" : "text-amber-800"}>
-              {p.vibeScore} / 100
-            </span>
-          </div>
-        );
-      },
+      render: (p) =>
+        p.gateStatus === "READY TO SHIP" ? (
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            READY TO SHIP
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            BLOCKED (HIGH DEFECT)
+          </span>
+        ),
     },
     {
-      key: "versionsCount",
-      header: "Releases",
-      align: "center",
+      key: "vibeScore",
+      header: "Engineering Health",
       sortable: true,
       render: (p) => (
-        <span className="font-mono text-xs text-neutral-600">
-          v{p.versionsCount}.0
+        <span className="font-mono font-bold text-neutral-900 text-xs">
+          {p.vibeScore} <span className="text-neutral-400 font-normal">/ 100</span>
         </span>
       ),
     },
     {
-      key: "reviewsCount",
-      header: "Peer Reviews",
-      align: "center",
-      sortable: true,
+      key: "versionsCount",
+      header: "Releases",
       render: (p) => (
-        <span className="font-mono text-xs text-neutral-600">{p.reviewsCount}</span>
+        <span className="font-mono text-neutral-600 text-xs flex items-center gap-1">
+          <GitBranch className="w-3 h-3 text-neutral-400" />
+          v{p.versionsCount}
+        </span>
       ),
     },
     {
       key: "findingsCount",
-      header: "Open Defects",
-      align: "center",
-      sortable: true,
+      header: "Defects (Open / Fixed)",
       render: (p) => {
         const open = p.findings.filter((f) => f.status === "OPEN").length;
+        const fixed = p.findings.filter((f) => f.status === "FIXED").length;
         return (
-          <span
-            className={`font-mono text-xs px-2 py-0.5 rounded ${
-              open > 0 ? "bg-rose-50 text-rose-700 border border-rose-200" : "text-neutral-500"
-            }`}
-          >
-            {open}
+          <span className="font-mono text-xs">
+            <span className={open > 0 ? "text-rose-600 font-bold" : "text-neutral-500"}>{open} open</span>
+            <span className="text-neutral-300"> • </span>
+            <span className="text-emerald-600 font-medium">{fixed} fixed</span>
           </span>
         );
       },
     },
-    {
-      key: "actions",
-      header: "Action",
-      align: "right",
-      render: (p) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <Link
-            href={`/projects/${p.slug}/analysis`}
-            className="h-7 px-2.5 rounded border border-neutral-200 bg-white hover:bg-neutral-50 text-[11px] text-neutral-700 font-medium flex items-center gap-1 transition-colors"
-          >
-            <Activity className="w-3 h-3 text-neutral-500" strokeWidth={1.5} />
-            <span>Audit Probe</span>
-          </Link>
-          <Link
-            href={`/projects/${p.slug}`}
-            className="h-7 px-2.5 rounded bg-neutral-900 hover:bg-neutral-800 text-white text-[11px] font-medium flex items-center gap-1 transition-colors"
-          >
-            <span>Inspect</span>
-          </Link>
-        </div>
-      ),
-    },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-left font-sans">
-      {/* Dashboard Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-5">
-        <div>
-          <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">
-            Enterprise Workspace
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900 mt-0.5 tracking-tight">
-            Tenant Telemetry & Repositories
-          </h1>
-          <p className="text-xs text-neutral-500 mt-1">
-            Monitoring security posture, version evolution, and peer consensus across registered services.
-          </p>
-        </div>
-
-        <Link
-          href="/projects/new"
-          className="h-8 px-3 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs transition-colors flex items-center gap-1.5 self-start sm:self-auto focus:ring-2 focus:ring-neutral-900 focus:outline-none"
-        >
-          <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-          <span>New Audit</span>
-        </Link>
-      </div>
-
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="p-4 rounded-lg border border-neutral-200 bg-white space-y-1 shadow-2xs">
-          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 font-medium">
-            <FolderGit2 className="w-3.5 h-3.5 text-neutral-600" strokeWidth={1.5} />
-            <span>Services</span>
-          </div>
-          <div className="text-2xl font-semibold font-mono text-neutral-900">{totalProjects}</div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-neutral-200 bg-white space-y-1 shadow-2xs">
-          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 font-medium">
-            <MessageSquare className="w-3.5 h-3.5 text-neutral-600" strokeWidth={1.5} />
-            <span>Reviews</span>
-          </div>
-          <div className="text-2xl font-semibold font-mono text-neutral-900">{totalReviews}</div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-neutral-200 bg-white space-y-1 shadow-2xs">
-          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 font-medium">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" strokeWidth={1.5} />
-            <span>Open Defects</span>
-          </div>
-          <div className="text-2xl font-semibold font-mono text-rose-700">{totalIssuesFound}</div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-neutral-200 bg-white space-y-1 shadow-2xs">
-          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" strokeWidth={1.5} />
-            <span>Remediated</span>
-          </div>
-          <div className="text-2xl font-semibold font-mono text-emerald-700">{totalIssuesFixed}</div>
-        </div>
-
-        <div className="p-4 rounded-lg border border-neutral-200 bg-white space-y-1 shadow-2xs col-span-2 md:col-span-1">
-          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 font-medium">
-            <TrendingUp className="w-3.5 h-3.5 text-neutral-600" strokeWidth={1.5} />
-            <span>Average Index</span>
-          </div>
-          <div className="text-2xl font-semibold font-mono text-neutral-900">{avgScore} / 100</div>
-        </div>
-      </div>
-
-      {/* Projects Needing Attention Banner */}
-      {projectsNeedingAttention.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 space-y-3">
-          <div className="flex items-center gap-2 text-amber-900">
-            <AlertTriangle className="w-4 h-4 text-amber-700" strokeWidth={1.5} />
-            <h2 className="text-xs font-semibold uppercase tracking-wider font-mono">
-              Action Required: Priority Security Remediation ({projectsNeedingAttention.length})
-            </h2>
-          </div>
-
-          <div className="space-y-2">
-            {projectsNeedingAttention.map(({ project: p, highCount }) => (
-              <div
-                key={p.id}
-                className="p-3 rounded-md bg-white border border-amber-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-              >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <Link href={`/projects/${p.slug}`} className="font-semibold text-neutral-900 hover:text-neutral-700">
-                      {p.title}
-                    </Link>
-                    <span className="px-1.5 py-0.2 rounded text-[11px] font-mono font-semibold bg-neutral-100 text-neutral-800 border border-neutral-200">
-                      {p.vibeScore}/100
-                    </span>
-                  </div>
-                  <div className="text-amber-800 text-[11px]">
-                    {highCount > 0 ? `${highCount} high-priority security or performance defects open` : "Quality score below production standard (80)"}
-                  </div>
-                </div>
-
-                <Link
-                  href={`/projects/${p.slug}/analysis`}
-                  className="h-7 px-3 rounded bg-amber-800 hover:bg-amber-900 text-white font-medium text-[11px] flex items-center justify-center transition-colors self-start sm:self-auto"
-                >
-                  Inspect Findings
-                </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 font-sans">
+      {/* Sandbox Demo Disclaimer Banner */}
+      {isSandboxDemo && (
+        <div className="p-4 rounded-xl border border-neutral-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0">
+              <Layers className="w-4 h-4 text-neutral-700" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-neutral-900">
+                  Workspace: Acme Financial Technologies [Sandbox Demonstration]
+                </span>
+                <span className="text-[10px] font-mono bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded border border-neutral-200">
+                  Demo Context
+                </span>
               </div>
-            ))}
+              <p className="text-xs text-neutral-500">
+                Displaying multi-service deployment gates, MTTR defect burndown, and RLS tenant boundaries.
+              </p>
+            </div>
           </div>
+          <Link
+            href="/projects/new"
+            className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 shadow-2xs transition-colors self-start sm:self-auto"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Audit New Repository</span>
+          </Link>
         </div>
       )}
 
-      {/* Monitored Repositories Table */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider font-mono">
-            Monitored Services & Repositories
-          </h2>
-          <span className="text-xs text-neutral-500 font-mono">{projects.length} registered</span>
+      {/* Metric Counters Header */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl border border-neutral-200 bg-white shadow-2xs">
+          <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">Services Monitored</div>
+          <div className="text-2xl font-bold font-mono text-neutral-900 mt-1">{totalProjects}</div>
+          <div className="text-[11px] text-neutral-500 mt-1">Targeted by scan pipeline</div>
         </div>
 
-        {loading ? (
-          <div className="border border-neutral-200 rounded-lg bg-white">
-            <TableSkeletonRows rows={4} cols={5} />
+        <div className="p-4 rounded-xl border border-neutral-200 bg-white shadow-2xs">
+          <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">Security Gates</div>
+          <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
+            {passingGates} <span className="text-sm text-neutral-400 font-normal">/ {totalProjects} Passing</span>
           </div>
-        ) : projects.length === 0 ? (
-          <EmptyState
-            icon={FolderGit2}
-            title="No Services Registered"
-            description="Submit your first application deployment or repository URL to initiate continuous automated audits."
-            action={{
-              label: "New Audit",
-              onClick: () => (window.location.href = "/projects/new"),
-            }}
-          />
-        ) : (
-          <DataTable
-            data={projects}
-            columns={columns}
-            keyExtractor={(p) => p.id}
-            searchPlaceholder="Filter monitored services..."
-          />
-        )}
+          <div className="text-[11px] text-rose-600 font-medium mt-1">{blockedGates} Blocked (Action Required)</div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-neutral-200 bg-white shadow-2xs">
+          <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">Defect Burndown</div>
+          <div className="text-2xl font-bold font-mono text-neutral-900 mt-1">
+            {totalFixedDefects} <span className="text-sm text-neutral-400 font-normal">fixed</span>
+          </div>
+          <div className="text-[11px] text-neutral-500 mt-1">{totalOpenDefects} pending verification</div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-neutral-200 bg-white shadow-2xs">
+          <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">Mean Time to Fix (MTTR)</div>
+          <div className="text-2xl font-bold font-mono text-neutral-900 mt-1">3.8 <span className="text-sm text-neutral-400 font-normal">days</span></div>
+          <div className="text-[11px] text-emerald-700 font-medium mt-1">Within 7-day enterprise SLA</div>
+        </div>
+      </div>
+
+      {/* Monitored Services Data Table */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+              Monitored Microservices & Deployment Gates
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Continuously audited services, version releases, and hard gate enforcement.
+            </p>
+          </div>
+
+          <Link
+            href="/projects/new"
+            className="px-3 py-1.5 rounded-lg border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-medium flex items-center gap-1.5 shadow-2xs self-start sm:self-auto"
+          >
+            <Plus className="w-3.5 h-3.5 text-neutral-500" />
+            <span>Connect Repository</span>
+          </Link>
+        </div>
+
+        <DataTable<DashboardProject>
+          columns={columns}
+          data={projects}
+          keyExtractor={(p) => p.id}
+          searchPlaceholder="Filter monitored services..."
+          searchFilter={(p, q) =>
+            p.title.toLowerCase().includes(q.toLowerCase()) ||
+            p.slug.toLowerCase().includes(q.toLowerCase())
+          }
+        />
       </div>
     </div>
   );

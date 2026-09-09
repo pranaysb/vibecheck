@@ -118,18 +118,28 @@ export default async function HomePage() {
       <section className="relative pt-12 sm:pt-20 pb-12 overflow-hidden bg-white border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-8">
           {/* Eyebrow badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 text-neutral-800 text-xs font-mono font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />
-            <span>Continuous Code Quality & Security Audit Suite</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 text-neutral-800 text-xs font-mono font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />
+              <span>Continuous Security & Quality Verification</span>
+            </div>
+            <Link
+              href="/security/self-audit"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-mono font-medium hover:bg-emerald-100 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Read VibeCheck's Own Self-Audit Report</span>
+              <ArrowRight className="w-3 h-3 text-emerald-700" />
+            </Link>
           </div>
 
           {/* Master Headline */}
           <div className="space-y-3 max-w-4xl mx-auto">
             <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-neutral-900 leading-[1.15]">
-              Continuous code quality, architectural validation, and security compliance.
+              Continuous security and engineering quality verification for AI-generated applications.
             </h1>
             <p className="max-w-2xl mx-auto text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal pt-1">
-              Automated SSRF-isolated remote probes, OWASP security header validation, and verified staff architect reviews for engineering teams.
+              Automated anti-SSRF remote probes, AST static analysis, hard security gates, and reproducible cryptographic evidence. Delineate remote HTTP hygiene from deep repository authorization audits.
             </p>
           </div>
 

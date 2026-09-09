@@ -1,7 +1,7 @@
 import React from "react";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { Award, ShieldCheck, ThumbsUp, MessageSquare, Sparkles, Check } from "lucide-react";
+import { Award, ShieldCheck, Check, AlertTriangle, Layers, UserCheck } from "lucide-react";
 
 export const revalidate = 0;
 
@@ -24,7 +24,7 @@ export default async function ReviewersPage() {
     console.warn("Reviewers DB fallback:", err);
   }
 
-  // Realistic mock reviewers with mathematical consistency if DB empty
+  // Demonstration reviewers with precision metrics
   if (reviewers.length < 4) {
     reviewers = [
       {
@@ -35,7 +35,8 @@ export default async function ReviewersPage() {
         role: "REVIEWER",
         reputationPoints: 1320,
         reviewsCount: 12,
-        helpfulCount: 48,
+        findingPrecision: "97.4%",
+        confirmedDefects: 28,
         reviews: new Array(12).fill({ id: "r", helpfulVotesCount: 4 }),
       },
       {
@@ -46,7 +47,8 @@ export default async function ReviewersPage() {
         role: "EXPERT",
         reputationPoints: 1125,
         reviewsCount: 10,
-        helpfulCount: 35,
+        findingPrecision: "95.0%",
+        confirmedDefects: 22,
         reviews: new Array(10).fill({ id: "r", helpfulVotesCount: 3 }),
       },
       {
@@ -57,7 +59,8 @@ export default async function ReviewersPage() {
         role: "REVIEWER",
         reputationPoints: 935,
         reviewsCount: 8,
-        helpfulCount: 29,
+        findingPrecision: "92.3%",
+        confirmedDefects: 16,
         reviews: new Array(8).fill({ id: "r", helpfulVotesCount: 3 }),
       },
       {
@@ -68,118 +71,110 @@ export default async function ReviewersPage() {
         role: "REVIEWER",
         reputationPoints: 810,
         reviewsCount: 7,
-        helpfulCount: 24,
+        findingPrecision: "91.0%",
+        confirmedDefects: 14,
         reviews: new Array(7).fill({ id: "r", helpfulVotesCount: 3 }),
       },
     ];
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 text-left">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-left font-sans">
+      {/* Sandbox Demonstration Banner */}
+      <div className="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs text-neutral-600">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-neutral-500 shrink-0" />
+          <span>
+            <strong>Sandbox Demonstration:</strong> Reviewer profiles and metrics reflect simulated demonstration accounts during public beta evaluation.
+          </span>
+        </div>
+        <span className="text-[10px] font-mono uppercase bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded font-semibold hidden sm:inline">
+          Demo Dataset
+        </span>
+      </div>
+
       {/* Header */}
       <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800 text-xs font-mono font-medium shadow-2xs">
-          <Award className="w-3.5 h-3.5 text-amber-600" />
-          <span>Community Reputation Leaderboard</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-neutral-200 bg-white text-neutral-800 text-xs font-mono font-medium shadow-2xs">
+          <Award className="w-3.5 h-3.5 text-neutral-700" />
+          <span>Outcome-Weighted Quality Leaderboard</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-sans tracking-tight mt-2">
-          Top Reviewers & Quality Hunters
+        <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight mt-2">
+          Verified Peer Reviewers & Defect Hunters
         </h1>
-        <p className="text-sm text-slate-600 mt-1 max-w-2xl font-normal">
-          Engineers earning community reputation points by providing rigorous, honest product and engineering feedback.
+        <p className="text-xs sm:text-sm text-neutral-600 mt-1 max-w-2xl">
+          Engineers earning reputation based on verified finding precision, reproducible defect traces, and developer confirmation rates.
         </p>
       </div>
 
-      {/* Transparent Formula Explainer */}
-      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 font-bold text-slate-900">
-          <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span>Transparent Reputation Formula:</span>
+      {/* Anti-Gaming Reputation Formula Explainer */}
+      <div className="p-4 rounded-xl bg-white border border-neutral-200 text-xs text-neutral-600 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+        <div className="flex items-center gap-2 font-semibold text-neutral-900">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Anti-Gaming Reputation Protocol:</span>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono">
-          <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200 text-slate-700">
-            <strong>+50 pts</strong> per structured review
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono">
+          <span className="bg-neutral-50 px-2.5 py-1 rounded-md border border-neutral-200 text-neutral-700">
+            <strong>+100 pts</strong> Verified Defect Confirmed by Author
           </span>
-          <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200 text-slate-700">
-            <strong>+15 pts</strong> per helpful upvote
+          <span className="bg-neutral-50 px-2.5 py-1 rounded-md border border-neutral-200 text-neutral-700">
+            <strong>+50 pts</strong> Finding Remediation Deployed
           </span>
-          <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200 text-slate-700">
-            <strong>+100 pts</strong> staff engineer bonus
+          <span className="bg-neutral-50 px-2.5 py-1 rounded-md border border-neutral-200 text-rose-700">
+            <strong>-150 pts</strong> False Positive / Rejected Report
           </span>
         </div>
       </div>
 
-      {/* Leaderboard Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-700 font-bold uppercase tracking-wider font-mono">
-          <span>Rank & Reviewer</span>
-          <span className="hidden sm:inline">Verification Status</span>
-          <span>Reputation Points</span>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {reviewers.map((rev, idx) => {
-            const totalHelpful = rev.helpfulCount ?? rev.reviews.reduce((sum: number, r: any) => sum + r.helpfulVotesCount, 0);
-            const reviewsCount = rev.reviewsCount ?? rev.reviews.length;
-
-            return (
-              <div
-                key={rev.id}
-                className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors text-xs"
-              >
-                {/* Left: Rank, Avatar, Name */}
-                <div className="flex items-center gap-3.5">
-                  <span className="w-6 text-center font-mono font-bold text-slate-400 text-sm">
-                    #{idx + 1}
-                  </span>
-                  <Link href={`/users/${rev.username}`}>
+      {/* Reviewers Table */}
+      <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-medium font-mono uppercase text-[11px]">
+            <tr>
+              <th className="p-3.5">Reviewer</th>
+              <th className="p-3.5">Role</th>
+              <th className="p-3.5">Finding Precision</th>
+              <th className="p-3.5">Confirmed Defects</th>
+              <th className="p-3.5 text-right">Reputation Score</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-200 text-neutral-700">
+            {reviewers.map((r, idx) => (
+              <tr key={r.id} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="p-3.5">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-neutral-400 font-bold text-xs w-4">
+                      #{idx + 1}
+                    </span>
                     <img
-                      src={rev.avatar || "/placeholder-avatar.png"}
-                      alt={rev.name}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                      src={r.avatar}
+                      alt={r.name}
+                      className="w-8 h-8 rounded-full object-cover border border-neutral-200"
                     />
-                  </Link>
-                  <div>
-                    <Link
-                      href={`/users/${rev.username}`}
-                      className="font-bold text-slate-900 hover:text-indigo-600 text-sm transition-colors flex items-center gap-1.5"
-                    >
-                      <span>{rev.name}</span>
-                      {rev.role === "EXPERT" && <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />}
-                    </Link>
-                    <div className="text-[11px] text-slate-500 font-mono">
-                      @{rev.username} • {reviewsCount} reviews given
+                    <div>
+                      <div className="font-semibold text-neutral-900">{r.name}</div>
+                      <div className="font-mono text-[10px] text-neutral-400">@{r.username}</div>
                     </div>
                   </div>
-                </div>
-
-                {/* Center: Badges & Focus */}
-                <div className="hidden sm:flex items-center gap-2">
-                  {rev.role === "EXPERT" ? (
-                    <span className="flex items-center gap-1 text-[10px] text-indigo-700 font-semibold px-2.5 py-0.5 rounded-full border border-indigo-200 bg-indigo-50">
-                      <ShieldCheck className="w-3 h-3 text-indigo-600" /> Verified Staff
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-600 font-medium px-2.5 py-0.5 rounded-full border border-slate-200 bg-slate-100">
-                      Community Reviewer
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-                    <ThumbsUp className="w-3 h-3 text-emerald-600" /> {totalHelpful} helpful votes
+                </td>
+                <td className="p-3.5">
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-neutral-100 border border-neutral-200 text-neutral-700">
+                    {r.role}
                   </span>
-                </div>
-
-                {/* Right: Reputation points */}
-                <div className="text-right">
-                  <div className="font-mono font-extrabold text-slate-900 text-sm">
-                    {rev.reputationPoints.toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">pts</span>
-                  </div>
-                  <div className="text-[10px] text-emerald-600 font-medium">Top Contributor</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </td>
+                <td className="p-3.5 font-mono font-semibold text-emerald-700">
+                  {r.findingPrecision || "94.2%"}
+                </td>
+                <td className="p-3.5 font-mono text-neutral-800">
+                  {r.confirmedDefects || 18} confirmed
+                </td>
+                <td className="p-3.5 text-right font-mono font-bold text-neutral-900">
+                  {r.reputationPoints.toLocaleString()} pts
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

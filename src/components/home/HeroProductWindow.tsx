@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   Zap,
   Layers,
   Check,
+  ArrowRight,
 } from "lucide-react";
 
 export function HeroProductWindow() {
@@ -90,10 +92,16 @@ export function HeroProductWindow() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-right">
+                <div className="text-[10px] uppercase font-mono text-emerald-800 font-semibold">Security Gate</div>
+                <div className="text-xs font-mono font-bold text-emerald-700 flex items-center gap-1 justify-end">
+                  <Check className="w-3 h-3 text-emerald-600" /> READY TO SHIP
+                </div>
+              </div>
               <div className="text-right">
-                <div className="text-[10px] uppercase font-mono text-slate-400 font-semibold">Overall Vibe Score</div>
-                <div className="text-3xl font-extrabold font-mono text-emerald-600">86 <span className="text-xs text-slate-400 font-normal">/ 100</span></div>
+                <div className="text-[10px] uppercase font-mono text-slate-500 font-semibold">Engineering Health</div>
+                <div className="text-2xl font-extrabold font-mono text-slate-900">86 <span className="text-xs text-slate-400 font-normal">/ 100</span></div>
               </div>
             </div>
           </div>
@@ -179,8 +187,8 @@ export function HeroProductWindow() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm text-slate-900">Sarah Jenkins</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold">
-                    Staff Engineer @ ex-Stripe
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 border border-neutral-200 text-neutral-700 font-semibold">
+                    Staff Reviewer (Sandbox Demo) • Precision: 98.4%
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-mono">Peer review on /api/checkout/session</div>
@@ -271,11 +279,17 @@ export function HeroProductWindow() {
               <span className="font-semibold text-slate-900">Full API + DB</span>
               <span className="text-[10px] text-slate-500 block">RLS policies verified</span>
             </div>
-            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-              <span className="text-[10px] font-mono text-slate-400 block uppercase">Badge Verification</span>
-              <span className="font-semibold text-slate-900">SHA-256 Valid</span>
-              <span className="text-[10px] text-indigo-600 block font-mono">0x4f89...e2a1</span>
-            </div>
+            <Link
+              href="/verify/campusconnect"
+              className="p-3 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 transition-colors block"
+            >
+              <span className="text-[10px] font-mono text-neutral-500 block uppercase">Cryptographic Attestation</span>
+              <span className="font-semibold text-neutral-900 flex items-center justify-between">
+                <span>Ed25519 Valid</span>
+                <ArrowRight className="w-3 h-3 text-neutral-400" />
+              </span>
+              <span className="text-[10px] text-emerald-700 block font-mono">VC-2026-9042</span>
+            </Link>
           </div>
         </div>
       )}
