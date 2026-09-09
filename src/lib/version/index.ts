@@ -3,20 +3,27 @@ export const VIBECHECK_CANONICAL_VERSION = {
   rulesetVersion: "owasp-asvs-l2-2026.09",
   scoringVersion: "engineering-health-v3",
   ssrfPolicyVersion: "outbound-destination-v2",
-  // In Vercel deployments, process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA provides the commit.
-  // Fallback resolves to the canonical release commit SHA.
-  releaseCommitSha:
-    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    "94fe2df",
-  auditId: "VC-SELF-CANONICAL",
-  lastAuditDate: "September 9, 2026",
 };
 
+/**
+ * Returns the verified deployment commit SHA.
+ * If the deployment identity cannot be resolved from the runtime environment,
+ * returns "UNKNOWN_COMMIT" rather than silently substituting a historical commit.
+ */
 export function getDeploymentCommitSha(): string {
   const sha =
     process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    VIBECHECK_CANONICAL_VERSION.releaseCommitSha;
-  return sha.slice(0, 7);
+    process.env.VERCEL_GIT_COMMIT_SHA;
+
+  if (sha && sha.length >= 7) {
+    return sha.slice(0, 7);
+  }
+
+  // If in a non-Vercel environment without commit info, fail closed
+  return "UNKNOWN_COMMIT";
+}
+
+export function isDeploymentIdentityVerified(): boolean {
+  const sha = getDeploymentCommitSha();
+  return sha !== "UNKNOWN_COMMIT" && /^[0-9a-f]{7,40}$/i.test(sha);
 }
