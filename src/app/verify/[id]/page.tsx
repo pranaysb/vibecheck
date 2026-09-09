@@ -88,7 +88,9 @@ export default function VerifyAuditPage() {
   const params = useParams();
   const rawId = (params?.id as string) || "VC-SELF-1E4E476";
 
-  const [attestation, setAttestation] = useState<AttestationData | null>(null);
+  const [attestation, setAttestation] = useState<AttestationData>(
+    SAMPLE_ATTESTATIONS[rawId] || SAMPLE_ATTESTATIONS["VC-SELF-1E4E476"]
+  );
   const [isVerifying, setIsVerifying] = useState(false);
   const [runningAttackSuite, setRunningAttackSuite] = useState(false);
   const [showAttackSuite, setShowAttackSuite] = useState(true);
