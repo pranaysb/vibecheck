@@ -258,9 +258,15 @@ export function RequestReviewModal({
                 {formatInr(currentPkg?.price || 2499)}
               </div>
             </div>
-            <div className="text-[11px] text-slate-500 text-right">
-              ✓ Turnaround: 48-72 hours<br />
-              ✓ Engineering Review Report included
+            <div className="text-[11px] text-slate-500 text-right space-y-0.5">
+              <div className="flex items-center justify-end gap-1">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Turnaround: 48-72 hours</span>
+              </div>
+              <div className="flex items-center justify-end gap-1">
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Engineering Review Report included</span>
+              </div>
             </div>
           </div>
 
@@ -275,9 +281,9 @@ export function RequestReviewModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              className="px-4 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-2xs"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5" />
               <span>{isSubmitting ? "Submitting..." : "Confirm & Request Review"}</span>
             </button>
           </div>

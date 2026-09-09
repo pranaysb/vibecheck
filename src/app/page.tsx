@@ -13,6 +13,9 @@ import {
   Cpu,
   FileCode2,
   Eye,
+  AlertTriangle,
+  Server,
+  Activity,
 } from "lucide-react";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { HeroProductWindow } from "@/components/home/HeroProductWindow";
@@ -110,23 +113,23 @@ export default async function HomePage() {
   });
 
   return (
-    <div className="space-y-32 pb-24 bg-[#f8fafc]">
+    <div className="space-y-24 pb-24 bg-[#f8fafc] font-sans">
       {/* 1. HERO SECTION */}
-      <section className="relative pt-16 sm:pt-24 pb-12 overflow-hidden bg-gradient-to-b from-white via-[#f8fafc] to-[#f8fafc] border-b border-slate-200/80">
+      <section className="relative pt-12 sm:pt-20 pb-12 overflow-hidden bg-white border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-8">
           {/* Eyebrow badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-indigo-200 bg-indigo-50/80 text-indigo-700 text-xs font-semibold shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-            <span>The Continuous Verification Platform for AI-Built Software</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 text-neutral-800 text-xs font-mono font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />
+            <span>Continuous Code Quality & Security Audit Suite</span>
           </div>
 
           {/* Master Headline */}
           <div className="space-y-3 max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 font-sans leading-[1.1]">
-              Ship AI-assisted software with the confidence of a staff engineer.
+            <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-neutral-900 leading-[1.15]">
+              Continuous code quality, architectural validation, and security compliance.
             </h1>
-            <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-600 leading-relaxed font-normal pt-2">
-              Automated security & accessibility scans, structured peer developer feedback, and verified staff engineer sign-off—built specifically for modern AI codebases.
+            <p className="max-w-2xl mx-auto text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal pt-1">
+              Automated SSRF-isolated remote probes, OWASP security header validation, and verified staff architect reviews for engineering teams.
             </p>
           </div>
 
@@ -136,7 +139,7 @@ export default async function HomePage() {
           </div>
 
           {/* Interactive macOS Product Window Preview */}
-          <div className="pt-8">
+          <div className="pt-4">
             <HeroProductWindow />
           </div>
         </div>
@@ -151,55 +154,67 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Automated Engine</span>
+            <div className="inline-flex items-center gap-2 text-xs font-mono font-medium uppercase tracking-wider text-neutral-700 bg-neutral-100 px-2.5 py-1 rounded-md border border-neutral-200">
+              <Zap className="w-3.5 h-3.5 text-neutral-700" strokeWidth={1.5} />
+              <span>Automated Audit Engine</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Catch authorization holes and security omissions before your users do.
+            <h2 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+              Mitigate authorization gaps and security defects prior to release.
             </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              When AI generates fullstack applications in minutes, subtle vulnerabilities like missing Row-Level Security, open CORS policies, and unprotected API endpoints are routinely introduced. Our headless analysis crawler inspects your live deployment across 35+ automated security and accessibility vectors.
+            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              When modern code generation velocities increase, subtle vulnerabilities including missing Content-Security-Policy headers, unauthenticated endpoints, and missing frame protections are easily overlooked. Our automated sandbox crawler inspects live deployments across standardized security vectors.
             </p>
 
-            <ul className="space-y-3 text-xs text-slate-700">
+            <ul className="space-y-2.5 text-xs text-neutral-700">
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>Zero-Exfiltration SSRF Protection:</strong> Runs via sandboxed crawler with strict RFC-1918 private subnet blocking.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>Zero-Exfiltration SSRF Protection:</strong> Enforces sandboxed probes with strict RFC-1918 private subnet isolation.</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>Security Header Verification:</strong> Validates Content-Security-Policy, HSTS, X-Content-Type-Options, and referrer leakage.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>Security Header Verification:</strong> Audits Content-Security-Policy, HSTS, X-Content-Type-Options, and clickjacking protections.</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>WCAG 2.1 AA Accessibility:</strong> Audits color contrast, keyboard focus traps, and form input labels for compliance.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>WCAG 2.1 AA Accessibility:</strong> Inspects color contrast ratios, keyboard navigation paths, and form input labels.</span>
               </li>
             </ul>
           </div>
 
           {/* Visual Showcase Card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4 text-left font-mono text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-slate-500 font-semibold text-[11px] uppercase">Audit Report Console</span>
-              <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">35 Checks Passed</span>
+          <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs space-y-4 text-left font-mono text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <span className="text-neutral-500 font-semibold text-[11px] uppercase tracking-wider">Audit Report Console</span>
+              <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px] font-medium">35 Checks Passed</span>
             </div>
             <div className="space-y-2">
-              <div className="p-2.5 rounded-lg bg-emerald-50/60 border border-emerald-200/80 text-emerald-800 text-[11px] flex items-center justify-between">
-                <span>✓ HSTS (Strict-Transport-Security)</span>
+              <div className="p-2.5 rounded-md bg-emerald-50/70 border border-emerald-200 text-emerald-900 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-700" strokeWidth={2} />
+                  <span>HSTS (Strict-Transport-Security)</span>
+                </span>
                 <span className="text-[10px] font-bold">max-age=63072000</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-emerald-50/60 border border-emerald-200/80 text-emerald-800 text-[11px] flex items-center justify-between">
-                <span>✓ Frame Protection (X-Frame-Options)</span>
+              <div className="p-2.5 rounded-md bg-emerald-50/70 border border-emerald-200 text-emerald-900 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-700" strokeWidth={2} />
+                  <span>Frame Protection (X-Frame-Options)</span>
+                </span>
                 <span className="text-[10px] font-bold">DENY</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-amber-50/60 border border-amber-200/80 text-amber-800 text-[11px] flex items-center justify-between">
-                <span>⚠ Missing Content-Security-Policy</span>
-                <span className="text-[10px] font-bold">Remediation Suggested</span>
+              <div className="p-2.5 rounded-md bg-amber-50/70 border border-amber-200 text-amber-900 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-700" strokeWidth={1.5} />
+                  <span>Missing Content-Security-Policy</span>
+                </span>
+                <span className="text-[10px] font-bold">Remediation Required</span>
               </div>
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-[11px] flex items-center justify-between">
-                <span>✓ Core Web Vitals (LCP / TTFB)</span>
-                <span className="text-[10px] font-bold">142ms TTFB • 1.1s LCP</span>
+              <div className="p-2.5 rounded-md bg-neutral-50 border border-neutral-200 text-neutral-800 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-neutral-700" strokeWidth={2} />
+                  <span>Core Web Vitals (TTFB Latency)</span>
+                </span>
+                <span className="text-[10px] font-bold">142ms TTFB</span>
               </div>
             </div>
           </div>
@@ -210,63 +225,63 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Visual Showcase Card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4 text-left order-2 lg:order-1">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs space-y-4 text-left order-2 lg:order-1">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="font-bold text-xs text-slate-900">Peer Consensus: 92% "Ship it"</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                <span className="font-semibold text-xs text-neutral-900">Peer Consensus: 92% "Approve for Production"</span>
               </div>
-              <span className="text-xs text-indigo-600 font-mono font-semibold">+14 reputation</span>
+              <span className="text-xs text-neutral-600 font-mono font-medium">+14 reputation</span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 text-center p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+            <div className="grid grid-cols-4 gap-2 text-center p-3 rounded-md bg-neutral-50 border border-neutral-200 text-xs">
               <div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Product</div>
-                <div className="font-mono font-extrabold text-slate-900 text-sm mt-0.5">9/10</div>
+                <div className="text-[10px] text-neutral-500 font-medium uppercase font-mono">Architecture</div>
+                <div className="font-mono font-semibold text-neutral-900 text-sm mt-0.5">9/10</div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Design</div>
-                <div className="font-mono font-extrabold text-slate-900 text-sm mt-0.5">8/10</div>
+                <div className="text-[10px] text-neutral-500 font-medium uppercase font-mono">Security</div>
+                <div className="font-mono font-semibold text-neutral-900 text-sm mt-0.5">8/10</div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Engineering</div>
-                <div className="font-mono font-extrabold text-slate-900 text-sm mt-0.5">9/10</div>
+                <div className="text-[10px] text-neutral-500 font-medium uppercase font-mono">Scalability</div>
+                <div className="font-mono font-semibold text-neutral-900 text-sm mt-0.5">9/10</div>
               </div>
               <div>
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Docs</div>
-                <div className="font-mono font-extrabold text-slate-900 text-sm mt-0.5">8/10</div>
+                <div className="text-[10px] text-neutral-500 font-medium uppercase font-mono">Operations</div>
+                <div className="font-mono font-semibold text-neutral-900 text-sm mt-0.5">8/10</div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed italic bg-slate-50/60 p-3 rounded-lg border border-slate-100">
-              "Great UX on mobile. Identified one memory leak on unmounting the WebSockets feed, but overall solid error boundaries. Highly recommend shipping."
+            <p className="text-xs text-neutral-600 leading-relaxed bg-neutral-50 p-3 rounded-md border border-neutral-200">
+              "Robust architecture. Identified one socket connection leak during connection termination, but general fault-tolerance and error boundaries are sound."
             </p>
           </div>
 
           <div className="space-y-6 text-left order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-              <Users className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 text-xs font-mono font-medium uppercase tracking-wider text-neutral-700 bg-neutral-100 px-2.5 py-1 rounded-md border border-neutral-200">
+              <Users className="w-3.5 h-3.5 text-neutral-700" strokeWidth={1.5} />
               <span>Peer Review Network</span>
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Honest, structured feedback from engineers who actually read code.
+            <h2 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+              Rigorous, structured code evaluation from verified engineers.
             </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              No generic "great job!" comments. Every peer review follows a rigorous 4-category rubric (Product, UX, Engineering, Docs), provides step-by-step bug reproductions, and records an unequivocal "Would you ship this?" vote.
+            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              Every peer review adheres to a standardized rubric (Architecture, Security, Reliability, Operations), logs reproducible defect traces, and records verified production readiness assessments.
             </p>
 
-            <ul className="space-y-3 text-xs text-slate-700">
+            <ul className="space-y-2.5 text-xs text-neutral-700">
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>Reputation-Driven Community:</strong> Reviewers gain platform points only when the project creator votes their feedback helpful.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>Reputation Protocol:</strong> Reviewers accrue reputation points only when repository owners confirm feedback validity.</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>Actionable Findings Tracker:</strong> Convert reviewer suggestions into trackable findings that bump your public Vibe Score when fixed.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>Defect Tracking:</strong> Automatically converts review observations into trackable findings.</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span><strong>Staff Engineer Marketplace:</strong> Book 1-on-1 audits from verified tech leads at Stripe, Meta, and top startups.</span>
+                <Check className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span><strong>Staff Architect Audits:</strong> Commission in-depth architecture reviews with cryptographic sign-offs.</span>
               </li>
             </ul>
           </div>
@@ -284,22 +299,22 @@ export default async function HomePage() {
       </section>
 
       {/* 7. FEATURED BENCHMARK PROJECTS */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-left">
-        <div className="flex items-end justify-between border-b border-slate-200 pb-4">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 text-left">
+        <div className="flex items-end justify-between border-b border-neutral-200 pb-3">
           <div>
-            <div className="text-xs font-mono text-indigo-600 uppercase tracking-widest font-semibold">
-              Live Submissions
+            <div className="text-xs font-mono text-neutral-500 uppercase tracking-wider">
+              Repository Index
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-              Recent Verified Projects
+            <h2 className="text-xl sm:text-2xl font-semibold text-neutral-900 tracking-tight mt-0.5">
+              Audited Applications
             </h2>
           </div>
           <Link
             href="/discover"
-            className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-semibold transition-colors"
+            className="text-xs text-neutral-700 hover:text-neutral-900 flex items-center gap-1 font-medium transition-colors"
           >
-            <span>View all benchmarks</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>View all records</span>
+            <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Link>
         </div>
 
@@ -311,33 +326,32 @@ export default async function HomePage() {
       </section>
 
       {/* 8. FINAL ENTERPRISE CONVERSION CTA */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 pt-8">
-        <div className="rounded-3xl border border-indigo-200 bg-gradient-to-b from-indigo-50/60 to-white p-8 sm:p-14 space-y-6 shadow-xl shadow-indigo-500/5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200 bg-white text-indigo-700 text-xs font-mono font-semibold shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Ready to Verify Your Build?</span>
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 pt-4">
+        <div className="rounded-xl border border-neutral-200 bg-white p-8 sm:p-12 space-y-5 shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-200 bg-neutral-50 text-neutral-800 text-xs font-mono font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-neutral-700" strokeWidth={1.5} />
+            <span>Enterprise Quality Assurance</span>
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-sans tracking-tight">
-            Stop guessing if your app is ready.<br />
-            <span className="text-indigo-600">Prove it before you ship.</span>
+          <h2 className="text-2xl sm:text-4xl font-semibold text-neutral-900 tracking-tight">
+            Deploy mission-critical software with verifiable confidence.
           </h2>
-          <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed font-normal">
-            Join thousands of developers using VibeCheck to audit code, fix critical flaws, improve scores across versions, and build an indisputable proof-of-quality portfolio.
+          <p className="text-neutral-600 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed font-normal">
+            Automate pre-deployment security benchmarks, eliminate header misconfigurations, and deliver audit-grade code quality reports.
           </p>
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/projects/new"
-              className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+              className="h-10 px-5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
             >
-              <span>Submit Project Free</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Submit Repository for Audit</span>
+              <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
             </Link>
             <Link
               href="/pricing"
-              className="px-6 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-semibold shadow-2xs transition-all"
+              className="h-10 px-5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs sm:text-sm font-medium transition-colors flex items-center justify-center"
             >
-              <span>View Pricing Plans</span>
+              <span>Review Enterprise SLA</span>
             </Link>
           </div>
         </div>

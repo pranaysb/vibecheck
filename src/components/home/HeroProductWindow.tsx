@@ -9,6 +9,7 @@ import {
   Lock,
   Zap,
   Layers,
+  Check,
 } from "lucide-react";
 
 export function HeroProductWindow() {
@@ -223,7 +224,14 @@ export function HeroProductWindow() {
                   : "bg-slate-900 text-white hover:bg-slate-800"
               }`}
             >
-              {issueFixed ? "✓ Resolved & Verified" : "Simulate 'Mark Fixed'"}
+              {issueFixed ? (
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" />
+                  Resolved & Verified
+                </span>
+              ) : (
+                "Simulate 'Mark Fixed'"
+              )}
             </button>
           </div>
         </div>

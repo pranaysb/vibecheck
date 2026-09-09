@@ -1,8 +1,8 @@
 import React from "react";
 import { prisma } from "@/lib/db";
-import { ProjectCard } from "@/components/project/ProjectCard";
+import { DiscoverTableView } from "@/components/discover/DiscoverTableView";
 import Link from "next/link";
-import { Search, Filter, Sparkles, TrendingUp, ShieldCheck, Plus } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 
 export const revalidate = 0;
 
@@ -86,7 +86,6 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
     ];
   }
 
-  // Handle "most_improved" in memory: calculate total score jump
   let finalProjects = projects;
   if (currentFilter === "most_improved") {
     finalProjects = [...projects].sort((a, b) => {
@@ -96,132 +95,88 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
     });
   }
 
+  const formattedProjects = finalProjects.map((p) => {
+    const latestV = p.versions[0];
+    const totalDelta = p.versions.reduce((sum: number, v: any) => sum + v.scoreDelta, 0);
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      tagline: p.tagline,
+      vibeScore: p.vibeScore,
+      techStack: p.techStack,
+      aiInvolvement: p.aiInvolvement,
+      creator: p.creator,
+      reviewsCount: p.reviews.length,
+      expertReviews: p.expertReviews,
+      findings: p.findings,
+      isExpertReviewed: p.expertReviews.length > 0,
+      isSecurityReviewed: p.findings.some((f: any) => f.status === "FIXED"),
+      scoreDelta: totalDelta > 0 ? totalDelta : undefined,
+      latestVersion: latestV?.versionNumber,
+      screenshotUrl: p.screenshotUrl,
+    };
+  });
+
   const filterTabs = [
-    { id: "trending", label: "Trending" },
-    { id: "new", label: "New" },
-    { id: "highest_rated", label: "Highest rated" },
-    { id: "most_improved", label: "Most improved" },
-    { id: "expert_reviewed", label: "Expert reviewed" },
-    { id: "security_reviewed", label: "Security reviewed" },
-    { id: "ai_built", label: "AI-built" },
-    { id: "open_source", label: "Open source" },
+    { id: "trending", label: "All Repositories" },
+    { id: "highest_rated", label: "Top Security Score" },
+    { id: "expert_reviewed", label: "Staff Sign-Off" },
+    { id: "security_reviewed", label: "Defects Resolved" },
+    { id: "most_improved", label: "Score Improvements" },
+    { id: "new", label: "Recent Audits" },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      {/* Header & Search */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-sans tracking-tight">
-            Discover Projects
+          <h1 className="text-2xl font-semibold text-neutral-900 tracking-tight">
+            Repository Directory & Audit Register
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1 font-normal">
-            Explore applications built with AI assistance, verified by automated checks and peer reviews.
+          <p className="text-xs text-neutral-500 mt-1">
+            Standardized repository inventory, OWASP security header compliance, and architectural sign-offs.
           </p>
         </div>
 
         <Link
           href="/projects/new"
-          className="self-start md:self-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5"
+          className="self-start sm:self-auto h-8 px-3 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs transition-colors flex items-center gap-1.5 focus:ring-2 focus:ring-neutral-900 focus:outline-none"
         >
-          <Plus className="w-4 h-4" />
-          <span>Submit Project</span>
+          <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+          <span>New Audit</span>
         </Link>
       </div>
 
-      {/* Search Input Bar */}
-      <form method="GET" action="/discover" className="relative">
-        <input type="hidden" name="filter" value={currentFilter} />
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3.5" />
-          <input
-            type="text"
-            name="q"
-            defaultValue={searchQuery}
-            placeholder="Search projects by name, problem solved, or description..."
-            className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs transition-colors"
-          />
-          <button
-            type="submit"
-            className="absolute right-2 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-2xs"
-          >
-            Search
-          </button>
-        </div>
-      </form>
+      {/* Filter Tabs & Search Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {filterTabs.map((tab) => {
+            const isActive = currentFilter === tab.id;
+            const queryParams = new URLSearchParams();
+            queryParams.set("filter", tab.id);
+            if (searchQuery) queryParams.set("q", searchQuery);
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
-        {filterTabs.map((tab) => {
-          const isActive = currentFilter === tab.id;
-          const queryParams = new URLSearchParams();
-          queryParams.set("filter", tab.id);
-          if (searchQuery) queryParams.set("q", searchQuery);
-
-          return (
-            <Link
-              key={tab.id}
-              href={`/discover?${queryParams.toString()}`}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
-                isActive
-                  ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold shadow-xs"
-                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Projects Grid */}
-      {finalProjects.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl border border-slate-200 bg-white space-y-3">
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mx-auto">
-            <Search className="w-5 h-5" />
-          </div>
-          <h3 className="text-base font-semibold text-slate-900">No projects found</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            No projects matched the selected filters. Be the first developer to submit something in this category!
-          </p>
-          <div className="pt-2">
-            <Link
-              href="/projects/new"
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs inline-block shadow-xs"
-            >
-              Submit your project
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {finalProjects.map((p) => {
-            const latestV = p.versions[0];
-            const totalDelta = p.versions.reduce((sum: number, v: any) => sum + v.scoreDelta, 0);
             return (
-              <ProjectCard
-                key={p.id}
-                project={{
-                  id: p.id,
-                  slug: p.slug,
-                  title: p.title,
-                  tagline: p.tagline,
-                  vibeScore: p.vibeScore,
-                  techStack: p.techStack,
-                  aiInvolvement: p.aiInvolvement,
-                  creator: p.creator,
-                  reviewsCount: p.reviews.length,
-                  isExpertReviewed: p.expertReviews.length > 0,
-                  isSecurityReviewed: p.findings.some((f: any) => f.status === "FIXED"),
-                  scoreDelta: totalDelta > 0 ? totalDelta : undefined,
-                  latestVersion: latestV?.versionNumber,
-                  screenshotUrl: p.screenshotUrl,
-                }}
-              />
+              <Link
+                key={tab.id}
+                href={`/discover?${queryParams.toString()}`}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors border ${
+                  isActive
+                    ? "bg-neutral-900 border-neutral-900 text-white"
+                    : "bg-white border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                }`}
+              >
+                {tab.label}
+              </Link>
             );
           })}
         </div>
-      )}
+      </div>
+
+      {/* Table & Grid Container */}
+      <DiscoverTableView initialProjects={formattedProjects} />
     </div>
   );
 }

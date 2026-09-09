@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Check, ArrowRight, HelpCircle, ShieldCheck, X, Sparkles, Send } from "lucide-react";
+import { Check, ArrowRight, HelpCircle, ShieldCheck, X, Send } from "lucide-react";
 import { toast } from "sonner";
 import { formatInr } from "@/lib/utils";
 
@@ -257,54 +257,56 @@ export default function PricingPage() {
 
       {/* Pro Builder Waitlist Modal */}
       {waitlistOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setWaitlistOpen(false)} />
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl p-6 sm:p-8 z-50 my-8 text-left space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto font-sans">
+          <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-xs" onClick={() => setWaitlistOpen(false)} />
+          <div className="relative w-full max-w-md rounded-lg border border-neutral-200 bg-white shadow-lg p-6 z-50 my-8 text-left space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold">
-                  <Sparkles className="w-3 h-3 text-indigo-600" />
-                  <span>Pro Builder Private Beta</span>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-neutral-100 border border-neutral-200 text-neutral-800 text-[10px] font-mono font-medium">
+                  <ShieldCheck className="w-3 h-3 text-neutral-700" strokeWidth={1.5} />
+                  <span>Pro Builder Early Access</span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight mt-1.5">
-                  Join the Pro Builder Waitlist
+                <h3 className="text-base font-semibold text-neutral-900 tracking-tight mt-1.5">
+                  Request Pro Builder Provisioning
                 </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  We are actively onboarding commercial teams in batches. Enter your work email for priority onboarding and 20% lifetime launch discount.
+                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                  We onboard commercial engineering teams in scheduled cohorts. Provide your corporate email for tenant provisioning and SLA onboarding.
                 </p>
               </div>
               <button
                 onClick={() => setWaitlistOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                className="text-neutral-400 hover:text-neutral-700 p-1"
+                aria-label="Close dialog"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
 
             {waitlistSubmitted ? (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 font-medium">
-                ✓ Priority invitation reserved! Check your inbox soon.
+              <div className="p-3 rounded-md bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 font-medium flex items-center justify-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-700" strokeWidth={2} />
+                <span>Priority reservation confirmed. Onboarding details transmitted via email.</span>
               </div>
             ) : (
-              <form onSubmit={handleWaitlistSubmit} className="space-y-4 text-xs">
+              <form onSubmit={handleWaitlistSubmit} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Work Email</label>
+                  <label className="block text-neutral-700 font-semibold mb-1">Corporate Email *</label>
                   <input
                     type="email"
                     value={waitlistEmail}
                     onChange={(e) => setWaitlistEmail(e.target.value)}
-                    placeholder="alex@startup.com"
-                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 focus:outline-none focus:border-indigo-500 text-xs"
+                    placeholder="engineer@company.com"
+                    className="w-full h-9 bg-white border border-neutral-300 rounded-md px-3 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 text-xs"
                     required
                     autoFocus
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full h-9 rounded-md bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-colors focus:ring-2 focus:ring-neutral-900 focus:outline-none"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Request Priority Access</span>
+                  <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span>Request Priority Provisioning</span>
                 </button>
               </form>
             )}
