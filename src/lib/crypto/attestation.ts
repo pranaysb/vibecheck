@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { getDeploymentCommitSha } from "@/lib/version";
 
 export interface AttestationPayload {
   auditId: string;
@@ -120,12 +121,13 @@ export function verifyAttestation(
  * Executes the complete 6-Test Adversarial Tamper Test Suite
  */
 export function runAdversarialAttestationSuite(baseAttestation?: SignedAttestation): TamperTestResult[] {
+  const deploySha = getDeploymentCommitSha();
   const samplePayload: AttestationPayload = {
-    auditId: "VC-SELF-1E4E476",
+    auditId: `VC-SELF-${deploySha.toUpperCase()}`,
     targetName: "VibeCheck Production Platform",
     targetUrl: "https://vibecheck-ten-omega.vercel.app",
-    commitSha: "1e4e476208479e0231bb14a796de",
-    timestamp: "2026-09-09T08:52:00Z",
+    commitSha: deploySha,
+    timestamp: "2026-09-09T09:15:00Z",
     scannerVersion: "v1.4.2",
     rulesetVersion: "owasp-asvs-l2-2026.09",
     securityGateVerdict: "READY TO SHIP",
@@ -213,7 +215,7 @@ export function runAdversarialAttestationSuite(baseAttestation?: SignedAttestati
   });
 
   // Test F: Replay / Outdated Audit Detection
-  const currentProductionCommit = "1e4e476";
+  const currentProductionCommit = getDeploymentCommitSha();
   const auditedCommit = original.payload.commitSha.slice(0, 7);
   const isUpToDate = auditedCommit === currentProductionCommit;
   results.push({

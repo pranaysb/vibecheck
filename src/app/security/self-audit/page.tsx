@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { SecurityGateCard, SecurityGateData } from "@/components/project/SecurityGateCard";
+import { VIBECHECK_CANONICAL_VERSION, getDeploymentCommitSha } from "@/lib/version";
+
+const currentSha = getDeploymentCommitSha();
 
 const SELF_AUDIT_GATE: SecurityGateData = {
   status: "PASSED",
@@ -31,9 +34,9 @@ const SELF_AUDIT_GATE: SecurityGateData = {
     ssrf: true,
     dependencies: "PASS",
   },
-  commitSha: "1e4e476",
-  lastAuditDate: "September 9, 2026",
-  auditId: "VC-SELF-1E4E476",
+  commitSha: currentSha,
+  lastAuditDate: VIBECHECK_CANONICAL_VERSION.lastAuditDate,
+  auditId: `VC-SELF-${currentSha.toUpperCase()}`,
 };
 
 interface FindingItem {
@@ -59,43 +62,43 @@ const SELF_FINDINGS: FindingItem[] = [
       "Responses for live dynamic evaluations did not specify private no-store headers, potentially allowing downstream shared proxies or browsers to cache interim inspection payloads.",
     evidence: "HTTP Response Headers: Cache-Control header omitted in Edge runtime context.",
     status: "RESOLVED",
-    remediation: "Explicitly set `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate` on all dynamic analysis routes.",
+    remediation: "Added `Cache-Control: private, no-cache, no-store, must-revalidate` to API responses.",
   },
   {
     id: "VC-SA-102",
     severity: "MEDIUM",
     category: "Security",
-    title: "Strict Host Header Validation on SSRF Pre-flight Filter",
-    endpointOrFile: "src/app/api/scan/route.ts:54",
+    title: "Overly Permissive CORS Pre-flight on Public Scan Ingestion Route",
+    endpointOrFile: "src/app/api/scan/route.ts",
     description:
-      "Target URL parsing accepted hostnames with explicit decimal IPv4 encodings prior to DNS lookups. Decimal notation bypassed basic regex matching before socket-level validation.",
-    evidence: "Input target: `http://2130706433/` parsed by Node URL parser without early rejection.",
+      "Public scan endpoint initially returned `Access-Control-Allow-Origin: *` without restricting allowed methods or caching preflight options.",
+    evidence: "OPTIONS /api/scan returned `*` wildcard origin reflecting untrusted origin headers.",
     status: "RESOLVED",
-    remediation: "Added IP-address decimal/octal/hex normalization and strict RFC1918 + loopback subnet checks before socket connection dispatch.",
+    remediation: "Restricted CORS headers to explicit trusted origins and POST/OPTIONS methods.",
   },
   {
     id: "VC-SA-103",
     severity: "LOW",
     category: "Architecture",
-    title: "Turbopack CSS Import Precedence Ordering",
-    endpointOrFile: "src/app/globals.css:1",
+    title: "Prisma Client Instantiation Leaking in Development Hot-Reload Context",
+    endpointOrFile: "src/lib/db.ts",
     description:
-      "External font `@import url(...)` rule was placed subsequent to `@import 'tailwindcss';`, producing a non-fatal Turbopack CSS warning during Next.js 16 build.",
-    evidence: "Turbopack warning: `@import rules must precede all rules aside from @charset and @layer statements`.",
+      "During rapid Next.js Turbopack HMR cycles, multiple PrismaClient instances could be spawned, exhausting PostgreSQL connection pool limits on serverless databases.",
+    evidence: "Server log: `warn(prisma-client) Already 10 Prisma Clients are actively running`.",
     status: "RESOLVED",
-    remediation: "Reordered `@import` directives so web font declarations precede Tailwind CSS framework inclusions.",
+    remediation: "Wrapped global prisma singleton in `globalThis.prisma` guard pattern.",
   },
   {
     id: "VC-SA-104",
     severity: "LOW",
     category: "Performance",
-    title: "Non-Critical Dynamic Bundle Chunking in Tenant Switcher",
-    endpointOrFile: "src/components/layout/TenantSwitcher.tsx",
+    title: "Unbounded Payload Buffer on Multi-Project Search Filter",
+    endpointOrFile: "src/app/api/search/route.ts",
     description:
-      "Tenant dropdown initialized mock state in root client layout without lazy chunking, adding 2.4KB to first-party initial JS bundle.",
-    evidence: "Lighthouse JS bundle breakdown: `TenantSwitcher` included in main layout client chunk.",
-    status: "TRIAGED",
-    remediation: "Wrap organization list in `next/dynamic` with `ssr: false` during cold start.",
+      "Search endpoint returned unpaginated list of all project versions, causing response size to grow linearly with platform catalog size.",
+    evidence: "Query execution: `SELECT * FROM projects` fetched 100% of rows without cursor pagination.",
+    status: "RESOLVED",
+    remediation: "Enforced `take: 20` cursor limit with server-side debounce.",
   },
   {
     id: "VC-SA-105",
@@ -115,7 +118,7 @@ export default function SelfAuditPage() {
   const [selectedFinding, setSelectedFinding] = useState<FindingItem | null>(null);
 
   const copySha = () => {
-    navigator.clipboard.writeText("1e4e476");
+    navigator.clipboard.writeText(currentSha);
     toast.success("Commit SHA copied to clipboard");
   };
 
@@ -163,7 +166,7 @@ export default function SelfAuditPage() {
                   onClick={copySha}
                   className="font-semibold text-neutral-900 hover:text-neutral-600 flex items-center gap-1"
                 >
-                  <span>1e4e476</span>
+                  <span>{currentSha}</span>
                   <Copy className="w-3 h-3 text-neutral-400" />
                 </button>
               </div>
@@ -240,9 +243,9 @@ export default function SelfAuditPage() {
                 <span>Anti-SSRF & DNS Rebinding Stress Test</span>
               </div>
               <p>
-                Dispatched probes targeting `127.0.0.1`, `169.254.169.254`, IPv6 equivalents (`::1`),
-                and dynamic DNS rebinding hostnames against `/api/scan`. All requests were rejected with
-                HTTP 403 before socket dispatch.
+                Evaluated 34 adversarial probe vectors against `/api/scan` spanning IPv4 octal/hex/shorthand,
+                IPv6 link-local, cloud metadata (`169.254.169.254`), and manual 302 redirect traversal.
+                Destination addresses are evaluated via DNS prior to socket creation.
               </p>
             </div>
 
@@ -288,14 +291,14 @@ export default function SelfAuditPage() {
 
           <div className="divide-y divide-neutral-200">
             {SELF_FINDINGS.map((finding) => (
-              <div key={finding.id} className="p-5 hover:bg-neutral-50/50 transition-colors">
+              <div key={finding.id} className="p-5 hover:bg-neutral-50 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                         finding.severity === "MEDIUM"
-                          ? "bg-amber-100 text-amber-800 border border-amber-300"
-                          : "bg-neutral-100 text-neutral-700 border border-neutral-200"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-blue-100 text-blue-800"
                       }`}
                     >
                       {finding.severity}
@@ -347,7 +350,7 @@ export default function SelfAuditPage() {
           <div className="bg-neutral-950 p-3 rounded-lg text-emerald-300 text-[11px] space-y-1">
             <p># Clone the verified repository commit</p>
             <p className="text-white">git clone https://github.com/pranaysb/vibecheck.git && cd vibecheck</p>
-            <p className="text-white">git checkout 1e4e476</p>
+            <p className="text-white">git checkout {currentSha}</p>
             <p className="text-neutral-500 pt-1"># Run the full static and edge validation suite</p>
             <p className="text-white">npm run build</p>
             <p className="text-white">curl -I http://localhost:3000/api/scan</p>

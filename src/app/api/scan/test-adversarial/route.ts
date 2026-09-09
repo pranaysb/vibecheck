@@ -28,7 +28,7 @@ export async function GET() {
     { name: "IPv6 Unique Local Address ([fc00::1])", url: "http://[fc00::1]", expectedBlocked: true },
     { name: "IPv6 Unique Local Address ([fd00::1])", url: "http://[fd00::1]", expectedBlocked: true },
     { name: "IPv6 Multicast ([ff02::1])", url: "http://[ff02::1]", expectedBlocked: true },
-    { name: "IPv6 Zone Identifier Attempt (http://[fe80::1%25eth0])", url: "http://[fe80::1%25eth0]", expectedBlocked: true },
+    { name: "IPv6 Zone Identifier / Malformed URL Rejection (http://[fe80::1%25eth0])", url: "http://[fe80::1%25eth0]", expectedBlocked: true },
 
     // 4. Cloud Metadata & Private Networks (RFC-1918, CGNAT, Documentation)
     { name: "Cloud Metadata IP AWS/GCP (169.254.169.254)", url: "http://169.254.169.254", expectedBlocked: true },

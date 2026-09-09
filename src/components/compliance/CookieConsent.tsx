@@ -164,7 +164,7 @@ export function CookieConsent() {
                     Cookie & Telemetry Preferences
                   </h2>
                   <p className="text-xs text-neutral-500">
-                    SOC 2 Type II and GDPR Art. 6 compliance settings
+                    Controls aligned with SOC 2 Trust Services Criteria & GDPR Art. 6
                   </p>
                 </div>
               </div>
