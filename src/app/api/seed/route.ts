@@ -65,8 +65,8 @@ export async function GET(request: Request) {
           reputationPoints: 2450,
           expertProfile: {
             create: {
-              title: "Senior Software Engineer (ex-Stripe)",
-              bio: "Ex-Stripe Senior Software Engineer (8 yrs). Auditing systems for security and performance.",
+              title: "Senior Security Engineer (Sandbox Demonstration)",
+              bio: "Senior Security Engineer (8 yrs). Auditing systems for security, BOLA, and performance.",
               yearsExperience: 8,
               hourlyRateInr: 2499,
               reviewRateInr: 2499,

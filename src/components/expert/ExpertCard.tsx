@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ShieldCheck, Star } from "lucide-react";
 import { RequestReviewModal } from "./RequestReviewModal";
 import Link from "next/link";
+import { formatInr } from "@/lib/utils";
 
 export interface ExpertCardData {
   id: string; // User ID
@@ -79,17 +80,17 @@ export function ExpertCard({ expert }: { expert: ExpertCardData }) {
           </div>
         </div>
 
-        {/* Footer with reconciled From ₹999 pricing */}
+        {/* Footer with audit pricing */}
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
           <div>
             <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
               Audit Rate
             </span>
             <span className="text-xs font-bold text-slate-900 font-mono">
-              From ₹999 <span className="text-[11px] text-slate-500 font-normal">/ review</span>
+              From {formatInr(expert.expertProfile?.reviewRateInr || 7500)} <span className="text-[11px] text-slate-500 font-normal">/ audit</span>
             </span>
             <span className="text-[10px] text-slate-400 block">
-              (Essential ₹999 • Full-Stack ₹2,499)
+              Signed report included
             </span>
           </div>
 

@@ -89,7 +89,7 @@ export default function AboutPage() {
             <div>
               <strong className="text-slate-900">Verified Expert Marketplace:</strong>
               <p className="text-slate-600 mt-0.5 leading-relaxed">
-                Connect with verified senior engineers (ex-Stripe, Staff Architects) for comprehensive written code audits and scalability debriefs.
+                Connect with verified senior security engineers and staff architects for comprehensive written code audits and scalability debriefs.
               </p>
             </div>
           </div>

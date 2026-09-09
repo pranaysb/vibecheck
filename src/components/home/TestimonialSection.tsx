@@ -21,7 +21,7 @@ export function TestimonialSection() {
     },
     {
       quote:
-        "We ordered a Verified Staff Audit for ₹999. The reviewer sent us line-by-line PostgreSQL indexing recommendations that dropped our query latency by 80%. Exceptional ROI.",
+        "We commissioned a targeted security review before release. The auditor sent us line-by-line PostgreSQL indexing and authorization recommendations that dropped our query latency by 80%. Exceptional ROI.",
       author: "Aisha Patel",
       role: "CTO @ ResumeForge AI",
       avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150",
@@ -30,16 +30,16 @@ export function TestimonialSection() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-center">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-center font-sans">
       <div className="space-y-2">
-        <div className="text-xs font-mono uppercase tracking-wider text-indigo-600 font-semibold">
-          Customer Proof
+        <div className="text-xs font-mono uppercase tracking-wider text-neutral-500 font-semibold">
+          Engineering Feedback
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-          Trusted by engineers shipping with AI.
+        <h2 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight">
+          Built for engineers shipping with AI code generation.
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
-          Over 4,200 projects audited, 18,000+ vulnerabilities patched, and zero blind deployments.
+        <p className="text-xs sm:text-sm text-neutral-600 max-w-xl mx-auto">
+          Continuous security verification, architectural hygiene, and zero blind deployments.
         </p>
       </div>
 

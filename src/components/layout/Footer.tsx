@@ -24,7 +24,7 @@ export function Footer() {
             <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />
               <Link href="/status" className="hover:underline">
-                All Systems Operational (99.98% Uptime)
+                All Systems Operational (Live Probes)
               </Link>
             </div>
           </div>
@@ -79,7 +79,7 @@ export function Footer() {
         {/* Bottom Sub-bar */}
         <div className="mt-10 pt-6 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
           <div>
-            © {new Date().getFullYear()} VibeCheck Enterprise Systems, Inc. SOC 2 Type II Certified.
+            © {new Date().getFullYear()} VibeCheck Enterprise Systems, Inc. Controls mapped to SOC 2 Trust Services Criteria.
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5 text-neutral-600">

@@ -48,7 +48,7 @@ export default async function ExpertReportPage({ params }: ReportPageProps) {
         username: "davidvance",
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
         expertProfile: {
-          title: "Principal Architect @ ex-Cloudflare",
+          title: "Principal Infrastructure Architect (Sandbox Demonstration)",
           yearsExperience: 11,
         },
       },

@@ -13,7 +13,7 @@ export function ComparisonTable() {
       feature: "Cost per Evaluation",
       traditional: "₹2,50,000+ ($3,500+)",
       social: "Free (Zero structure)",
-      vibecheck: "₹0 Free / ₹999 Expert Review",
+      vibecheck: "₹0 Free / Pro ₹1,499 / Audit ₹7,500+",
     },
     {
       feature: "AI-Specific Vulnerability Scans",
