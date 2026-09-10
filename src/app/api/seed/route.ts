@@ -60,7 +60,7 @@ export async function GET(request: Request) {
           username: "sarahchen",
           name: "Sarah Chen",
           avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-          bio: "Ex-Stripe Senior Software Engineer (8 yrs). Auditing systems for security and performance.",
+          bio: "Senior Systems & Security Engineer (8 yrs). Auditing systems for security, BOLA, and performance.",
           role: "EXPERT",
           reputationPoints: 2450,
           expertProfile: {

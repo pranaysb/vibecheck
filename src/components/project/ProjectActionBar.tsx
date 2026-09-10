@@ -116,8 +116,8 @@ export function ProjectActionBar({ project }: ProjectActionBarProps) {
         expert={{
           id: "sarahchen_id",
           name: "Sarah Chen",
-          title: "Senior Software Engineer (Ex-Stripe)",
-          reviewRateInr: 999,
+          title: "Senior Systems & Security Engineer",
+          reviewRateInr: 7500,
           specialties: ["Backend", "Security", "System Design"],
         }}
         isOpen={isExpertOpen}

@@ -96,7 +96,7 @@ export default function PricingPage() {
     },
     {
       q: "Why is a Targeted Security Review priced at ₹7,500+?",
-      a: "Automated remote probes cannot reliably detect business logic flaws, BOLA/IDOR vulnerabilities, or race conditions. A real security audit requires experienced human engineers to inspect API schemas, authorization checks, and database tenant isolation. We do not offer superficial ₹999 automated audits disguised as human reviews.",
+      a: "Automated remote probes cannot reliably detect business logic flaws, BOLA/IDOR vulnerabilities, or race conditions. A real security audit requires experienced human engineers to inspect API schemas, authorization checks, and database tenant isolation. We do not offer superficial entry-level automated audits disguised as human reviews.",
     },
     {
       q: "How does the Hard Security Gate work?",

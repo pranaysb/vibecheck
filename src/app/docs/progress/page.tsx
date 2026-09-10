@@ -17,7 +17,7 @@ export default function ProgressDocsPage() {
     { num: "§16-17", title: "Project Evolution & Versioning", desc: "CampusConnect v1 61 → v2 73 → v3 86 (+25 pts jump), changelog diff", status: "100% Complete", link: "/projects/campusconnect/versions" },
     { num: "§18", title: "AI Transparency Disclosure", desc: "Disclosed without penalty, tool tags (Cursor, Claude Code, v0), involvement levels", status: "100% Complete", link: "/projects/campusconnect" },
     { num: "§19-21", title: "Automated Analysis & SSRF Guard", desc: "Modular scanner, live re-run trigger, private IP rejection, headers & a11y checks", status: "100% Complete", link: "/projects/campusconnect/analysis" },
-    { num: "§22-26", title: "Verified Expert Marketplace", desc: "Sarah Chen (ex-Stripe), Marcus Vance, pricing in INR (₹999-₹4,999), audit request flow", status: "100% Complete", link: "/experts" },
+    { num: "§22-26", title: "Verified Expert Marketplace", desc: "Sarah Chen (Staff Systems Architect), Marcus Vance, structured security & architecture audit request flow", status: "100% Complete", link: "/experts" },
     { num: "§25", title: "Engineering Audit Report", desc: "Formal written report with executive summary, radar scores, top recommendations", status: "100% Complete", link: "/expert-reports/campusconnect" },
     { num: "§27", title: "Community Challenges", desc: "'Build a Productivity Tool with AI', submissions leaderboard, countdown", status: "100% Complete", link: "/challenges" },
     { num: "§28", title: "Developer Public Profile", desc: "Alex Rivera build history (+25 jump), reviews given, badges, reputation points", status: "100% Complete", link: "/users/alexrivera" },
@@ -26,7 +26,7 @@ export default function ProgressDocsPage() {
     { num: "§32", title: "Security & SSRF Hardening", desc: "Blocks 127.0.0.1, private RFC 1918 subnets, cloud metadata 169.254.169.254", status: "100% Complete", link: "/about#safety" },
     { num: "§33-34", title: "PostgreSQL Schema & Seed Data", desc: "11 realistic projects, 15 users, 38 reviews, 50+ findings, badges", status: "100% Complete", link: "/discover" },
     { num: "§41", title: "Global Search & Command Palette", desc: "⌘K instant keyboard shortcut searching projects, users, reviewers, experts", status: "100% Complete", link: "/" },
-    { num: "§42", title: "Transparent Pricing Tiers", desc: "Free (₹0), Pro Builder (₹699/mo), Expert Review (Starting ₹999)", status: "100% Complete", link: "/pricing" },
+    { num: "§42", title: "Transparent Pricing Tiers", desc: "Community (Free), Professional Engineering (Monthly/Annual), Targeted Security Audit", status: "100% Complete", link: "/pricing" },
   ];
 
   return (
