@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-[#f8fafc] text-[#0f172a] selection:bg-neutral-200 selection:text-neutral-900">
+      <body className="min-h-full w-full max-w-full overflow-x-clip flex flex-col bg-[#f8fafc] text-[#0f172a] selection:bg-neutral-200 selection:text-neutral-900">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-neutral-900 focus:text-white focus:text-xs focus:font-medium focus:rounded-md focus:shadow-md focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2"
@@ -33,7 +33,7 @@ export default function RootLayout({
         </a>
         <UserProvider>
           <Navbar />
-          <main id="main-content" className="flex-1 focus:outline-none">
+          <main id="main-content" className="flex-1 w-full max-w-full overflow-x-clip focus:outline-none">
             {children}
           </main>
           <Footer />

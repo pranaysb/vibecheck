@@ -7,6 +7,30 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model AuditReport {
+  id            String   @id @default(cuid())
+  targetUrl     String
+  finalUrl      String
+  domain        String
+  ipAddress     String?
+  statusCode    Int      @default(200)
+  score         Int      @default(0)
+  grade         String   @default("F")
+  verdict       String   @default("SECURITY GATE BLOCKED")
+  ttfbMs        Int      @default(0)
+  hops          Int      @default(0)
+  findings      Json
+  rawHeaders    Json
+  sha256Digest  String
+  isPublic      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([domain])
+  @@index([createdAt])
+  @@index([score])
+}
+
 enum Role {
   CREATOR
   REVIEWER

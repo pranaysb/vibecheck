@@ -18,7 +18,8 @@
     --accent-foreground: #ffffff;
   }
 
-  * {
+  *, *::before, *::after {
+    box-sizing: border-box;
     border-color: var(--border);
   }
 
@@ -31,6 +32,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.011em;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+    margin: 0;
+    padding: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {

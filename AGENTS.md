@@ -1,9 +1,13 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# VibeCheck Project Directives (GSD Protocol Active)
 
-# This is NOT the Next.js you know
+## 1. Zero-Theater Engineering
+- Never invent mock user personas, fake marketplace gigs, or unearned compliance certifications.
+- All scores, audits, and outputs must be backed by real deterministic code execution or live HTTP analysis.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+## 2. Relentless Bias to Action & Simplicity
+- Strip away bloat. A lean, sharp tool that performs a genuine audit flawlessly is infinitely better than 29 mock pages.
+- Every UI element must have a functional, tested backend handler.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+## 3. High Craft Standards
+- Google Sans typography, monochrome/Linear-style aesthetic, razor-sharp contrast, WCAG 2.1 AA compliance.
+- All code must pass `npm run build` and TypeScript check with zero errors.

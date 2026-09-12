@@ -45,7 +45,7 @@ export default function PricingPage() {
         "Embeddable markdown status badge for GitHub Readme",
       ],
       cta: "Start Free Audit",
-      href: "/projects/new",
+      href: "/#inspector",
       popular: false,
     },
     {
@@ -65,7 +65,7 @@ export default function PricingPage() {
         "Tamper-evident verification certificates",
       ],
       cta: "Upgrade to Pro",
-      href: "/projects/new",
+      href: "/#inspector",
       popular: true,
     },
     {
