@@ -1,7 +1,24 @@
 {
   "name": "vibecheck",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.4.2",
+  "description": "Enterprise code quality benchmarks, SSRF-defended automated remote audits, and cryptographic attestation platform built on Next.js 16.",
+  "license": "MIT",
+  "author": "Pranay S. B. <pranaystudies22@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pranaysb/vibecheck.git"
+  },
+  "homepage": "https://vibecheck-ten-omega.vercel.app",
+  "keywords": [
+    "security",
+    "ssrf-prevention",
+    "code-quality",
+    "audit",
+    "cryptographic-attestation",
+    "nextjs",
+    "turbopack",
+    "vercel"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && (prisma db push --accept-data-loss || true) && next build",

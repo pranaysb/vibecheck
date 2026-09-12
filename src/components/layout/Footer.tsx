@@ -77,16 +77,49 @@ export function Footer() {
         </div>
 
         {/* Bottom Sub-bar */}
-        <div className="mt-10 pt-6 border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
-          <div>
-            © {new Date().getFullYear()} VibeCheck Enterprise Systems, Inc. Controls mapped to SOC 2 Trust Services Criteria.
+        <div className="mt-10 pt-6 border-t border-neutral-200 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <span>
+              © {new Date().getFullYear()} VibeCheck. Released under the{" "}
+              <a
+                href="https://github.com/pranaysb/vibecheck/blob/main/LICENSE"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-neutral-900"
+              >
+                MIT Open Source License
+              </a>
+              .
+            </span>
           </div>
+
           <div className="flex flex-wrap items-center gap-4">
+            <a
+              href="https://vercel.com?utm_source=vibecheck&utm_campaign=oss"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-800 transition-colors text-[11px] font-medium"
+              aria-label="Powered by Vercel"
+            >
+              <svg width="12" height="10" viewBox="0 0 76 65" fill="currentColor" aria-hidden="true">
+                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+              </svg>
+              <span>Powered by Vercel</span>
+            </a>
+
             <div className="flex items-center gap-1.5 text-neutral-600">
               <Globe className="w-3.5 h-3.5 text-neutral-400" strokeWidth={1.5} />
-              <span>Region: US-East (N. Virginia)</span>
+              <span>Edge Network: Global</span>
             </div>
             <span className="text-neutral-300">•</span>
+            <a
+              href="https://github.com/pranaysb/vibecheck"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-neutral-900 transition-colors"
+            >
+              GitHub (v1.4)
+            </a>
             <Link href="/privacy-policy" className="hover:text-neutral-900 transition-colors">Privacy</Link>
             <Link href="/terms-of-service" className="hover:text-neutral-900 transition-colors">Terms</Link>
             <Link href="/security" className="hover:text-neutral-900 transition-colors">Security</Link>
