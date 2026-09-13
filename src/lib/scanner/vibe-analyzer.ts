@@ -111,10 +111,14 @@ export function analyzeVibeFromHtml(
 
   for (const btn of buttonTags) {
     const textOnly = btn.replace(/<[^>]+>/g, "").trim().toLowerCase();
-    const hasAria = /aria-label=["'][^"']+["']/i.test(btn);
+    const hasAria = /aria-label=["'][^"']+["']/i.test(btn) || /title=["'][^"']+["']/i.test(btn);
     const hasSvg = /<svg/i.test(btn);
 
-    if (!textOnly && !hasAria && !hasSvg) {
+    // If button has an SVG icon or no text, but lacks aria-label/title
+    const isIconOnly = (!textOnly || textOnly.length === 0) && hasSvg;
+    const isCompletelyEmpty = !textOnly && !hasAria && !hasSvg;
+
+    if ((isIconOnly && !hasAria) || isCompletelyEmpty) {
       emptyButtonsCount++;
     } else if (genericLabels.includes(textOnly)) {
       genericCtaCount++;
