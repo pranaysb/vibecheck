@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { executeDeepProbe } from "@/lib/scanner/deep-probe";
 import { prisma } from "@/lib/db";
+import { getClientIp, extractTargetDomain, checkRateLimit } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,6 +13,34 @@ export async function POST(req: Request) {
 
     if (!rawUrl || typeof rawUrl !== "string") {
       return NextResponse.json({ error: "A valid target URL is required (e.g., https://example.com)" }, { status: 400 });
+    }
+
+    const clientIp = getClientIp(req);
+    const targetDomain = extractTargetDomain(rawUrl);
+
+    // Abuse defense: Check requester IP rate limit and target domain cooldown
+    const rateLimit = checkRateLimit({
+      ip: clientIp,
+      domain: targetDomain,
+    });
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: rateLimit.reason,
+          rateLimitExceeded: true,
+          retryAfterSeconds: rateLimit.retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+            "X-RateLimit-Limit": String(rateLimit.limit),
+            "X-RateLimit-Remaining": String(rateLimit.remaining),
+            "X-RateLimit-Reset": String(Math.ceil((Date.now() + rateLimit.resetMs) / 1000)),
+          },
+        }
+      );
     }
 
     const enableHeadlessRender = Boolean(body.enableHeadlessRender);
