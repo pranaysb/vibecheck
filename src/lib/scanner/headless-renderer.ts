@@ -75,6 +75,47 @@ export async function renderPageWithPlaywright(
 
   let chromiumModule: any;
   try {
+    // Ensure playwright-core can resolve browsers.json even if bundler strips non-JS files in serverless environment
+    try {
+      const Module = require("module");
+      const originalResolve = Module._resolveFilename;
+      const virtualBrowsersPath = "/virtual/browsers.json";
+
+      if (!require.cache[virtualBrowsersPath]) {
+        const defaultBrowsers = {
+          comment: "Synthetic fallback for serverless environment",
+          browsers: [
+            { name: "chromium", revision: "1243", installByDefault: true, browserVersion: "153.0.8010.12", title: "Chrome for Testing" },
+            { name: "chromium-headless-shell", revision: "1243", installByDefault: true, browserVersion: "153.0.8010.12", title: "Chrome Headless Shell" },
+            { name: "firefox", revision: "1543", installByDefault: true, browserVersion: "155.0", title: "Firefox" },
+            { name: "webkit", revision: "2359", installByDefault: true, revisionOverrides: { mac14: "2251", "mac14-arm64": "2251" }, browserVersion: "26.6", title: "WebKit" },
+            { name: "ffmpeg", revision: "1011", installByDefault: true },
+            { name: "winldd", revision: "1007", installByDefault: false },
+            { name: "android", revision: "1001", installByDefault: false }
+          ]
+        };
+        require.cache[virtualBrowsersPath] = {
+          id: virtualBrowsersPath,
+          filename: virtualBrowsersPath,
+          loaded: true,
+          exports: defaultBrowsers
+        } as any;
+      }
+
+      Module._resolveFilename = function (request: string, parent: any, isMain: boolean, options: any) {
+        try {
+          return originalResolve.call(this, request, parent, isMain, options);
+        } catch (err: any) {
+          if (typeof request === "string" && request.endsWith("browsers.json")) {
+            return virtualBrowsersPath;
+          }
+          throw err;
+        }
+      };
+    } catch {
+      // Ignore if Module patching is restricted
+    }
+
     chromiumModule = await import("playwright-core");
   } catch (err: any) {
     return {

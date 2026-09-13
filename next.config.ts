@@ -15,6 +15,12 @@ function getGitCommitSha(): string {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min"],
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/playwright-core/**/*",
+      "./node_modules/playwright-core/browsers.json",
+    ],
+  },
   env: {
     NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: getGitCommitSha(),
   },
