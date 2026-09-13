@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -28,6 +28,26 @@ export default function SelfAuditPage() {
   const [report, setReport] = useState<SelfAuditReport>(() => generateSelfAuditReport());
   const [selectedFinding, setSelectedFinding] = useState<AuditFinding | null>(null);
   const [isRunningLive, setIsRunningLive] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchLiveProbes() {
+      try {
+        const res = await fetch("/api/self-audit");
+        if (!res.ok) return;
+        const liveReport: SelfAuditReport = await res.json();
+        if (mounted) {
+          setReport(liveReport);
+        }
+      } catch {
+        // Fallback to baseline
+      }
+    }
+    fetchLiveProbes();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const gateData: SecurityGateData = {
     status: report.securityGate.verdict === "READY TO SHIP" ? "PASSED" : "FAILED",

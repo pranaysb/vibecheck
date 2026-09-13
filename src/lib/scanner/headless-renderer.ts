@@ -75,7 +75,7 @@ export async function renderPageWithPlaywright(
 
   let chromiumModule: any;
   try {
-    chromiumModule = await import("playwright");
+    chromiumModule = await import("playwright-core");
   } catch (err: any) {
     return {
       rendered: false,
@@ -83,11 +83,50 @@ export async function renderPageWithPlaywright(
     };
   }
 
+  const isServerless = Boolean(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.AWS_REGION
+  );
+
+  let executablePath: string;
+  let launchArgs: string[];
+
+  if (isServerless) {
+    try {
+      const sparticuzModule = await import("@sparticuz/chromium-min");
+      const chromium = sparticuzModule.default || sparticuzModule;
+      chromium.setGraphicsMode = false;
+      const arch = process.arch === "arm64" ? "arm64" : "x64";
+      const packUrl = `https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.${arch}.tar`;
+      executablePath = await chromium.executablePath(packUrl);
+      launchArgs = chromium.args;
+    } catch (sparticuzErr: any) {
+      return {
+        rendered: false,
+        error: `Serverless Chromium initialization failed: ${sparticuzErr.message}`,
+      };
+    }
+  } else {
+    try {
+      executablePath = chromiumModule.chromium.executablePath();
+    } catch {
+      executablePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    }
+    launchArgs = [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+    ];
+  }
+
   let browser: any = null;
   try {
     browser = await chromiumModule.chromium.launch({
+      executablePath,
+      args: launchArgs,
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
 
     const context = await browser.newContext({
