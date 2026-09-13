@@ -14,8 +14,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "A valid target URL is required (e.g., https://example.com)" }, { status: 400 });
     }
 
+    const enableHeadlessRender = Boolean(body.enableHeadlessRender);
+
     // Execute deep SSRF-sandboxed probe
-    const auditResult = await executeDeepProbe(rawUrl);
+    const auditResult = await executeDeepProbe(rawUrl, { enableHeadlessRender });
 
     // Persist to database
     let savedReportId = "";

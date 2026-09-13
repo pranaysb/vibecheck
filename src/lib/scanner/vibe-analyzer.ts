@@ -4,6 +4,8 @@
  * navigation flow, typography hierarchy, and mobile responsiveness.
  */
 
+import type { HeadlessRenderResult } from "./headless-renderer";
+
 export type VibePillar =
   | "VISUAL_DESIGN_AMBIENCE"
   | "UI_BUTTON_CRAFT"
@@ -63,15 +65,25 @@ export interface VibeAnalysisResult {
   critiques: VibeCritique[];
   summaryFeedback: string[];
   sha256Digest: string;
+  headlessRender?: {
+    used: boolean;
+    hasHorizontalOverflow?: boolean;
+    lowContrastElementsCount?: number;
+    smallTapTargetsCount?: number;
+    renderTimeMs?: number;
+  };
 }
 
 export function analyzeVibeFromHtml(
-  html: string,
+  rawHtml: string,
   rawHeaders: Record<string, string>,
   ttfbMs: number,
   targetUrl: string,
-  finalUrl: string
+  finalUrl: string,
+  headlessData?: HeadlessRenderResult | null
 ): VibeAnalysisResult {
+  // If headless rendering captured hydrated DOM, audit the rendered DOM; otherwise use raw static HTML
+  const html = headlessData?.rendered && headlessData.renderedHtml ? headlessData.renderedHtml : rawHtml;
   const parsed = new URL(finalUrl || targetUrl);
   const domain = parsed.hostname;
 
@@ -269,6 +281,46 @@ export function analyzeVibeFromHtml(
     });
   }
 
+  // Headless Real Visual Inspection (Overflow & Computed Color Contrast)
+  if (headlessData?.rendered) {
+    if (headlessData.hasHorizontalOverflow) {
+      visualScore -= 15;
+      visualCritiques.push({
+        id: "vibe-visual-overflow",
+        pillar: "VISUAL_DESIGN_AMBIENCE",
+        title: `Horizontal Layout Overflow Detected (${headlessData.scrollWidth}px on ${headlessData.viewportWidth}px viewport)`,
+        impact: "HIGH",
+        status: "NEEDS_WORK",
+        summary: "Rendered page content exceeds viewport boundaries, forcing horizontal scrolling.",
+        recommendation: "Ensure full-width containers use max-width: 100vw and enforce overflow-x: clip on body.",
+        codeSnippet: "html, body { max-width: 100vw; overflow-x: clip; }",
+      });
+    }
+
+    if (headlessData.lowContrastElementsCount && headlessData.lowContrastElementsCount > 0) {
+      visualScore -= Math.min(20, headlessData.lowContrastElementsCount * 5);
+      visualCritiques.push({
+        id: "vibe-visual-contrast-low",
+        pillar: "VISUAL_DESIGN_AMBIENCE",
+        title: `Low Visual Color Contrast on ${headlessData.lowContrastElementsCount} Elements`,
+        impact: "HIGH",
+        status: "NEEDS_WORK",
+        summary: `${headlessData.lowContrastElementsCount} rendered text or button elements fail the WCAG 4.5:1 color contrast threshold.`,
+        recommendation: "Increase foreground text luminance against dark backgrounds or darken text on light surfaces.",
+      });
+    } else {
+      visualCritiques.push({
+        id: "vibe-visual-contrast-pass",
+        pillar: "VISUAL_DESIGN_AMBIENCE",
+        title: "High Visual Color Contrast & Legibility",
+        impact: "EXCELLENT",
+        status: "PASSED",
+        summary: "All tested text and button elements meet WCAG 4.5:1 color contrast standards.",
+        recommendation: "Maintain contrast ratio across light/dark mode themes.",
+      });
+    }
+  }
+
   visualScore = Math.max(10, Math.min(100, visualScore));
 
   // =========================================================================
@@ -349,6 +401,32 @@ export function analyzeVibeFromHtml(
       summary: `All ${inputTags.length} form inputs have labels or clear placeholder guidance.`,
       recommendation: "Ensure high-contrast focus rings for keyboard navigation (:focus-visible).",
     });
+  }
+
+  // Headless tap target dimensions check
+  if (headlessData?.rendered && typeof headlessData.smallTapTargetsCount === "number") {
+    if (headlessData.smallTapTargetsCount > 0) {
+      uiScore -= Math.min(15, headlessData.smallTapTargetsCount * 3);
+      uiCritiques.push({
+        id: "vibe-btn-small-tap-targets",
+        pillar: "UI_BUTTON_CRAFT",
+        title: `${headlessData.smallTapTargetsCount} Interactive Controls Below Accessible Touch Target (24px)`,
+        impact: "MEDIUM",
+        status: "WARNING",
+        summary: `Found ${headlessData.smallTapTargetsCount} interactive control(s) smaller than 24x24px, which causes touch mis-taps on mobile devices.`,
+        recommendation: "Ensure interactive elements provide at least a 44x44px touch target (or minimum 24x24px with appropriate padding).",
+      });
+    } else {
+      uiCritiques.push({
+        id: "vibe-btn-tap-targets-pass",
+        pillar: "UI_BUTTON_CRAFT",
+        title: "Ergonomic Touch Target Sizing",
+        impact: "EXCELLENT",
+        status: "PASSED",
+        summary: "All tested interactive buttons and links satisfy minimum touch target size constraints.",
+        recommendation: "Maintain ample spacing between adjacent touch targets.",
+      });
+    }
   }
 
   uiScore = Math.max(10, Math.min(100, uiScore));
@@ -691,12 +769,12 @@ export function analyzeVibeFromHtml(
       metaDescription,
       ogImage,
       detectedFrameworks,
-      buttonCount: totalButtons,
+      buttonCount: headlessData?.rendered && typeof headlessData.renderedButtonCount === "number" ? headlessData.renderedButtonCount : totalButtons,
       headingsHierarchy: {
-        h1Count: h1Matches.length,
-        h2Count: h2Matches.length,
-        h3Count: h3Matches.length,
-        sampleH1: cleanH1,
+        h1Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h1Count : h1Matches.length,
+        h2Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h2Count : h2Matches.length,
+        h3Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h3Count : h3Matches.length,
+        sampleH1: headlessData?.rendered && headlessData.renderedHeadings?.sampleH1 ? headlessData.renderedHeadings.sampleH1 : cleanH1,
       },
       navigationDetected: hasNav,
       footerDetected: hasFooter,
@@ -707,5 +785,12 @@ export function analyzeVibeFromHtml(
     critiques: allCritiques,
     summaryFeedback,
     sha256Digest,
+    headlessRender: headlessData?.rendered ? {
+      used: true,
+      hasHorizontalOverflow: headlessData.hasHorizontalOverflow,
+      lowContrastElementsCount: headlessData.lowContrastElementsCount,
+      smallTapTargetsCount: headlessData.smallTapTargetsCount,
+      renderTimeMs: headlessData.renderTimeMs,
+    } : undefined,
   };
 }

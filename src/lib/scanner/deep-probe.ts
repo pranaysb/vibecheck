@@ -3,6 +3,7 @@ import https from "node:https";
 import http from "node:http";
 import { validateTargetDestination } from "@/lib/security/ssrf";
 import { analyzeVibeFromHtml, VibeAnalysisResult } from "@/lib/scanner/vibe-analyzer";
+import { renderPageWithPlaywright, HeadlessRenderResult } from "@/lib/scanner/headless-renderer";
 
 export type FindingSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
 export type FindingCategory = "SECURITY_HEADERS" | "EXPOSURE_PROBES" | "TRANSPORT_HYGIENE" | "SECRETS_DETECTION";
@@ -51,6 +52,7 @@ export interface DeepAuditResult {
     highCount: number;
     mediumCount: number;
   };
+  headlessRender?: HeadlessRenderResult;
 }
 
 interface RawHttpResponse {
@@ -179,7 +181,10 @@ async function safeHttpRequest(initialUrl: string, maxHops = 5, maxBodyBytes = 2
 /**
  * Execute deep, multi-vector defensive security audit against target web application.
  */
-export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResult> {
+export async function executeDeepProbe(
+  inputUrl: string,
+  options?: { enableHeadlessRender?: boolean }
+): Promise<DeepAuditResult> {
   let target = inputUrl.trim();
   if (!target.startsWith("http://") && !target.startsWith("https://")) {
     target = "https://" + target;
@@ -576,7 +581,16 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
   // ==========================================
   // DETERMINISTIC VIBE & PRODUCT CRAFT AUDIT
   // ==========================================
-  const vibe = analyzeVibeFromHtml(responseBodyText, headers, ttfbMs, target, currentUrl);
+  let headlessData: HeadlessRenderResult | null = null;
+  if (options?.enableHeadlessRender) {
+    try {
+      headlessData = await renderPageWithPlaywright(currentUrl, { timeoutMs: 8000 });
+    } catch (err: any) {
+      console.warn("Headless render failed, falling back to static HTML:", err.message);
+    }
+  }
+
+  const vibe = analyzeVibeFromHtml(responseBodyText, headers, ttfbMs, target, currentUrl, headlessData);
 
   // Technical baseline counters
   let techScore = 100;
@@ -635,6 +649,7 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
     critiques: vibe.critiques,
     summaryFeedback: vibe.summaryFeedback,
     technicalFindings: findings,
+    headlessRender: vibe.headlessRender,
     stats: {
       passed: passedCount,
       failed: failedCount,
@@ -686,5 +701,6 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
       highCount,
       mediumCount,
     },
+    headlessRender: headlessData || undefined,
   };
 }
