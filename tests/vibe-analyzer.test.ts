@@ -188,4 +188,98 @@ describe("Vibe & Product UI/UX Analyzer Engine", () => {
     assert.ok(r1.vibeScore >= 90, "High craft application should achieve Grade A/A+");
     assert.equal(r1.grade, "A+");
   });
+
+  test("11. Parses minified single-line production HTML correctly", () => {
+    const minifiedHtml = `<!DOCTYPE html><html><head><title>Minified App</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body class="flex flex-col"><nav><a href="/">Home</a></nav><h1>Minified Heading</h1><button class="btn">Deploy</button><footer><p>&copy; 2026</p></footer></body></html>`;
+    const result = analyzeVibeFromHtml(minifiedHtml, sampleHeaders, 50, "https://minified.com", "https://minified.com");
+    assert.equal(result.productSnapshot.pageTitle, "Minified App");
+    assert.equal(result.productSnapshot.headingsHierarchy.sampleH1, "Minified Heading");
+    assert.equal(result.productSnapshot.buttonCount, 1);
+    assert.equal(result.productSnapshot.navigationDetected, true);
+    assert.equal(result.productSnapshot.footerDetected, true);
+  });
+
+  test("12. Flags simulated [role='button'] missing keyboard focus (tabindex)", () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Custom Buttons</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body>
+          <h1>App Dashboard</h1>
+          <div role="button" class="cursor-pointer">Save Changes</div>
+          <button>Real Button</button>
+        </body>
+      </html>
+    `;
+    const result = analyzeVibeFromHtml(html, sampleHeaders, 75, "https://acme.com", "https://acme.com");
+    const unfocusable = result.critiques.find((c) => c.id === "vibe-btn-role-unfocusable");
+    assert.ok(unfocusable, "Must flag [role=button] without tabindex");
+    assert.equal(unfocusable.status, "NEEDS_WORK");
+    assert.equal(unfocusable.impact, "HIGH");
+  });
+
+  test("13. Recognizes <label for='id'> and wrapped <label> controls as accessible", () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Accessible Form</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body>
+          <h1>Account Setup</h1>
+          <label for="username-input">Username</label>
+          <input id="username-input" type="text" />
+
+          <label>
+            Password
+            <input type="password" />
+          </label>
+          <button>Create Account</button>
+        </body>
+      </html>
+    `;
+    const result = analyzeVibeFromHtml(html, sampleHeaders, 80, "https://acme.com", "https://acme.com");
+    const unlabeled = result.critiques.find((c) => c.id === "vibe-input-unlabeled");
+    assert.equal(unlabeled, undefined, "Properly associated inputs must not be flagged as unlabeled");
+    const goodInput = result.critiques.find((c) => c.id === "vibe-input-good");
+    assert.ok(goodInput, "Should pass labeled form controls check");
+  });
+
+  test("14. Flags heading hierarchy skipping (h1 directly to h3 without h2)", () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Skipped Heading</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body>
+          <h1>Main Topic</h1>
+          <h3>Skipped Subtopic</h3>
+          <button>Read More</button>
+        </body>
+      </html>
+    `;
+    const result = analyzeVibeFromHtml(html, sampleHeaders, 80, "https://acme.com", "https://acme.com");
+    const headingSkip = result.critiques.find((c) => c.id === "vibe-heading-skip");
+    assert.ok(headingSkip, "Must flag skipped <h2> heading rank");
+    assert.equal(headingSkip.status, "WARNING");
+  });
+
+  test("15. Distinguishes accessible decorative images (alt='') from missing alt attributes", () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Image Test</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body>
+          <h1>Hero Showcase</h1>
+          <!-- Decorative image with empty alt attribute is valid WCAG -->
+          <img src="/decorative-blob.svg" alt="" />
+          <!-- Meaningful image with descriptive alt is valid WCAG -->
+          <img src="/chart.png" alt="Revenue growth chart for Q3" />
+          <button>Learn More</button>
+        </body>
+      </html>
+    `;
+    const result = analyzeVibeFromHtml(html, sampleHeaders, 80, "https://acme.com", "https://acme.com");
+    const altFail = result.critiques.find((c) => c.id === "vibe-resp-img-alt");
+    assert.equal(altFail, undefined, "Valid decorative alt='' and descriptive alt must not be flagged");
+    const altPass = result.critiques.find((c) => c.id === "vibe-resp-img-good");
+    assert.ok(altPass, "Should pass accessible media assets check");
+  });
 });

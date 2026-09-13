@@ -5,6 +5,7 @@
  */
 
 import type { HeadlessRenderResult } from "./headless-renderer";
+import { parse } from "node-html-parser";
 
 export type VibePillar =
   | "VISUAL_DESIGN_AMBIENCE"
@@ -87,66 +88,109 @@ export function analyzeVibeFromHtml(
   const parsed = new URL(finalUrl || targetUrl);
   const domain = parsed.hostname;
 
-  // 1. Extract Meta & Head Information
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  const pageTitle = titleMatch?.[1] ? titleMatch[1].trim() : domain;
+  const root = parse(html);
 
-  const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-                    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
-  const metaDescription = descMatch?.[1] ? descMatch[1].trim() : "";
+  // 1. Extract Meta & Head Information via AST
+  const titleEl = root.querySelector("title");
+  const pageTitle = titleEl?.textContent?.trim() || domain;
 
-  const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-  const ogImage = ogImageMatch?.[1] ? ogImageMatch[1].trim() : undefined;
+  const descEl = root.querySelector("meta[name='description'], meta[content][name='description']");
+  const metaDescription = descEl?.getAttribute("content")?.trim() || "";
 
-  const viewportMatch = html.match(/<meta[^>]+name=["']viewport["'][^>]+content=["']([^"']+)["']/i);
-  const hasResponsiveViewport = Boolean(viewportMatch?.[1] && viewportMatch[1].includes("width=device-width"));
+  const ogImageEl = root.querySelector("meta[property='og:image']");
+  const ogImage = ogImageEl?.getAttribute("content")?.trim() || undefined;
 
-  // 2. Headings & Visual Hierarchy Analysis
-  const h1Matches = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/gi) || [];
-  const h2Matches = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/gi) || [];
-  const h3Matches = html.match(/<h3[^>]*>([\s\S]*?)<\/h3>/gi) || [];
+  const viewportEl = root.querySelector("meta[name='viewport']");
+  const viewportContent = viewportEl?.getAttribute("content") || "";
+  const hasResponsiveViewport = viewportContent.includes("width=device-width");
 
-  const firstH1 = h1Matches[0];
+  // 2. Headings & Visual Hierarchy Analysis via AST
+  const h1Elements = root.querySelectorAll("h1");
+  const h2Elements = root.querySelectorAll("h2");
+  const h3Elements = root.querySelectorAll("h3");
+  const h1Count = h1Elements.length;
+  const h2Count = h2Elements.length;
+  const h3Count = h3Elements.length;
+
+  const firstH1 = h1Elements[0];
   const cleanH1 = firstH1
-    ? firstH1.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+    ? firstH1.textContent.replace(/\s+/g, " ").trim()
     : undefined;
 
-  // 3. Interactive Buttons & Controls
-  const buttonTags = html.match(/<button[^>]*>([\s\S]*?)<\/button>/gi) || [];
-  const inputButtons = html.match(/<input[^>]+type=["'](?:submit|button)["'][^>]*>/gi) || [];
-  const linkButtons = html.match(/<a[^>]+class=["'][^"']*(?:btn|button|cta)[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi) || [];
-  const totalButtons = buttonTags.length + inputButtons.length + linkButtons.length;
+  // 3. Interactive Buttons & Controls (native buttons, [role="button"], input buttons, CTA links)
+  const standardButtons = root.querySelectorAll("button");
+  const roleButtons = root.querySelectorAll("[role='button']").filter((el) => el.tagName.toLowerCase() !== "button");
+  const inputButtons = root.querySelectorAll("input[type='submit'], input[type='button']");
+  const linkButtons = root.querySelectorAll("a.btn, a.button, a.cta, a[class*='btn'], a[class*='button']");
+
+  const totalButtons = standardButtons.length + roleButtons.length + inputButtons.length + linkButtons.length;
 
   let emptyButtonsCount = 0;
   let genericCtaCount = 0;
+  let roleButtonsMissingTabindex = 0;
   const genericLabels = ["click here", "submit", "button", "link", "read more", "more", "learn more"];
 
-  for (const btn of buttonTags) {
-    const textOnly = btn.replace(/<[^>]+>/g, "").trim().toLowerCase();
-    const hasAria = /aria-label=["'][^"']+["']/i.test(btn) || /title=["'][^"']+["']/i.test(btn);
-    const hasSvg = /<svg/i.test(btn);
+  for (const btn of standardButtons) {
+    const textOnly = btn.textContent.trim().toLowerCase();
+    const ariaLabel = btn.getAttribute("aria-label")?.trim() || btn.getAttribute("title")?.trim();
+    const hasSvg = Boolean(btn.querySelector("svg"));
+    const hasImg = Boolean(btn.querySelector("img"));
 
-    // If button has an SVG icon or no text, but lacks aria-label/title
-    const isIconOnly = (!textOnly || textOnly.length === 0) && hasSvg;
-    const isCompletelyEmpty = !textOnly && !hasAria && !hasSvg;
+    const isIconOnly = (!textOnly || textOnly.length === 0) && (hasSvg || hasImg);
+    const isCompletelyEmpty = !textOnly && !ariaLabel && !hasSvg && !hasImg;
 
-    if ((isIconOnly && !hasAria) || isCompletelyEmpty) {
+    if ((isIconOnly && !ariaLabel) || isCompletelyEmpty) {
       emptyButtonsCount++;
     } else if (genericLabels.includes(textOnly)) {
       genericCtaCount++;
     }
   }
 
-  // 4. Form Inputs & Accessibility
-  const inputTags = html.match(/<input[^>]*>/gi) || [];
+  // Accessibility check for simulated [role="button"] elements (styled-components, custom divs)
+  for (const roleBtn of roleButtons) {
+    const textOnly = roleBtn.textContent.trim().toLowerCase();
+    const ariaLabel = roleBtn.getAttribute("aria-label")?.trim() || roleBtn.getAttribute("title")?.trim();
+    const hasSvg = Boolean(roleBtn.querySelector("svg"));
+    const hasImg = Boolean(roleBtn.querySelector("img"));
+
+    const isIconOnly = (!textOnly || textOnly.length === 0) && (hasSvg || hasImg);
+    const isCompletelyEmpty = !textOnly && !ariaLabel && !hasSvg && !hasImg;
+
+    if ((isIconOnly && !ariaLabel) || isCompletelyEmpty) {
+      emptyButtonsCount++;
+    } else if (genericLabels.includes(textOnly)) {
+      genericCtaCount++;
+    }
+
+    if (!roleBtn.hasAttribute("tabindex")) {
+      roleButtonsMissingTabindex++;
+    }
+  }
+
+  // 4. Form Inputs & Accessibility via AST (including <label for="..."> association)
+  const inputTags = root.querySelectorAll("input, textarea, select");
   let inputsWithoutLabels = 0;
+  let totalInspectableInputs = 0;
+
   for (const inp of inputTags) {
-    const isHiddenOrSubmit = /type=["'](?:hidden|submit|button|checkbox|radio)["']/i.test(inp);
+    const type = inp.getAttribute("type")?.toLowerCase() || "text";
+    const isHiddenOrSubmit = ["hidden", "submit", "button", "checkbox", "radio"].includes(type);
     if (!isHiddenOrSubmit) {
-      const hasAria = /aria-label=["'][^"']+["']/i.test(inp) || /aria-labelledby/i.test(inp);
-      const hasPlaceholder = /placeholder=["'][^"']+["']/i.test(inp);
-      const hasId = /id=["']([^"']+)["']/i.test(inp);
-      if (!hasAria && !hasPlaceholder && !hasId) {
+      totalInspectableInputs++;
+      const hasAria = Boolean(inp.getAttribute("aria-label") || inp.getAttribute("aria-labelledby"));
+      const hasPlaceholder = Boolean(inp.getAttribute("placeholder")?.trim());
+      const inputId = inp.getAttribute("id");
+      let hasAssociatedLabel = false;
+      if (inputId) {
+        try {
+          hasAssociatedLabel = Boolean(root.querySelector(`label[for="${inputId}"]`));
+        } catch {
+          hasAssociatedLabel = false;
+        }
+      }
+      const isInsideLabel = Boolean(inp.closest("label"));
+
+      if (!hasAria && !hasPlaceholder && !hasAssociatedLabel && !isInsideLabel) {
         inputsWithoutLabels++;
       }
     }
@@ -154,11 +198,21 @@ export function analyzeVibeFromHtml(
 
   // 5. Design System, Frameworks & Ambience
   const detectedFrameworks: string[] = [];
-  if (/class=["'][^"']*(?:flex|grid|p-\d|m-\d|text-|bg-)[^"']*["']/i.test(html)) detectedFrameworks.push("Tailwind CSS");
-  if (/data-radix-/i.test(html)) detectedFrameworks.push("Radix UI / Shadcn");
-  if (/lucide/i.test(html) || /<svg[^>]+class=["'][^"']*lucide[^"']*["']/i.test(html)) detectedFrameworks.push("Lucide Icons");
-  if (/__next/i.test(html) || /_next\/static/i.test(html)) detectedFrameworks.push("Next.js");
-  if (/class=["'][^"']*(?:Mui|css-)[^"']*["']/i.test(html)) detectedFrameworks.push("MUI / Emotion");
+  if (root.querySelector("[class*='flex'], [class*='grid'], [class*='p-'], [class*='m-'], [class*='text-'], [class*='bg-']") || /class=["'][^"']*(?:flex|grid|p-\d|m-\d|text-|bg-)[^"']*["']/i.test(html)) {
+    detectedFrameworks.push("Tailwind CSS");
+  }
+  if (root.querySelector("[data-radix-collection-item], [data-state], [data-orientation]") || /data-radix-/i.test(html)) {
+    detectedFrameworks.push("Radix UI / Shadcn");
+  }
+  if (root.querySelector("svg.lucide, svg[class*='lucide']") || /lucide/i.test(html)) {
+    detectedFrameworks.push("Lucide Icons");
+  }
+  if (root.querySelector("#__next, script[src*='/_next/static/']") || /__next/i.test(html) || /_next\/static/i.test(html)) {
+    detectedFrameworks.push("Next.js");
+  }
+  if (root.querySelector("[class*='Mui'], [class*='css-']") || /class=["'][^"']*(?:Mui|css-)[^"']*["']/i.test(html)) {
+    detectedFrameworks.push("MUI / Emotion");
+  }
 
   // Font family extraction
   const fontFamilies: string[] = [];
@@ -174,18 +228,22 @@ export function analyzeVibeFromHtml(
     if (!fontFamilies.includes("Inter / Geist modern sans")) fontFamilies.push("Inter / Geist modern sans");
   }
 
-  // Navigation & Footer
-  const hasNav = /<nav/i.test(html) || /class=["'][^"']*(?:navbar|header-nav)[^"']*["']/i.test(html);
-  const hasFooter = /<footer/i.test(html) || /class=["'][^"']*(?:footer)[^"']*["']/i.test(html);
+  // Navigation & Footer via AST
+  const hasNav = root.querySelectorAll("nav, [role='navigation'], header nav").length > 0 ||
+                 root.querySelectorAll("[class*='navbar'], [class*='header-nav']").length > 0 ||
+                 /<nav/i.test(html);
+  const hasFooter = root.querySelectorAll("footer, [role='contentinfo']").length > 0 ||
+                   root.querySelectorAll("[class*='footer']").length > 0 ||
+                   /<footer/i.test(html);
 
   // Hero Section & Primary CTA
   const hasHeroCTA = totalButtons > 0 && Boolean(cleanH1);
 
-  // Images without alt
-  const imgTags = html.match(/<img[^>]*>/gi) || [];
+  // Images without alt via AST
+  const imgTags = root.querySelectorAll("img");
   let imagesWithoutAlt = 0;
   for (const img of imgTags) {
-    if (!/alt=["'][^"']*["']/i.test(img)) {
+    if (!img.hasAttribute("alt")) {
       imagesWithoutAlt++;
     }
   }
@@ -197,7 +255,7 @@ export function analyzeVibeFromHtml(
   const visualCritiques: VibeCritique[] = [];
 
   // Heading hierarchy check
-  if (h1Matches.length === 0) {
+  if (h1Count === 0) {
     visualScore -= 20;
     visualCritiques.push({
       id: "vibe-heading-missing",
@@ -209,12 +267,12 @@ export function analyzeVibeFromHtml(
       recommendation: "Wrap your headline hook in a prominent <h1> tag with tight letter-spacing and responsive font size.",
       codeSnippet: `<h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-slate-900">\n  Your Compelling Headline\n</h1>`,
     });
-  } else if (h1Matches.length > 1) {
+  } else if (h1Count > 1) {
     visualScore -= 8;
     visualCritiques.push({
       id: "vibe-heading-multiple",
       pillar: "VISUAL_DESIGN_AMBIENCE",
-      title: `Multiple <h1> Headings Found (${h1Matches.length})`,
+      title: `Multiple <h1> Headings Found (${h1Count})`,
       impact: "MEDIUM",
       status: "WARNING",
       summary: "Multiple <h1> tags compete for primary visual dominance, diluting typographic hierarchy.",
@@ -230,6 +288,20 @@ export function analyzeVibeFromHtml(
       summary: `Found single crisp <h1>: "${cleanH1?.slice(0, 65)}${cleanH1 && cleanH1.length > 65 ? "..." : ""}"`,
       recommendation: "Maintain strong contrast between <h1> and supporting body text.",
       detectedDetail: cleanH1,
+    });
+  }
+
+  // Heading hierarchy skip check (WCAG 1.3.1)
+  if (h3Count > 0 && h2Count === 0) {
+    visualScore -= 6;
+    visualCritiques.push({
+      id: "vibe-heading-skip",
+      pillar: "VISUAL_DESIGN_AMBIENCE",
+      title: "Broken Heading Hierarchy (Skipped <h2>)",
+      impact: "MEDIUM",
+      status: "WARNING",
+      summary: "Found <h3> headings without any preceding <h2> headings, breaking the semantic document outline.",
+      recommendation: "Ensure heading levels ascend progressively (<h1> -> <h2> -> <h3>).",
     });
   }
 
@@ -380,6 +452,20 @@ export function analyzeVibeFromHtml(
     });
   }
 
+  if (roleButtonsMissingTabindex > 0) {
+    uiScore -= Math.min(12, roleButtonsMissingTabindex * 4);
+    uiCritiques.push({
+      id: "vibe-btn-role-unfocusable",
+      pillar: "UI_BUTTON_CRAFT",
+      title: `${roleButtonsMissingTabindex} Custom [role="button"] Elements Not Keyboard Focusable`,
+      impact: "HIGH",
+      status: "NEEDS_WORK",
+      summary: `${roleButtonsMissingTabindex} custom element(s) declare role="button" but lack tabindex="0", making them inaccessible to keyboard navigation.`,
+      recommendation: "Prefer native <button> elements or add tabindex='0' and keyboard handlers to custom role='button' elements.",
+      codeSnippet: `<div role="button" tabIndex={0} onKeyDown={handleKeyDown} className="...">Action</div>`,
+    });
+  }
+
   if (inputsWithoutLabels > 0) {
     uiScore -= 15;
     uiCritiques.push({
@@ -391,14 +477,14 @@ export function analyzeVibeFromHtml(
       summary: "Inputs missing visible labels or aria-label cause friction during data entry and fail WCAG form accessibility standards.",
       recommendation: "Pair inputs with descriptive <label> elements or explicit aria-label tags.",
     });
-  } else if (inputTags.length > 0) {
+  } else if (totalInspectableInputs > 0) {
     uiCritiques.push({
       id: "vibe-input-good",
       pillar: "UI_BUTTON_CRAFT",
       title: "Accessible & Labeled Form Controls",
       impact: "EXCELLENT",
       status: "PASSED",
-      summary: `All ${inputTags.length} form inputs have labels or clear placeholder guidance.`,
+      summary: `All ${totalInspectableInputs} form inputs have labels or clear placeholder guidance.`,
       recommendation: "Ensure high-contrast focus rings for keyboard navigation (:focus-visible).",
     });
   }
@@ -771,9 +857,9 @@ export function analyzeVibeFromHtml(
       detectedFrameworks,
       buttonCount: headlessData?.rendered && typeof headlessData.renderedButtonCount === "number" ? headlessData.renderedButtonCount : totalButtons,
       headingsHierarchy: {
-        h1Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h1Count : h1Matches.length,
-        h2Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h2Count : h2Matches.length,
-        h3Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h3Count : h3Matches.length,
+        h1Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h1Count : h1Count,
+        h2Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h2Count : h2Count,
+        h3Count: headlessData?.rendered && headlessData.renderedHeadings ? headlessData.renderedHeadings.h3Count : h3Count,
         sampleH1: headlessData?.rendered && headlessData.renderedHeadings?.sampleH1 ? headlessData.renderedHeadings.sampleH1 : cleanH1,
       },
       navigationDetected: hasNav,
