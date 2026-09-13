@@ -24,7 +24,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-neutral-600 text-xs leading-relaxed max-w-md">
-              SSRF-sandboxed web application and security inspector. Audits security headers, detects accidental configuration exposures, verifies transport hygiene, and produces verifiable cryptographic reports with embeddable GitHub badges.
+              Automated product craft, UI/UX, button accessibility, and visual ambience inspector for modern web applications. Powered by real-time DOM analysis and cryptographic verification.
             </p>
             <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse-subtle" />

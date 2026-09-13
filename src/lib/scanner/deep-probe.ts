@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import https from "node:https";
 import http from "node:http";
 import { validateTargetDestination } from "@/lib/security/ssrf";
+import { analyzeVibeFromHtml, VibeAnalysisResult } from "@/lib/scanner/vibe-analyzer";
 
 export type FindingSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO";
 export type FindingCategory = "SECURITY_HEADERS" | "EXPOSURE_PROBES" | "TRANSPORT_HYGIENE" | "SECRETS_DETECTION";
@@ -35,8 +36,10 @@ export interface DeepAuditResult {
   ttfbMs: number;
   score: number;
   grade: "A+" | "A" | "B" | "C" | "D" | "F";
-  verdict: "READY TO SHIP" | "SECURITY GATE BLOCKED";
-  findings: AuditFinding[];
+  verdict: string;
+  vibe: VibeAnalysisResult;
+  technicalFindings: AuditFinding[];
+  findings: any;
   rawHeaders: Record<string, string>;
   sha256Digest: string;
   scannedAt: string;
@@ -571,9 +574,12 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
   });
 
   // ==========================================
-  // DETERMINISTIC SCORE & GRADE CALCULATION
+  // DETERMINISTIC VIBE & PRODUCT CRAFT AUDIT
   // ==========================================
-  let score = 100;
+  const vibe = analyzeVibeFromHtml(responseBodyText, headers, ttfbMs, target, currentUrl);
+
+  // Technical baseline counters
+  let techScore = 100;
   let criticalCount = 0;
   let highCount = 0;
   let mediumCount = 0;
@@ -587,53 +593,70 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
     } else if (f.status === "FAILED") {
       failedCount++;
       if (f.severity === "CRITICAL") {
-        score -= 30;
+        techScore -= 30;
         criticalCount++;
       } else if (f.severity === "HIGH") {
-        score -= 15;
+        techScore -= 15;
         highCount++;
       } else if (f.severity === "MEDIUM") {
-        score -= 8;
+        techScore -= 8;
         mediumCount++;
       } else {
-        score -= 3;
+        techScore -= 3;
       }
     } else if (f.status === "WARNING") {
       warningCount++;
       if (f.severity === "HIGH") {
-        score -= 7;
+        techScore -= 7;
       } else if (f.severity === "MEDIUM") {
-        score -= 4;
+        techScore -= 4;
       } else {
-        score -= 2;
+        techScore -= 2;
       }
     }
   }
 
-  score = Math.max(0, Math.min(100, Math.round(score)));
+  techScore = Math.max(0, Math.min(100, Math.round(techScore)));
 
-  let grade: "A+" | "A" | "B" | "C" | "D" | "F" = "F";
-  if (score >= 95 && criticalCount === 0 && highCount === 0) grade = "A+";
-  else if (score >= 90 && criticalCount === 0 && highCount === 0) grade = "A";
-  else if (score >= 80 && criticalCount === 0) grade = "B";
-  else if (score >= 70 && criticalCount === 0) grade = "C";
-  else if (score >= 60) grade = "D";
-  else grade = "F";
-
-  const verdict: "READY TO SHIP" | "SECURITY GATE BLOCKED" =
-    score >= 80 && criticalCount === 0 && highCount === 0 ? "READY TO SHIP" : "SECURITY GATE BLOCKED";
+  // Headline metric is the composite VibeScore
+  const headlineScore = vibe.vibeScore;
+  const headlineGrade = vibe.grade;
+  const headlineVerdict = vibe.verdict;
 
   const scannedAt = new Date().toISOString();
+
+  // Structured findings payload saved to database and client responses
+  const findingsPayload = {
+    vibeScore: vibe.vibeScore,
+    grade: vibe.grade,
+    verdict: vibe.verdict,
+    scores: vibe.scores,
+    productSnapshot: vibe.productSnapshot,
+    critiques: vibe.critiques,
+    summaryFeedback: vibe.summaryFeedback,
+    technicalFindings: findings,
+    stats: {
+      passed: passedCount,
+      failed: failedCount,
+      warnings: warningCount,
+      criticalCount,
+      highCount,
+      mediumCount,
+      techScore,
+    },
+  };
 
   // Compute cryptographic SHA-256 integrity hash
   const canonicalPayload = JSON.stringify({
     domain,
     finalUrl: currentUrl,
     scannedAt,
-    score,
-    grade,
-    verdict,
-    findings: findings.map((f) => ({ id: f.id, status: f.status, severity: f.severity })),
+    vibeScore: headlineScore,
+    grade: headlineGrade,
+    verdict: headlineVerdict,
+    scores: vibe.scores,
+    critiquesCount: vibe.critiques.length,
+    technicalFindingsCount: findings.length,
   });
 
   const sha256Digest = crypto.createHash("sha256").update(canonicalPayload).digest("hex");
@@ -646,10 +669,12 @@ export async function executeDeepProbe(inputUrl: string): Promise<DeepAuditResul
     statusCode: primary.statusCode,
     hops,
     ttfbMs,
-    score,
-    grade,
-    verdict,
-    findings,
+    score: headlineScore,
+    grade: headlineGrade,
+    verdict: headlineVerdict,
+    vibe,
+    technicalFindings: findings,
+    findings: findingsPayload,
     rawHeaders: headers,
     sha256Digest,
     scannedAt,

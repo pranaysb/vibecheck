@@ -113,10 +113,10 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900">
-            Public Audit Directory
+            Public Vibe & Craft Directory
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500">
-            Browse live web application security audits conducted via VibeCheck's probe engine.
+            Browse live product, UI/UX craft, and vibe audits conducted via VibeCheck's real-time inspection engine.
           </p>
         </div>
 
@@ -172,7 +172,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50/70 text-neutral-500 font-mono">
                 <th className="py-3 px-4 font-semibold">Target Domain</th>
-                <th className="py-3 px-4 font-semibold text-center">Score</th>
+                <th className="py-3 px-4 font-semibold text-center">VibeScore</th>
                 <th className="py-3 px-4 font-semibold text-center">Grade</th>
                 <th className="py-3 px-4 font-semibold">Verdict</th>
                 <th className="py-3 px-4 font-semibold">Latency</th>

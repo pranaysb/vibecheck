@@ -13,11 +13,12 @@ export function InstantAuditBar() {
   const router = useRouter();
 
   const scanSteps = [
-    "Validating SSRF sandbox & DNS records...",
-    "Probing HTTP/2 & TLS handshake...",
-    "Auditing CSP, HSTS, XFO & security headers...",
-    "Testing for exposed .env and .git repository...",
-    "Computing SHA-256 cryptographic audit digest...",
+    "Validating SSRF sandbox & fetching live HTML DOM...",
+    "Auditing interactive buttons, CTAs & input accessibility...",
+    "Evaluating typography harmony, visual hierarchy & ambience...",
+    "Analyzing product copy, value proposition & navigation flow...",
+    "Testing mobile responsive ergonomics & technical foundation...",
+    "Generating verified VibeScore & cryptographic digest...",
   ];
 
   useEffect(() => {
