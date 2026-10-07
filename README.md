@@ -149,7 +149,7 @@ curl https://vibecheck-ten-omega.vercel.app/api/scan/test-redirect-chain
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome community contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting pull requests.
 
@@ -157,7 +157,7 @@ To report security vulnerabilities, please consult our [Responsible Disclosure P
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
 
