@@ -1,45 +1,42 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { UserProvider } from "@/lib/auth/UserContext";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { ToastProvider } from "@/components/ui/ToastProvider";
-import { CookieConsent } from "@/components/compliance/CookieConsent";
+import Link from "next/link";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "VibeCheck — Enterprise Code Quality & Security Audit Platform",
-  description: "Continuous architectural validation, SSRF-protected remote probes, and structured peer engineering reviews for mission-critical software.",
-  openGraph: {
-    title: "VibeCheck — Enterprise Code Quality & Security Audit Platform",
-    description: "Continuous architectural validation, SSRF-protected remote probes, and structured peer engineering reviews.",
-    siteName: "VibeCheck Enterprise",
-    type: "website",
-  },
+  title: { default: "VibeCheck — Website audits you can verify", template: "%s · VibeCheck" },
+  description: "Run a deterministic audit of any website, upload, or GitHub repo, then get a written review from an approved human expert.",
+  openGraph: { title: "VibeCheck", description: "Automated audit + human expert review for websites.", type: "website" },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full w-full max-w-full overflow-x-clip flex flex-col bg-[#f8fafc] text-[#0f172a] selection:bg-neutral-200 selection:text-neutral-900">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1.5 focus:bg-neutral-900 focus:text-white focus:text-xs focus:font-medium focus:rounded-md focus:shadow-md focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2"
-        >
-          Skip to main content
+    <html lang="en">
+      <body className="min-h-dvh flex flex-col overflow-x-clip">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 btn btn-primary btn-sm">
+          Skip to content
         </a>
-        <UserProvider>
-          <Navbar />
-          <main id="main-content" className="flex-1 w-full max-w-full overflow-x-clip focus:outline-none">
-            {children}
-          </main>
-          <Footer />
-          <ToastProvider />
-          <CookieConsent />
-        </UserProvider>
+        <Header />
+        <main id="main" className="flex-1 w-full">
+          {children}
+        </main>
+        <footer className="border-t border-line">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-[13px] text-muted">
+            <p>VibeCheck · MIT licensed · every check is open source and documented.</p>
+            <nav className="flex gap-5" aria-label="Footer">
+              <Link href="/methodology" className="hover:text-fg">Methodology</Link>
+              <Link href="/experts" className="hover:text-fg">Experts</Link>
+              <a href="https://github.com/pranaysb/vibecheck" className="hover:text-fg">Source</a>
+            </nav>
+          </div>
+        </footer>
       </body>
     </html>
   );

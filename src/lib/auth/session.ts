@@ -1,28 +1,54 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import type { User } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { User, Role } from "@prisma/client";
+import { hashToken, newToken } from "./password";
 
-export const DEFAULT_USER_USERNAME = "alexrivera";
+const COOKIE = "vc_session";
+const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export async function getCurrentUser(): Promise<User | null> {
-  try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("vibecheck_user_id")?.value;
+export type SessionUser = Pick<User, "id" | "email" | "name"> & { isAdmin: boolean; expertStatus: "PENDING" | "APPROVED" | "REJECTED" | null };
 
-    if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-      });
-      if (user) return user;
-    }
+export function isAdminEmail(email: string): boolean {
+  const list = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return list.includes(email.toLowerCase());
+}
 
-    // Default to Alex Rivera for demo if no cookie set
-    const defaultUser = await prisma.user.findUnique({
-      where: { username: DEFAULT_USER_USERNAME },
-    });
-    return defaultUser;
-  } catch (error) {
-    console.error("Error fetching current user:", error);
-    return null;
-  }
+export async function createSession(userId: string) {
+  const { token, hash } = newToken();
+  const expiresAt = new Date(Date.now() + TTL_MS);
+  await prisma.session.create({ data: { tokenHash: hash, userId, expiresAt } });
+  (await cookies()).set(COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: expiresAt,
+  });
+}
+
+export async function destroySession() {
+  const jar = await cookies();
+  const token = jar.get(COOKIE)?.value;
+  if (token) await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+  jar.delete(COOKIE);
+}
+
+export const getUser = cache(async (): Promise<SessionUser | null> => {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return null;
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: { user: { select: { id: true, email: true, name: true, expertProfile: { select: { status: true } } } } },
+  });
+  if (!session || session.expiresAt < new Date()) return null;
+  const { expertProfile, ...u } = session.user;
+  return { ...u, isAdmin: isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
+});
+
+export async function requireUser(next = "/dashboard"): Promise<SessionUser> {
+  const user = await getUser();
+  if (!user) redirect(`/signin?next=${encodeURIComponent(next)}`);
+  return user;
 }

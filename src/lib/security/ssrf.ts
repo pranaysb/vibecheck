@@ -317,7 +317,7 @@ export async function validateTargetDestination(targetUrl: string): Promise<SSRF
       normalizedHost: hostname,
       resolvedIp: addresses[0].address,
     };
-  } catch (err: any) {
-    return { allowed: false, reason: `DNS resolution failed: ${err.message}` };
+  } catch (err) {
+    return { allowed: false, reason: `DNS resolution failed: ${(err as Error).message}` };
   }
 }

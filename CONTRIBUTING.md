@@ -36,10 +36,9 @@ All contributors and maintainers are expected to uphold a respectful, inclusive,
    DATABASE_URL="postgresql://user:password@localhost:5432/vibecheck?schema=public"
    ```
 
-4. **Initialize database schema & seeds**:
+4. **Create the database schema**:
    ```bash
-   npx prisma db push
-   npm run seed
+   npm run db:push
    ```
 
 5. **Start the Next.js development server**:
@@ -52,16 +51,13 @@ All contributors and maintainers are expected to uphold a respectful, inclusive,
 
 ## Security Guidelines
 
-VibeCheck is a security-focused audit system. Any pull request affecting:
-- Destination resolution (`src/lib/security/ssrf.ts`)
-- Cryptographic attestation (`src/lib/audit/self-audit-engine.ts`)
-- Verification endpoints (`src/app/api/scan/*`)
+Any pull request touching destination resolution (`src/lib/security/ssrf.ts`, `src/lib/net/safe-fetch.ts`), the browser router (`src/lib/audit/browser.ts`), or the upload preview (`src/app/preview/`, `src/lib/preview.ts`) **must**:
 
-**Must**:
-1. Pass the full 34-vector SSRF normalization probe suite (`npm run build` and `/api/scan/test-adversarial`).
-2. Pass genuine network-level redirect traversal tests (`/api/scan/test-redirect-chain`).
-3. Never weaken IP normalization (support octal, hex, decimal, shorthand, and IPv6 encodings).
-4. Maintain zero socket dispatch to private, cloud metadata (169.254.169.254), loopback (127.0.0.0/8), and RFC 1918 subnets.
+1. Keep `npm test` green, including the SSRF and preview-token suites.
+2. Never dispatch a socket to private, loopback, link-local or metadata ranges, and keep connections pinned to the validated IP.
+3. Never serve uploaded content without the CSP `sandbox` header.
+
+New automated checks must be added to `src/lib/audit/catalog.ts`; `tests/catalog.test.ts` fails otherwise.
 
 ---
 

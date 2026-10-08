@@ -1,7 +1,7 @@
 {
   "name": "vibecheck",
   "version": "1.4.2",
-  "description": "Enterprise code quality benchmarks, SSRF-defended automated remote audits, and cryptographic attestation platform built on Next.js 16.",
+  "description": "Website audits you can verify: a deterministic automated audit plus written reviews from approved human experts.",
   "license": "MIT",
   "author": "Pranay S. B. <pranaystudies22@gmail.com>",
   "repository": {
@@ -10,46 +10,37 @@
   },
   "homepage": "https://vibecheck-ten-omega.vercel.app",
   "keywords": [
-    "security",
-    "ssrf-prevention",
-    "code-quality",
     "audit",
-    "cryptographic-attestation",
-    "nextjs",
-    "turbopack",
-    "vercel"
+    "accessibility",
+    "security-headers",
+    "web-performance",
+    "code-review",
+    "nextjs"
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && (prisma db push --accept-data-loss || true) && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "tsx --test tests/**/*.test.ts",
-    "seed": "tsx prisma/seed.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:push": "prisma db push",
     "postinstall": "prisma generate"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@sparticuz/chromium-min": "^153.0.0",
-    "canvas-confetti": "^1.9.4",
-    "clsx": "^2.1.1",
+    "fflate": "^0.8.3",
     "lucide-react": "^1.39.0",
-    "motion": "^13.2.0",
     "next": "16.3.4",
     "node-html-parser": "^9.0.4",
     "playwright-core": "^1.63.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sonner": "^2.0.8",
-    "tailwind-merge": "^3.6.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

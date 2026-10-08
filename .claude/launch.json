@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vibecheck-prod",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "ADMIN_EMAILS=admin@vibecheck.test npx next start -p 3100"],
+      "port": 3100
+    }
+  ]
+}
