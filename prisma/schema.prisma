@@ -1,6 +1,9 @@
+// All tables live in their own "vibecheck" schema, so `prisma db push` never touches other
+// tables in the same database (e.g. Neon Auth or pre-rebuild data in "public").
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["vibecheck"]
 }
 
 generator client {
@@ -20,6 +23,8 @@ model User {
   requests        ReviewRequest[] @relation("Requester")
   claimedRequests ReviewRequest[] @relation("Expert")
   expertReviews   ExpertReview[]
+
+  @@schema("vibecheck")
 }
 
 model Session {
@@ -31,12 +36,16 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+
+  @@schema("vibecheck")
 }
 
 enum ExpertStatus {
   PENDING
   APPROVED
   REJECTED
+
+  @@schema("vibecheck")
 }
 
 model ExpertProfile {
@@ -53,18 +62,24 @@ model ExpertProfile {
   updatedAt  DateTime     @updatedAt
 
   @@index([status])
+
+  @@schema("vibecheck")
 }
 
 enum AuditSource {
   URL
   ZIP
   GITHUB
+
+  @@schema("vibecheck")
 }
 
 enum AuditStatus {
   RUNNING
   COMPLETED
   FAILED
+
+  @@schema("vibecheck")
 }
 
 model Audit {
@@ -89,6 +104,8 @@ model Audit {
 
   @@index([ownerId])
   @@index([createdAt])
+
+  @@schema("vibecheck")
 }
 
 model AuditFile {
@@ -101,6 +118,8 @@ model AuditFile {
   data        Bytes
 
   @@unique([auditId, path])
+
+  @@schema("vibecheck")
 }
 
 model Screenshot {
@@ -113,6 +132,8 @@ model Screenshot {
   data    Bytes
 
   @@unique([auditId, kind])
+
+  @@schema("vibecheck")
 }
 
 enum RequestStatus {
@@ -120,6 +141,8 @@ enum RequestStatus {
   CLAIMED
   COMPLETED
   CANCELLED
+
+  @@schema("vibecheck")
 }
 
 model ReviewRequest {
@@ -141,12 +164,16 @@ model ReviewRequest {
   @@index([status])
   @@index([requesterId])
   @@index([expertId])
+
+  @@schema("vibecheck")
 }
 
 enum Verdict {
   SHIP
   FIX_FIRST
   NOT_READY
+
+  @@schema("vibecheck")
 }
 
 model ExpertReview {
@@ -163,4 +190,6 @@ model ExpertReview {
   createdAt   DateTime      @default(now())
 
   @@index([expertId])
+
+  @@schema("vibecheck")
 }
