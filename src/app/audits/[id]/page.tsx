@@ -175,6 +175,8 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
                 </p>
               ) : !user ? (
                 <Link href={`/signin?next=/audits/${audit.id}`} className="btn btn-primary">Sign in to request a review</Link>
+              ) : !user.verified ? (
+                <Link href={`/verify?next=/audits/${audit.id}`} className="btn btn-primary">Verify your email to request a review</Link>
               ) : audit.ownerId && !isOwner ? (
                 <p className="text-sm text-muted">Only the person who ran this audit can request a review. <Link href="/" className="underline underline-offset-4">Run your own</Link>.</p>
               ) : (

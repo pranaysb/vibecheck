@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth/session";
+import { requireVerifiedUser } from "@/lib/auth/session";
 import { claimRequest } from "@/app/actions/reviews";
 import { ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { VERDICT } from "@/components/review-ui";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Review queue" };
 
 export default async function Queue({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const user = await requireUser("/expert");
+  const user = await requireVerifiedUser("/expert");
   if (user.expertStatus !== "APPROVED") redirect("/experts/apply");
   const { error } = await searchParams;
 

@@ -1,18 +1,14 @@
 import crypto from "node:crypto";
+import { hmac } from "@/lib/secret";
 
 /**
  * Sandboxed previews run on an opaque origin, so their subresource requests carry no session cookie.
  * Access is instead granted by an expiring HMAC token in the path, issued only after canViewAudit passes.
  */
 const TTL_SECONDS = 12 * 60 * 60;
-const fallbackSecret = crypto.randomBytes(32).toString("hex");
-
-function secret() {
-  return process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || fallbackSecret;
-}
 
 function sign(auditId: string, exp: number) {
-  return crypto.createHmac("sha256", secret()).update(`${auditId}.${exp}`).digest("base64url").slice(0, 32);
+  return hmac(`${auditId}.${exp}`).slice(0, 32);
 }
 
 export function previewPath(auditId: string, now = Date.now()): string {

@@ -14,8 +14,9 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
 
   sessions        Session[]
   audits          Audit[]
@@ -24,6 +25,28 @@ model User {
   claimedRequests ReviewRequest[] @relation("Expert")
   expertReviews   ExpertReview[]
 
+  @@schema("vibecheck")
+}
+
+enum CodePurpose {
+  VERIFY
+  SIGNIN
+
+  @@schema("vibecheck")
+}
+
+/// One-time email codes. Only an HMAC of the code is stored.
+model EmailCode {
+  id         String      @id @default(cuid())
+  email      String
+  purpose    CodePurpose
+  codeHash   String
+  attempts   Int         @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@index([email, purpose, createdAt])
   @@schema("vibecheck")
 }
 

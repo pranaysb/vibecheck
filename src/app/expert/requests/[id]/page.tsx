@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { previewPath } from "@/lib/preview";
-import { requireUser } from "@/lib/auth/session";
+import { requireVerifiedUser } from "@/lib/auth/session";
 import { releaseRequest } from "@/app/actions/reviews";
 import { computeScore, type AuditMeta, type CheckResult } from "@/lib/audit/types";
 import { ScoreRing, SOURCE_LABEL, sortChecks } from "@/components/audit-ui";
@@ -13,7 +13,7 @@ export const metadata = { title: "Write review" };
 
 export default async function Workspace({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireUser(`/expert/requests/${id}`);
+  const user = await requireVerifiedUser(`/expert/requests/${id}`);
   if (user.expertStatus !== "APPROVED") redirect("/experts/apply");
   const req = await prisma.reviewRequest.findUnique({
     where: { id },

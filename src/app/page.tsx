@@ -32,7 +32,7 @@ export default async function Home() {
           written review from a human expert when you want a second pair of eyes.
         </p>
         <div className="mt-10">
-          <AuditForm signedIn={Boolean(user)} maxUploadMb={MAX_UPLOAD_MB} />
+          <AuditForm signedIn={Boolean(user)} verified={Boolean(user?.verified)} maxUploadMb={MAX_UPLOAD_MB} />
         </div>
       </section>
 

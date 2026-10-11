@@ -14,12 +14,14 @@ Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload
 
 **Score.** The score is the weighted share of checks that ran and passed: critical 10, high 6, medium 3, low 1; a warning earns half. A failed critical check caps the score at 40. Checks that couldn't run are excluded, never counted as passes.
 
+**Accounts.** Email + password or passwordless email codes (via Resend). New accounts verify their email with a 6-digit code before they can upload, request reviews, apply as experts, or get admin. Codes are stored as HMACs, expire in 10 minutes, allow 5 attempts, and are rate-limited per email in the database.
+
 **Safety.** All outbound requests (including Chromium's subrequests) are blocked from private, loopback, link-local and metadata ranges, and sockets are pinned to the validated IP to defeat DNS rebinding. Uploaded sites are previewed under `Content-Security-Policy: sandbox` (opaque origin) via expiring HMAC-signed links. Real `.env` files are never stored.
 
 ## Running locally
 
 ```bash
-cp .env.example .env      # set DATABASE_URL, ADMIN_EMAILS, SESSION_SECRET
+cp .env.example .env      # DATABASE_URL, ADMIN_EMAILS, SESSION_SECRET; RESEND_API_KEY + EMAIL_FROM optional locally
 npm install
 npx playwright-core install chromium   # browser checks; skipped (not faked) if missing
 npm run db:push
@@ -37,14 +39,14 @@ npm run build
 
 ## Deploying
 
-- Set `DATABASE_URL`, `ADMIN_EMAILS` and `SESSION_SECRET`. Run `npm run db:push` yourself; the build no longer pushes the schema (it used to run `--accept-data-loss` on every deploy).
+- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `RESEND_API_KEY` and `EMAIL_FROM`. Run `npm run db:push` yourself; the build no longer pushes the schema (it used to run `--accept-data-loss` on every deploy).
 - On Vercel, Chromium comes from `@sparticuz/chromium-min`, and request bodies are capped at 4.5 MB, so set `MAX_UPLOAD_MB=4` there or self-host for larger uploads.
 - Rate limits are in-memory per instance. Put a shared store (Redis/Upstash) behind `src/lib/security/rate-limit.ts` before scaling out.
 
 ## Not built yet
 
 - Payments. Review requests are free; nothing on the site claims otherwise.
-- Email notifications. Status changes show on the dashboard and review queue.
+- Email notifications for review status. Status changes show on the dashboard and review queue (email is only used for sign-in codes).
 - Private GitHub repos. These need a GitHub OAuth app; upload a `.zip` for now.
 
 MIT licensed.

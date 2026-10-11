@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { getUser, requireUser } from "@/lib/auth/session";
+import { getUser, requireUser, requireVerifiedUser } from "@/lib/auth/session";
 import { FOCUS_AREAS } from "@/lib/access";
 import type { FormState } from "./auth";
 
@@ -22,7 +22,7 @@ const Application = z.object({
 });
 
 export async function applyAsExpert(_: FormState, form: FormData): Promise<FormState> {
-  const user = await requireUser("/experts/apply");
+  const user = await requireVerifiedUser("/experts/apply");
   const parsed = Application.safeParse({
     headline: form.get("headline"),
     bio: form.get("bio"),
@@ -48,7 +48,7 @@ export async function applyAsExpert(_: FormState, form: FormData): Promise<FormS
 }
 
 export async function decideExpert(form: FormData) {
-  const user = await requireUser("/admin");
+  const user = await requireVerifiedUser("/admin");
   if (!user.isAdmin) throw new Error("Admins only.");
   const id = String(form.get("id"));
   const decision = form.get("decision") === "approve" ? "APPROVED" : "REJECTED";
@@ -67,7 +67,7 @@ const RequestInput = z.object({
 
 export async function requestReview(_: FormState, form: FormData): Promise<FormState> {
   const auditId = String(form.get("auditId"));
-  const user = await requireUser(`/audits/${auditId}`);
+  const user = await requireVerifiedUser(`/audits/${auditId}`);
   const parsed = RequestInput.safeParse({ auditId, focus: form.getAll("focus"), notes: form.get("notes") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const audit = await prisma.audit.findUnique({ where: { id: auditId } });
@@ -110,7 +110,7 @@ export async function rateReview(_: FormState, form: FormData): Promise<FormStat
 
 async function requireExpert() {
   const user = await getUser();
-  if (!user || user.expertStatus !== "APPROVED") throw new Error("Approved experts only.");
+  if (!user || !user.verified || user.expertStatus !== "APPROVED") throw new Error("Approved experts only.");
   return user;
 }
 

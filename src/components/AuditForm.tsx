@@ -13,7 +13,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "zip", label: "Upload .zip" },
 ];
 
-export function AuditForm({ signedIn, maxUploadMb }: { signedIn: boolean; maxUploadMb: number }) {
+export function AuditForm({ signedIn, verified, maxUploadMb }: { signedIn: boolean; verified: boolean; maxUploadMb: number }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("url");
   const [url, setUrl] = useState("");
@@ -32,7 +32,7 @@ export function AuditForm({ signedIn, maxUploadMb }: { signedIn: boolean; maxUpl
     return () => clearInterval(t);
   }, [running]);
 
-  const needsAccount = tab !== "url" && !signedIn;
+  const needsAccount = tab !== "url" && (!signedIn || !verified);
 
   async function start(e: React.FormEvent) {
     e.preventDefault();
@@ -140,7 +140,11 @@ export function AuditForm({ signedIn, maxUploadMb }: { signedIn: boolean; maxUpl
           </button>
         </div>
 
-        {needsAccount ? (
+        {needsAccount && signedIn ? (
+          <p className="text-sm text-muted mt-3 px-1">
+            Uploads and repo imports need a verified email. <Link href="/verify?next=/" className="text-fg underline underline-offset-4">Verify yours</Link> &mdash; it takes a minute.
+          </p>
+        ) : needsAccount ? (
           <p className="text-sm text-muted mt-3 px-1">
             Uploads and repo imports are stored for expert review, so they need an account.{" "}
             <Link href="/signup?next=/" className="text-fg underline underline-offset-4">Create one</Link> or <Link href="/signin?next=/" className="text-fg underline underline-offset-4">sign in</Link>.

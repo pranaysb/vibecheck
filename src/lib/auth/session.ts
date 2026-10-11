@@ -8,7 +8,12 @@ import { hashToken, newToken } from "./password";
 const COOKIE = "vc_session";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export type SessionUser = Pick<User, "id" | "email" | "name"> & { isAdmin: boolean; expertStatus: "PENDING" | "APPROVED" | "REJECTED" | null };
+export type SessionUser = Pick<User, "id" | "email" | "name"> & {
+  verified: boolean;
+  /** Only true once the email is verified, so nobody can claim an admin address they don't own. */
+  isAdmin: boolean;
+  expertStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
+};
 
 export function isAdminEmail(email: string): boolean {
   const list = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
@@ -40,15 +45,23 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
   if (!token) return null;
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { user: { select: { id: true, email: true, name: true, expertProfile: { select: { status: true } } } } },
+    include: { user: { select: { id: true, email: true, name: true, emailVerifiedAt: true, expertProfile: { select: { status: true } } } } },
   });
   if (!session || session.expiresAt < new Date()) return null;
-  const { expertProfile, ...u } = session.user;
-  return { ...u, isAdmin: isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
+  const { expertProfile, emailVerifiedAt, ...u } = session.user;
+  const verified = emailVerifiedAt !== null;
+  return { ...u, verified, isAdmin: verified && isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
 });
 
 export async function requireUser(next = "/dashboard"): Promise<SessionUser> {
   const user = await getUser();
   if (!user) redirect(`/signin?next=${encodeURIComponent(next)}`);
+  return user;
+}
+
+/** For pages and actions that need a verified email (uploads, reviews, expert work, admin). */
+export async function requireVerifiedUser(next = "/dashboard"): Promise<SessionUser> {
+  const user = await requireUser(next);
+  if (!user.verified) redirect(`/verify?next=${encodeURIComponent(next)}`);
   return user;
 }
