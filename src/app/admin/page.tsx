@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireVerifiedUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
 import { decideExpert } from "@/app/actions/reviews";
 import { timeAgo } from "@/components/audit-ui";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin", robots: { index: false } };
 
 export default async function Admin() {
-  const user = await requireVerifiedUser("/admin");
+  const user = await requireUser("/admin");
   if (!user.isAdmin) notFound();
 
   const [pending, decided, counts] = await Promise.all([

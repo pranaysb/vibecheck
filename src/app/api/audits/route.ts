@@ -21,7 +21,6 @@ export async function POST(req: Request) {
   const type = req.headers.get("content-type") ?? "";
   if (type.startsWith("multipart/form-data")) {
     if (!user) return fail(401, "Sign in to upload files.");
-    if (!user.verified) return fail(403, "Verify your email before uploading.");
     const len = Number(req.headers.get("content-length") ?? 0);
     if (len > MAX_UPLOAD_BYTES + 64 * 1024) return fail(413, `Uploads are limited to ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
     const form = await req.formData();
@@ -35,7 +34,6 @@ export async function POST(req: Request) {
     if (body?.source === "URL" && typeof body.url === "string" && body.url.trim()) input = { source: "URL", url: body.url.slice(0, 2048) };
     else if (body?.source === "GITHUB" && typeof body.repo === "string" && body.repo.trim()) {
       if (!user) return fail(401, "Sign in to import a repository.");
-      if (!user.verified) return fail(403, "Verify your email before importing a repository.");
       input = { source: "GITHUB", repo: body.repo.slice(0, 300) };
     } else return fail(400, "Provide a URL, a GitHub repository, or a .zip file.");
   }

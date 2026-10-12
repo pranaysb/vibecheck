@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getUser } from "@/lib/auth/session";
-import { signOut } from "@/app/actions/auth";
+import { UserButton } from "@clerk/nextjs";
 
 export function Logo() {
   return (
@@ -29,23 +29,17 @@ export async function Header() {
         <div className="ml-auto flex items-center gap-1">
           {user ? (
             <>
-              {!user.verified && (
-                <Link href="/verify" className="chip h-8 px-3 text-[13px] text-fg border-line-strong hover:bg-surface mr-1">
-                  <span className="size-1.5 rounded-full bg-warn" aria-hidden="true" />
-                  Verify email
-                </Link>
-              )}
               {user.expertStatus === "APPROVED" && <Link href="/expert" className="btn btn-ghost btn-sm hidden sm:inline-flex">Review queue</Link>}
               {user.isAdmin && <Link href="/admin" className="btn btn-ghost btn-sm hidden sm:inline-flex">Admin</Link>}
               <Link href="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
-              <form action={signOut}>
-                <button className="btn btn-ghost btn-sm" type="submit">Sign out</button>
-              </form>
+              <span className="ml-1.5 grid size-8 place-items-center">
+                <UserButton />
+              </span>
             </>
           ) : (
             <>
-              <Link href="/signin" className="btn btn-ghost btn-sm">Sign in</Link>
-              <Link href="/signup" className="btn btn-primary btn-sm">Create account</Link>
+              <Link href="/sign-in" className="btn btn-ghost btn-sm">Sign in</Link>
+              <Link href="/sign-up" className="btn btn-primary btn-sm">Create account</Link>
             </>
           )}
         </div>

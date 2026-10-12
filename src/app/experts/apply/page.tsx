@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
-import { requireVerifiedUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
 import { ApplyForm } from "./ApplyForm";
 
 export const metadata = { title: "Apply as an expert" };
 export const dynamic = "force-dynamic";
 
 export default async function Apply() {
-  const user = await requireVerifiedUser("/experts/apply");
+  const user = await requireUser("/experts/apply");
   const profile = await prisma.expertProfile.findUnique({ where: { userId: user.id } });
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12 sm:py-16">

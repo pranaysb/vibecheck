@@ -1,16 +1,14 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { hashToken, newToken } from "./password";
 
-const COOKIE = "vc_session";
-const TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
+/**
+ * Clerk owns sign-in, email verification and sessions. This module maps the signed-in Clerk user
+ * onto VibeCheck's own User row (audits, reviews and expert profiles hang off it).
+ */
 export type SessionUser = Pick<User, "id" | "email" | "name"> & {
-  verified: boolean;
-  /** Only true once the email is verified, so nobody can claim an admin address they don't own. */
   isAdmin: boolean;
   expertStatus: "PENDING" | "APPROVED" | "REJECTED" | null;
 };
@@ -20,48 +18,48 @@ export function isAdminEmail(email: string): boolean {
   return list.includes(email.toLowerCase());
 }
 
-export async function createSession(userId: string) {
-  const { token, hash } = newToken();
-  const expiresAt = new Date(Date.now() + TTL_MS);
-  await prisma.session.create({ data: { tokenHash: hash, userId, expiresAt } });
-  (await cookies()).set(COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
-}
+const SELECT = { id: true, email: true, name: true, expertProfile: { select: { status: true } } } as const;
 
-export async function destroySession() {
-  const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
-  if (token) await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
-  jar.delete(COOKIE);
+/**
+ * First request after a Clerk sign-in: link to an existing row with the same email (accounts created
+ * before Clerk), or create one. Only a Clerk-verified primary email is ever stored, which is what
+ * makes ADMIN_EMAILS safe: nobody can register an admin's address without receiving its code.
+ */
+async function linkClerkUser(clerkId: string) {
+  const cu = await currentUser();
+  const primary = cu?.emailAddresses.find((e) => e.id === cu.primaryEmailAddressId);
+  if (!cu || !primary || primary.verification?.status !== "verified") return null;
+  const email = primary.emailAddress.toLowerCase();
+  const name = [cu.firstName, cu.lastName].filter(Boolean).join(" ") || cu.username || email.split("@")[0];
+
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true, clerkId: true } });
+  if (existing) {
+    if (existing.clerkId && existing.clerkId !== clerkId) return null; // address belongs to another Clerk user
+    return prisma.user.update({ where: { id: existing.id }, data: { clerkId }, select: SELECT });
+  }
+  try {
+    return await prisma.user.create({ data: { clerkId, email, name }, select: SELECT });
+  } catch {
+    // Two first requests raced; the other one created the row.
+    return prisma.user.findUnique({ where: { clerkId }, select: SELECT });
+  }
 }
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
-  const token = (await cookies()).get(COOKIE)?.value;
-  if (!token) return null;
-  const session = await prisma.session.findUnique({
-    where: { tokenHash: hashToken(token) },
-    include: { user: { select: { id: true, email: true, name: true, emailVerifiedAt: true, expertProfile: { select: { status: true } } } } },
-  });
-  if (!session || session.expiresAt < new Date()) return null;
-  const { expertProfile, emailVerifiedAt, ...u } = session.user;
-  const verified = emailVerifiedAt !== null;
-  return { ...u, verified, isAdmin: verified && isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
+  const { userId } = await auth();
+  if (!userId) return null;
+  const user = (await prisma.user.findUnique({ where: { clerkId: userId }, select: SELECT })) ?? (await linkClerkUser(userId));
+  if (!user) return null;
+  const { expertProfile, ...u } = user;
+  return { ...u, isAdmin: isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
 });
 
 export async function requireUser(next = "/dashboard"): Promise<SessionUser> {
   const user = await getUser();
-  if (!user) redirect(`/signin?next=${encodeURIComponent(next)}`);
-  return user;
-}
-
-/** For pages and actions that need a verified email (uploads, reviews, expert work, admin). */
-export async function requireVerifiedUser(next = "/dashboard"): Promise<SessionUser> {
-  const user = await requireUser(next);
-  if (!user.verified) redirect(`/verify?next=${encodeURIComponent(next)}`);
-  return user;
+  if (user) return user;
+  if ((await auth()).userId) {
+    // Signed in to Clerk but not linkable (no verified primary email); redirecting to sign-in would loop.
+    throw new Error("Your account needs a verified primary email address. Add one under Manage account.");
+  }
+  redirect(`/sign-in?redirect_url=${encodeURIComponent(next)}`);
 }

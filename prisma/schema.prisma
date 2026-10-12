@@ -11,12 +11,17 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash    String
+  id        String   @id @default(cuid())
+  /// Clerk user id. Sign-in, email verification and sessions are handled by Clerk.
+  clerkId   String?  @unique
+  /// The user's Clerk-verified primary email (ADMIN_EMAILS is matched against it).
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  /// Legacy (pre-Clerk) auth columns, unused. Dropped once the migration is deployed.
+  passwordHash    String?
   emailVerifiedAt DateTime?
-  createdAt       DateTime  @default(now())
 
   sessions        Session[]
   audits          Audit[]
@@ -35,7 +40,7 @@ enum CodePurpose {
   @@schema("vibecheck")
 }
 
-/// One-time email codes. Only an HMAC of the code is stored.
+/// Legacy (pre-Clerk), unused. Dropped once the migration is deployed.
 model EmailCode {
   id         String      @id @default(cuid())
   email      String
@@ -50,6 +55,7 @@ model EmailCode {
   @@schema("vibecheck")
 }
 
+/// Legacy (pre-Clerk), unused. Dropped once the migration is deployed.
 model Session {
   id        String   @id @default(cuid())
   tokenHash String   @unique

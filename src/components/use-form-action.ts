@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState } from "react";
-import type { FormState } from "@/app/actions/auth";
+import type { FormState } from "@/lib/form";
 
 /**
  * useActionState, but submitted via onSubmit so React doesn't reset the form's fields when the
