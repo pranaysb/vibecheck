@@ -19,52 +19,11 @@ model User {
   name      String
   createdAt DateTime @default(now())
 
-  /// Legacy (pre-Clerk) auth columns, unused. Dropped once the migration is deployed.
-  passwordHash    String?
-  emailVerifiedAt DateTime?
-
-  sessions        Session[]
   audits          Audit[]
   expertProfile   ExpertProfile?
   requests        ReviewRequest[] @relation("Requester")
   claimedRequests ReviewRequest[] @relation("Expert")
   expertReviews   ExpertReview[]
-
-  @@schema("vibecheck")
-}
-
-enum CodePurpose {
-  VERIFY
-  SIGNIN
-
-  @@schema("vibecheck")
-}
-
-/// Legacy (pre-Clerk), unused. Dropped once the migration is deployed.
-model EmailCode {
-  id         String      @id @default(cuid())
-  email      String
-  purpose    CodePurpose
-  codeHash   String
-  attempts   Int         @default(0)
-  expiresAt  DateTime
-  consumedAt DateTime?
-  createdAt  DateTime    @default(now())
-
-  @@index([email, purpose, createdAt])
-  @@schema("vibecheck")
-}
-
-/// Legacy (pre-Clerk), unused. Dropped once the migration is deployed.
-model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
 
   @@schema("vibecheck")
 }
