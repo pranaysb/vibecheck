@@ -14,21 +14,21 @@ Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload
 
 **Score.** The score is the weighted share of checks that ran and passed: critical 10, high 6, medium 3, low 1; a warning earns half. A failed critical check caps the score at 40. Checks that couldn't run are excluded, never counted as passes.
 
-**Accounts.** Email + password or passwordless email codes (sent through Gmail SMTP or Resend). New accounts verify their email with a 6-digit code before they can upload, request reviews, apply as experts, or get admin. Codes are stored as HMACs, expire in 10 minutes, allow 5 attempts, and are rate-limited per email in the database.
+**Accounts.** [Clerk](https://clerk.com) handles sign-up and sign-in (email code, Google, GitHub; password optional) and verifies every email address. Each Clerk user is linked to a VibeCheck user row by `clerkId`; on first sign-in, an existing row with the same verified email is claimed. Admin access requires a Clerk-verified email listed in `ADMIN_EMAILS`.
 
 **Safety.** All outbound requests (including Chromium's subrequests) are blocked from private, loopback, link-local and metadata ranges, and sockets are pinned to the validated IP to defeat DNS rebinding. Uploaded sites are previewed under `Content-Security-Policy: sandbox` (opaque origin) via expiring HMAC-signed links. Real `.env` files are never stored.
 
 ## Running locally
 
 ```bash
-cp .env.example .env      # DATABASE_URL, ADMIN_EMAILS, SESSION_SECRET; email provider optional locally
+cp .env.example .env      # DATABASE_URL, ADMIN_EMAILS, SESSION_SECRET, Clerk keys (`clerk env pull`)
 npm install
 npx playwright-core install chromium   # browser checks; skipped (not faked) if missing
 npm run db:push
 npm run dev
 ```
 
-Sign up with an email listed in `ADMIN_EMAILS` to get `/admin`, where you approve expert applications.
+Sign in with an email listed in `ADMIN_EMAILS` to get `/admin`, where you approve expert applications.
 
 ```bash
 npm test          # unit tests for checks, scoring, secrets, archives, lockfiles, SSRF, preview tokens
@@ -39,14 +39,14 @@ npm run build
 
 ## Deploying
 
-- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, and an email provider: `GMAIL_USER` + `GMAIL_APP_PASSWORD` (no domain needed, ~500 emails/day) or `RESEND_API_KEY` + `EMAIL_FROM`. Run `npm run db:push` yourself; the build no longer pushes the schema (it used to run `--accept-data-loss` on every deploy).
+- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_SIGN_IN_URL` and `NEXT_PUBLIC_CLERK_SIGN_UP_URL`. A Clerk production instance needs a domain you own; until then the deployment can run on Clerk development keys (shows a "Development mode" badge and has a user cap). Run `npm run db:push` yourself; the build no longer pushes the schema (it used to run `--accept-data-loss` on every deploy).
 - On Vercel, Chromium comes from `@sparticuz/chromium-min`, and request bodies are capped at 4.5 MB, so set `MAX_UPLOAD_MB=4` there or self-host for larger uploads.
 - Rate limits are in-memory per instance. Put a shared store (Redis/Upstash) behind `src/lib/security/rate-limit.ts` before scaling out.
 
 ## Not built yet
 
 - Payments. Review requests are free; nothing on the site claims otherwise.
-- Email notifications for review status. Status changes show on the dashboard and review queue (email is only used for sign-in codes).
+- Email notifications for review status. Status changes show on the dashboard and review queue.
 - Private GitHub repos. These need a GitHub OAuth app; upload a `.zip` for now.
 
 MIT licensed.
