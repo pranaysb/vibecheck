@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { decideExpert } from "@/app/actions/reviews";
+import { resolveReport } from "@/app/actions/moderation";
 import { timeAgo } from "@/components/audit-ui";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,15 @@ export default async function Admin() {
     prisma.expertProfile.findMany({ where: { status: { not: "PENDING" } }, orderBy: { decidedAt: "desc" }, take: 30, include: { user: { select: { name: true, email: true } } } }),
     Promise.all([prisma.user.count(), prisma.audit.count(), prisma.reviewRequest.count({ where: { status: "OPEN" } }), prisma.expertReview.count()]),
   ]);
+  const reports = await prisma.report.findMany({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" }, include: { reporter: { select: { name: true, email: true } } } });
+  const reviewIds = reports.filter((r) => r.targetType === "REVIEW").map((r) => r.targetId);
+  const expertIds = reports.filter((r) => r.targetType === "EXPERT").map((r) => r.targetId);
+  const [reportedReviews, reportedExperts] = await Promise.all([
+    prisma.expertReview.findMany({ where: { id: { in: reviewIds } }, select: { id: true, summary: true, expert: { select: { name: true } } } }),
+    prisma.expertProfile.findMany({ where: { id: { in: expertIds } }, select: { id: true, headline: true, status: true, user: { select: { name: true, email: true } } } }),
+  ]);
+  const reviewById = new Map(reportedReviews.map((r) => [r.id, r]));
+  const expertById = new Map(reportedExperts.map((e) => [e.id, e]));
   const stats = [
     ["Accounts", counts[0]],
     ["Audits run", counts[1]],
@@ -34,6 +44,48 @@ export default async function Admin() {
           </div>
         ))}
       </dl>
+
+      <section className="mt-12">
+        <h2 className="text-base font-semibold mb-1">Reports ({reports.length})</h2>
+        <p className="text-sm text-muted mb-4">Hiding a review removes it from the expert&rsquo;s rating; revoking an expert ends their queue access and releases their claimed requests. Reporters are notified either way.</p>
+        {reports.length === 0 ? (
+          <p className="card p-5 text-sm text-muted">No open reports.</p>
+        ) : (
+          <ul className="space-y-3">
+            {reports.map((r) => {
+              const review = r.targetType === "REVIEW" ? reviewById.get(r.targetId) : undefined;
+              const expert = r.targetType === "EXPERT" ? expertById.get(r.targetId) : undefined;
+              return (
+                <li key={r.id} className="card p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="font-semibold">
+                        {r.targetType === "REVIEW" ? "Review" : "Expert"} · <span className="text-fail">{r.reason.toLowerCase()}</span>
+                        <span className="font-normal text-muted"> · from {r.reporter.name} ({r.reporter.email}) · {timeAgo(r.createdAt)}</span>
+                      </p>
+                      <p className="mt-2 prose-text">{r.details}</p>
+                      {review && (
+                        <p className="mt-3 text-muted">
+                          Review by {review.expert.name}: &ldquo;{review.summary.slice(0, 160)}{review.summary.length > 160 ? "…" : ""}&rdquo;{" "}
+                          <a href={`/reviews/${review.id}`} className="underline underline-offset-4">Open</a>
+                        </p>
+                      )}
+                      {expert && <p className="mt-3 text-muted">{expert.user.name} ({expert.user.email}) · {expert.headline} · currently {expert.status.toLowerCase()}</p>}
+                      {!review && !expert && <p className="mt-3 text-muted">The reported item no longer exists.</p>}
+                    </div>
+                    <form action={resolveReport} className="flex flex-wrap gap-2">
+                      <input type="hidden" name="id" value={r.id} />
+                      <button name="action" value="dismiss" className="btn btn-secondary btn-sm" type="submit">Dismiss</button>
+                      {review && <button name="action" value="hide" className="btn btn-primary btn-sm" type="submit">Hide review</button>}
+                      {expert && expert.status === "APPROVED" && <button name="action" value="revoke" className="btn btn-primary btn-sm" type="submit">Revoke expert</button>}
+                    </form>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <section className="mt-12">
         <h2 className="text-base font-semibold mb-1">Expert applications ({pending.length})</h2>

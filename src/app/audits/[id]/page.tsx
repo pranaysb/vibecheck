@@ -19,7 +19,7 @@ async function load(id: string) {
       screenshots: { select: { kind: true, width: true, height: true } },
       requests: {
         orderBy: { createdAt: "desc" },
-        include: { expert: { select: { name: true } }, review: { select: { id: true, verdict: true, createdAt: true } } },
+        include: { expert: { select: { name: true } }, review: { select: { id: true, verdict: true, createdAt: true, hiddenAt: true } } },
       },
       _count: { select: { files: true } },
     },
@@ -167,7 +167,11 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
                         <span className="font-medium">{r.expert?.name ?? "Expert"}</span>
                         <span className="text-muted"> · {timeAgo(r.review!.createdAt)}</span>
                       </span>
-                      <span className={`text-sm font-medium ${VERDICT[r.review!.verdict].tone}`}>{VERDICT[r.review!.verdict].label} →</span>
+                      {r.review!.hiddenAt ? (
+                        <span className="text-sm text-muted">Removed by a moderator</span>
+                      ) : (
+                        <span className={`text-sm font-medium ${VERDICT[r.review!.verdict].tone}`}>{VERDICT[r.review!.verdict].label} →</span>
+                      )}
                     </Link>
                   </li>
                 ))}

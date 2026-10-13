@@ -6,6 +6,8 @@ import { canViewAudit } from "@/lib/access";
 import type { ExpertFinding } from "@/app/actions/reviews";
 import { SEVERITY_TONE, Stars, VERDICT } from "@/components/review-ui";
 import { RateForm } from "./RateForm";
+import { ReportButton } from "@/components/ReportButton";
+import { restoreReview } from "@/app/actions/moderation";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Expert review", robots: { index: false } };
@@ -25,11 +27,28 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   if (!review || !canViewAudit(review.request.audit, user)) notFound();
   const findings = review.findings as unknown as ExpertFinding[];
   const isRequester = user?.id === review.request.requesterId;
+  if (review.hiddenAt && !user?.isAdmin) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
+        <Link href={`/audits/${review.request.audit.id}`} className="text-sm text-muted hover:text-fg">← Audit of {review.request.audit.label}</Link>
+        <p className="card mt-6 p-6 text-sm text-muted">This review was removed by a moderator and no longer counts toward the expert&rsquo;s rating.</p>
+      </div>
+    );
+  }
   const v = VERDICT[review.verdict];
 
   return (
     <article className="mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
       <Link href={`/audits/${review.request.audit.id}`} className="text-sm text-muted hover:text-fg">← Audit of {review.request.audit.label}</Link>
+      {review.hiddenAt && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm">
+          <span><span className="font-medium text-fail">Hidden from everyone but admins.</span> {review.hiddenNote}</span>
+          <form action={restoreReview}>
+            <input type="hidden" name="id" value={review.id} />
+            <button type="submit" className="btn btn-secondary btn-sm">Restore</button>
+          </form>
+        </div>
+      )}
       <p className="eyebrow mt-6">Expert review</p>
       <h1 className={`mt-2 text-3xl sm:text-4xl font-semibold ${v.tone}`}>{v.label}</h1>
       <p className="mt-1 text-muted">{v.blurb}</p>
@@ -89,6 +108,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
           <p className="text-sm text-muted">Not rated by the requester yet.</p>
         )}
       </section>
+      {user && user.id !== review.expertId && !review.hiddenAt && (
+        <div className="mt-6 flex justify-end">
+          <ReportButton targetType="REVIEW" targetId={review.id} label="Report this review" />
+        </div>
+      )}
     </article>
   );
 }

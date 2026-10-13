@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Stars } from "@/components/review-ui";
+import { ReportButton } from "@/components/ReportButton";
+import { getUser } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Experts", description: "Admin-approved reviewers. Every count and rating comes from completed reviews." };
@@ -14,9 +16,10 @@ function host(u: string) {
 }
 
 export default async function Experts() {
+  const viewer = await getUser();
   const experts = await prisma.expertProfile.findMany({
     where: { status: "APPROVED" },
-    include: { user: { select: { id: true, name: true, expertReviews: { select: { rating: true } } } } },
+    include: { user: { select: { id: true, name: true, expertReviews: { where: { hiddenAt: null }, select: { rating: true } } } } },
     orderBy: { decidedAt: "asc" },
   });
 
@@ -78,6 +81,11 @@ export default async function Experts() {
                     ))}
                   </span>
                 </div>
+                {viewer && viewer.id !== e.user.id && (
+                  <div className="mt-3 flex justify-end">
+                    <ReportButton targetType="EXPERT" targetId={e.id} label="Report" />
+                  </div>
+                )}
               </li>
             );
           })}

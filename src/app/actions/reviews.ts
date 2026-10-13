@@ -7,6 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getUser, requireUser } from "@/lib/auth/session";
 import { FOCUS_AREAS } from "@/lib/access";
+import { notify } from "@/lib/notify";
 import type { FormState } from "@/lib/form";
 
 // ---------- Expert applications ----------
@@ -52,7 +53,13 @@ export async function decideExpert(form: FormData) {
   if (!user.isAdmin) throw new Error("Admins only.");
   const id = String(form.get("id"));
   const decision = form.get("decision") === "approve" ? "APPROVED" : "REJECTED";
-  await prisma.expertProfile.update({ where: { id }, data: { status: decision, decidedAt: new Date() } });
+  const profile = await prisma.expertProfile.update({ where: { id }, data: { status: decision, decidedAt: new Date() } });
+  await notify(
+    profile.userId,
+    decision === "APPROVED" ? "You're approved as an expert" : "Your expert application wasn't approved",
+    decision === "APPROVED" ? "/expert" : "/experts/apply",
+    decision === "APPROVED" ? "Open requests are waiting in your review queue." : "You can update your application and resubmit."
+  );
   revalidatePath("/admin");
   revalidatePath("/experts");
 }
@@ -101,6 +108,7 @@ export async function rateReview(_: FormState, form: FormData): Promise<FormStat
   if (!review || review.request.requesterId !== user.id) return { error: "Only the requester can rate this review." };
   if (review.rating) return { error: "You've already rated this review." };
   await prisma.expertReview.update({ where: { id: review.id }, data: { rating: parsed.data.rating, ratingNote: parsed.data.note } });
+  await notify(review.expertId, `Your review was rated ${parsed.data.rating}/5`, `/reviews/${review.id}`, parsed.data.note);
   revalidatePath(`/reviews/${review.id}`);
   revalidatePath("/experts");
   return { ok: "Thanks — your rating is now part of this expert's public record." };
@@ -123,13 +131,19 @@ export async function claimRequest(form: FormData) {
     data: { status: "CLAIMED", expertId: user.id, claimedAt: new Date() },
   });
   if (!res.count) redirect("/expert?error=unavailable");
+  const req = await prisma.reviewRequest.findUnique({ where: { id }, select: { requesterId: true, auditId: true, audit: { select: { label: true } } } });
+  await notify(req?.requesterId, `${user.name} is reviewing ${req?.audit.label ?? "your site"}`, req ? `/audits/${req.auditId}` : undefined);
   redirect(`/expert/requests/${id}`);
 }
 
 export async function releaseRequest(form: FormData) {
   const user = await requireExpert();
   const id = String(form.get("id"));
-  await prisma.reviewRequest.updateMany({ where: { id, status: "CLAIMED", expertId: user.id }, data: { status: "OPEN", expertId: null, claimedAt: null } });
+  const res = await prisma.reviewRequest.updateMany({ where: { id, status: "CLAIMED", expertId: user.id }, data: { status: "OPEN", expertId: null, claimedAt: null } });
+  if (res.count) {
+    const req = await prisma.reviewRequest.findUnique({ where: { id }, select: { requesterId: true, auditId: true } });
+    await notify(req?.requesterId, "Your review request is back in the queue", req ? `/audits/${req.auditId}` : undefined, "The expert who claimed it released it; another expert can pick it up.");
+  }
   redirect("/expert");
 }
 
@@ -171,6 +185,8 @@ export async function submitReview(_: FormState, form: FormData): Promise<FormSt
     });
   });
   if (!review) return { error: "This request is no longer assigned to you." };
+  const req = await prisma.reviewRequest.findUnique({ where: { id: requestId }, select: { requesterId: true, audit: { select: { label: true } } } });
+  await notify(req?.requesterId, `Your expert review of ${req?.audit.label ?? "your site"} is ready`, `/reviews/${review.id}`, `${user.name}'s verdict: ${verdict === "SHIP" ? "ready to ship" : verdict === "FIX_FIRST" ? "fix first" : "not ready"}.`);
   revalidatePath("/expert");
   revalidatePath("/dashboard");
   redirect(`/reviews/${review.id}`);
