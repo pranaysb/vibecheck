@@ -1,5 +1,7 @@
 # VibeCheck
 
+[![CI](https://github.com/pranaysb/vibecheck/actions/workflows/ci.yml/badge.svg)](https://github.com/pranaysb/vibecheck/actions/workflows/ci.yml)
+
 Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload), then get a written review from a human expert.
 
 - **Automated audit.** 52 deterministic checks across security, performance, accessibility, SEO, reliability and dependencies. Every result shows its raw evidence. There is no LLM in the loop. The full list is rendered from [`src/lib/audit/catalog.ts`](src/lib/audit/catalog.ts) at `/methodology`.
@@ -37,16 +39,24 @@ npm run lint
 npm run build
 ```
 
+## Platform
+
+- **Storage.** Uploaded files and screenshots live in a private Vercel Blob store (keys prefixed by environment) and are only served through routes that check access. Without a store (local dev, CI) they are kept in Postgres. `.zip` uploads go straight from the browser to Blob (up to `MAX_DIRECT_UPLOAD_MB`, default 50), so the 4.5 MB request limit doesn't apply.
+- **Retention.** A daily Vercel Cron (`/api/cron/cleanup`, authorized by `CRON_SECRET`) deletes files and screenshots 90 days after an audit unless a review is in progress, fails abandoned audits, removes orphaned uploads, and prunes rate-limit counters.
+- **Rate limiting.** Counters live in Postgres (`RateLimit`), so limits hold across serverless instances.
+- **Moderation.** Users report reviews or experts; admins dismiss, hide reviews, or revoke experts from `/admin`. Everyone involved gets an in-app notification.
+- **CI.** Every push runs lint, typecheck, tests (against Postgres), build, and a smoke test that audits a real site in Chromium (`scripts/smoke.mjs`, also usable against any deployment).
+
 ## Deploying
 
-- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_SIGN_IN_URL` and `NEXT_PUBLIC_CLERK_SIGN_UP_URL`. A Clerk production instance needs a domain you own; until then the deployment can run on Clerk development keys (shows a "Development mode" badge and has a user cap). Run `npm run db:push` yourself; the build no longer pushes the schema (it used to run `--accept-data-loss` on every deploy).
-- On Vercel, Chromium comes from `@sparticuz/chromium-min`, and request bodies are capped at 4.5 MB, so set `MAX_UPLOAD_MB=4` there or self-host for larger uploads.
-- Rate limits are in-memory per instance. Put a shared store (Redis/Upstash) behind `src/lib/security/rate-limit.ts` before scaling out.
+- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `CRON_SECRET`, the four `CLERK` variables, and connect a **private** Blob store (`vercel blob create-store <name> --access private`). Run `npm run db:push` yourself; the build never changes the schema.
+- Clerk session tokens must include the claim `{"email": "{{user.primary_email_address}}"}` so email changes reach `ADMIN_EMAILS` matching.
+- A Clerk production instance needs a domain you own; until then the deployment can run on Clerk development keys ("Development mode" badge, user cap).
 
 ## Not built yet
 
-- Payments. Review requests are free; nothing on the site claims otherwise.
-- Email notifications for review status. Status changes show on the dashboard and review queue.
-- Private GitHub repos. These need a GitHub OAuth app; upload a `.zip` for now.
+- **Payments** for expert reviews (needs a Stripe account). Reviews are free and nothing on the site claims otherwise.
+- **Email notifications.** Notifications are in-app only; email needs a sending domain.
+- **Private GitHub repos** (needs a GitHub OAuth app with `repo` scope configured in Clerk). Upload a `.zip` instead.
 
 MIT licensed.
