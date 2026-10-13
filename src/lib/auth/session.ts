@@ -46,10 +46,19 @@ async function linkClerkUser(clerkId: string) {
 }
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
   if (!userId) return null;
-  const user = (await prisma.user.findUnique({ where: { clerkId: userId }, select: SELECT })) ?? (await linkClerkUser(userId));
+  let user = (await prisma.user.findUnique({ where: { clerkId: userId }, select: SELECT })) ?? (await linkClerkUser(userId));
   if (!user) return null;
+
+  // The session token carries the current primary email (Clerk custom claim `email`; only verified
+  // addresses can be primary). Keep our copy in sync so admin matching follows email changes.
+  const claimed = typeof sessionClaims?.email === "string" ? sessionClaims.email.toLowerCase() : null;
+  if (claimed && claimed !== user.email) {
+    const taken = await prisma.user.findUnique({ where: { email: claimed }, select: { id: true } });
+    if (!taken) user = await prisma.user.update({ where: { id: user.id }, data: { email: claimed }, select: SELECT });
+    else console.warn(`Email sync skipped for ${user.id}: ${claimed} belongs to another account.`);
+  }
   const { expertProfile, ...u } = user;
   return { ...u, isAdmin: isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
 });
