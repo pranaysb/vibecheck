@@ -34,6 +34,9 @@ describe("retention (database)", async () => {
     await prisma.screenshot.createMany({ data: [shot(expired.id), shot(reviewing.id), shot(recent.id)] });
     await prisma.auditFile.create({ data: { auditId: expired.id, path: "index.html", contentType: "text/html", size: 3, data: new Uint8Array([60, 112, 62]) } });
     await prisma.reviewRequest.create({ data: { auditId: reviewing.id, requesterId: user.id, focus: ["Security"], notes: "in progress" } });
+    const expert = await prisma.user.create({ data: { email: `${tag}-expert@vibecheck.test`, name: "Slow expert" } });
+    const staleClaim = await prisma.reviewRequest.create({ data: { auditId: recent.id, requesterId: user.id, focus: ["SEO"], notes: "n", status: "CLAIMED", expertId: expert.id, claimedAt: new Date(now.getTime() - 8 * day) } });
+    const freshClaim = await prisma.reviewRequest.create({ data: { auditId: recent.id, requesterId: user.id, focus: ["SEO"], notes: "n", status: "CLAIMED", expertId: expert.id, claimedAt: new Date(now.getTime() - 2 * day) } });
 
     const result = await runRetention(now);
     assert.ok(result.expiredAudits >= 1);
@@ -51,8 +54,14 @@ describe("retention (database)", async () => {
     const s = await after(stuck.id);
     assert.equal(s?.status, "FAILED");
 
+    const sc = await prisma.reviewRequest.findUniqueOrThrow({ where: { id: staleClaim.id } });
+    assert.equal(sc.status, "OPEN", "claims older than 7 days are released");
+    assert.equal(sc.expertId, null);
+    assert.equal((await prisma.reviewRequest.findUniqueOrThrow({ where: { id: freshClaim.id } })).status, "CLAIMED", "recent claims are kept");
+    assert.equal(await prisma.notification.count({ where: { userId: { in: [user.id, expert.id] } } }), 2, "expert and requester are told");
+
     await prisma.audit.deleteMany({ where: { label: { startsWith: tag } } });
-    await prisma.user.delete({ where: { id: user.id } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: tag } } });
     await prisma.$disconnect();
   });
 });

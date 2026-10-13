@@ -209,7 +209,8 @@ function mobileAudit() {
     if (st.visibility !== "visible" || st.display === "none") continue;
     if (el.tagName === "A" && st.display === "inline") continue; // WCAG 2.5.8 inline exception
     const r = el.getBoundingClientRect();
-    if (r.width === 0 || r.height === 0) continue;
+    // ≤1px boxes are the visually-hidden pattern (e.g. skip links that appear on focus), not tap targets.
+    if (r.width <= 1 || r.height <= 1) continue;
     if (r.width < 24 || r.height < 24) small.push(`${describe(el)} ${Math.round(r.width)}×${Math.round(r.height)}px`);
   }
   return { vw, sw, overflowing, small };

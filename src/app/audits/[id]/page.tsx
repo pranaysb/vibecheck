@@ -8,6 +8,8 @@ import { canViewAudit } from "@/lib/access";
 import { computeScore, CRITICAL_CAP, type AuditMeta, type CheckResult } from "@/lib/audit/types";
 import { CategorySummary, CheckGroups, ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { RequestReviewForm } from "./RequestReviewForm";
+import { RerunButton } from "./RerunButton";
+import { diffAudits } from "@/lib/audit/compare";
 import { VERDICT } from "@/components/review-ui";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +52,22 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
   const stale = audit.status === "RUNNING" && isAbandoned(audit.createdAt);
   const skipped = checks.filter((c) => c.status === "skip");
 
+  // What changed since this owner's previous completed audit of the same target.
+  const previous =
+    audit.ownerId && audit.status === "COMPLETED"
+      ? await prisma.audit.findFirst({
+          where: { ownerId: audit.ownerId, target: audit.target, status: "COMPLETED", createdAt: { lt: audit.createdAt } },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, createdAt: true, checks: true },
+        })
+      : null;
+  const prevChecks = (previous?.checks ?? []) as unknown as CheckResult[];
+  const prevScore = previous ? computeScore(prevChecks).score : null;
+  const diff = previous ? diffAudits(prevChecks, checks) : null;
+  const improved = diff ? [...diff.fixed.map((c) => ({ c, note: "now passing" })), ...diff.changed.filter((x) => x.from === "fail").map((x) => ({ c: x.check, note: "fail → warning" }))] : [];
+  const worse = diff ? [...diff.regressed.map((c) => ({ c, note: c.status === "fail" ? "now failing" : "now a warning" })), ...diff.changed.filter((x) => x.from === "warn").map((x) => ({ c: x.check, note: "warning → fail" }))] : [];
+  const canRerun = (audit.source === "URL" || (audit.source === "GITHUB" && Boolean(user))) && audit.status !== "RUNNING";
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-14">
       {/* Header */}
@@ -58,7 +76,10 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
         <span>{timeAgo(audit.createdAt)}</span>
         {audit.durationMs ? <span>· took {(audit.durationMs / 1000).toFixed(1)}s</span> : null}
       </div>
-      <h1 className="mt-3 text-3xl sm:text-4xl font-semibold break-words">{audit.label}</h1>
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-3xl sm:text-4xl font-semibold break-words min-w-0">{audit.label}</h1>
+        {canRerun && <RerunButton source={audit.source as "URL" | "GITHUB"} target={audit.target} />}
+      </div>
       {meta.title && meta.title !== audit.label && <p className="mt-1 text-muted">{meta.title}</p>}
       <p className="mt-2 text-sm text-muted break-all">
         {audit.source === "ZIP" ? (
@@ -106,6 +127,40 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
           </div>
+
+          {previous && diff && (
+            <section className="mt-6 card p-5" aria-labelledby="changes">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="changes" className="font-semibold">
+                  Since your audit {timeAgo(previous.createdAt)}
+                  {prevScore !== null && score.score !== null && (
+                    <span className={`ml-2 tabular-nums ${score.score > prevScore ? "text-pass" : score.score < prevScore ? "text-fail" : "text-muted"}`}>
+                      {prevScore} → {score.score} ({score.score - prevScore >= 0 ? "+" : ""}{score.score - prevScore})
+                    </span>
+                  )}
+                </h2>
+                <Link href={`/audits/${previous.id}`} className="text-sm text-muted underline underline-offset-4 hover:text-fg">Previous report</Link>
+              </div>
+              {improved.length + worse.length === 0 ? (
+                <p className="mt-2 text-sm text-muted">No check changed status.</p>
+              ) : (
+                <div className="mt-3 grid gap-4 sm:grid-cols-2 text-sm">
+                  {improved.length > 0 && (
+                    <div>
+                      <p className="eyebrow mb-1.5 text-pass">Better ({improved.length})</p>
+                      <ul className="space-y-1">{improved.map(({ c, note }) => <li key={c.id}>{c.title} <span className="text-muted">· {note}</span></li>)}</ul>
+                    </div>
+                  )}
+                  {worse.length > 0 && (
+                    <div>
+                      <p className="eyebrow mb-1.5 text-fail">Worse ({worse.length})</p>
+                      <ul className="space-y-1">{worse.map(({ c, note }) => <li key={c.id}>{c.title} <span className="text-muted">· {note}</span></li>)}</ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           {meta.browser && !meta.browser.ran && meta.browser.reason && (
             <p className="mt-6 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { upload } from "@vercel/blob/client";
+import { AuditStreamError, streamAudit } from "@/components/audit-stream";
 
 type Tab = "url" | "github" | "zip";
 type Step = { label: string; startedAt: number; endedAt?: number };
@@ -73,38 +74,14 @@ export function AuditForm({ signedIn, maxUploadMb, uploadPrefix }: { signedIn: b
         const body = tab === "url" ? { source: "URL", url } : { source: "GITHUB", repo };
         init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
       }
-      const res = await fetch("/api/audits", init);
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? `Request failed (${res.status}).`);
-      }
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-      let buf = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += value;
-        let nl: number;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line) continue;
-          const ev = JSON.parse(line);
-          if (ev.type === "step") {
-            const t = Date.now();
-            setSteps((s) => [...s.map((x, i) => (i === s.length - 1 && !x.endedAt ? { ...x, endedAt: t } : x)), { label: ev.label, startedAt: t }]);
-          } else if (ev.type === "done") {
-            setSteps((s) => s.map((x) => (x.endedAt ? x : { ...x, endedAt: Date.now() })));
-            router.push(`/audits/${ev.id}`);
-            return;
-          } else if (ev.type === "error") {
-            if (ev.id) setFailedId(ev.id);
-            throw new Error(ev.message);
-          }
-        }
-      }
-      throw new Error("The connection closed before the audit finished. If it completed, it will appear in your dashboard.");
+      const id = await streamAudit(init, (label) => {
+        const t = Date.now();
+        setSteps((s) => [...s.map((x, i) => (i === s.length - 1 && !x.endedAt ? { ...x, endedAt: t } : x)), { label, startedAt: t }]);
+      });
+      setSteps((s) => s.map((x) => (x.endedAt ? x : { ...x, endedAt: Date.now() })));
+      router.push(`/audits/${id}`);
     } catch (err) {
+      if (err instanceof AuditStreamError && err.auditId) setFailedId(err.auditId);
       setError((err as Error).message);
       setRunning(false);
     }

@@ -14,7 +14,7 @@ describe("secrets", () => {
       `const a = "AKIAIOSFODNN7EXAMPLE";`,
       `stripe("sk_live_${"a".repeat(24)}")`,
       `const gh = "ghp_${"A".repeat(36)}"`,
-      `-----BEGIN RSA PRIVATE KEY-----`,
+      `-----BEGIN RSA PRIVATE KEY-----\n${"MIIEowIBAAKCAQEAu1SU1LfVLPHCozMxH2Mo4lgOEePzNm0tRgeLezV6ffAt0gun".repeat(1)}\n${"VTLw7onLRnrq0/IzW7yWR7QkrmBL7jTKEn5u+qKhbwKfBstIs+bMY2Zkp18gnTxK".repeat(1)}\n-----END RSA PRIVATE KEY-----`,
       `DATABASE_URL="postgres://admin:s3cr3tpw@db.prod.example.com:5432/app"`,
     ].join("\n");
     const hits = findSecrets(text);
@@ -22,6 +22,15 @@ describe("secrets", () => {
     const stripe = hits.find((h) => h.kind.startsWith("Stripe"))!;
     assert.equal(stripe.line, 2);
     assert.ok(!stripe.sample.includes("a".repeat(24)), "full secret must never be stored");
+  });
+
+  test("PEM headers in library code are not leaks; real key blocks are", () => {
+    // Real excerpt from jose's PKCS#8 parser as bundled by Clerk; this used to be reported as critical.
+    const jose = `async function eH(e,t,r){if("string"!=typeof e||0!==e.indexOf("-----BEGIN PRIVATE KEY-----"))throw TypeError('"pkcs8" must be PKCS#8 formatted string');return eT(/(?:-----(?:BEGIN|END) PRIVATE KEY-----|\\s)/g,"pkcs8",e,t,r)}`;
+    assert.equal(findSecrets(jose).length, 0);
+    const body = Array.from({ length: 4 }, () => "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7" + "x".repeat(12)).join("\n");
+    assert.equal(findSecrets(`-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----`)[0]?.kind, "Private key", "real newlines");
+    assert.equal(findSecrets(`{"key":"-----BEGIN RSA PRIVATE KEY-----\\n${body.replace(/\n/g, "\\n")}\\n-----END RSA PRIVATE KEY-----"}`)[0]?.kind, "Private key", "escaped \\n in JSON");
   });
 
   test("Supabase: service_role JWT is flagged, anon key is not", () => {

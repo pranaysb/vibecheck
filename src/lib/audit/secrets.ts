@@ -22,7 +22,13 @@ const PATTERNS: Pattern[] = [
   { kind: "SendGrid API key", re: /\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b/g },
   { kind: "Twilio API key", re: /\bSK[0-9a-f]{32}\b/g },
   { kind: "Google OAuth client secret", re: /\bGOCSPX-[A-Za-z0-9_-]{28}\b/g },
-  { kind: "Private key", re: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY(?: BLOCK)?-----/g },
+  // The header alone is not a leak: crypto libraries (e.g. jose, shipped by Clerk, Auth.js, Supabase)
+  // contain "-----BEGIN PRIVATE KEY-----" as a string to compare against. Require base64 key material
+  // after it, on real newlines or the escaped "\n" found inside JS/JSON strings.
+  {
+    kind: "Private key",
+    re: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP |ENCRYPTED )?PRIVATE KEY(?: BLOCK)?-----(?:\r?\n|(?:\\r)?\\n)+(?:[A-Za-z0-9+/=]{40,}(?:\r?\n|(?:\\r)?\\n)+){2,}/g,
+  },
   {
     kind: "Supabase service_role key",
     re: /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g,
@@ -45,7 +51,7 @@ function jwtRole(jwt: string): string | null {
 }
 
 export function mask(value: string): string {
-  if (value.startsWith("-----BEGIN")) return value;
+  if (value.startsWith("-----BEGIN")) return value.slice(0, value.indexOf("-----", 10) + 5) + " (with key material)";
   if (value.length <= 12) return value.slice(0, 3) + "…";
   return `${value.slice(0, 6)}…${value.slice(-4)} (${value.length} chars)`;
 }

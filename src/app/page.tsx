@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth/session";
 import { AuditForm } from "@/components/AuditForm";
@@ -10,12 +11,21 @@ export const dynamic = "force-dynamic";
 
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB ?? 25);
 
+// Public counts change rarely; cache them so the home page doesn't hit the database on every visit.
+const getPublicCounts = unstable_cache(
+  async () => {
+    const [experts, reviews] = await Promise.all([
+      prisma.expertProfile.count({ where: { status: "APPROVED" } }),
+      prisma.expertReview.count({ where: { hiddenAt: null } }),
+    ]);
+    return { experts, reviews };
+  },
+  ["home-counts"],
+  { revalidate: 300, tags: ["home-counts"] }
+);
+
 export default async function Home() {
-  const [user, experts, reviews] = await Promise.all([
-    getUser(),
-    prisma.expertProfile.count({ where: { status: "APPROVED" } }),
-    prisma.expertReview.count(),
-  ]);
+  const [user, { experts, reviews }] = await Promise.all([getUser(), getPublicCounts()]);
   const byCategory = (Object.keys(CATEGORY_LABEL) as Category[]).map((c) => ({ c, items: CATALOG.filter((k) => k.category === c) }));
 
   return (

@@ -131,3 +131,17 @@ describe("computeScore", () => {
     assert.equal(computeScore([mk("high", "skip")]).score, null);
   });
 });
+
+describe("diffAudits", async () => {
+  const { diffAudits } = await import("../src/lib/audit/compare");
+  const c = (id: string, status: CheckResult["status"]): CheckResult => ({ id, status, category: "security", severity: "medium", title: id, detail: "", method: "http" });
+
+  test("classifies fixes, regressions and severity changes; ignores checks that didn't run", () => {
+    const before = [c("csp", "fail"), c("hsts", "pass"), c("alt", "warn"), c("lcp", "skip"), c("gone", "fail"), c("same", "fail")];
+    const after = [c("csp", "pass"), c("hsts", "fail"), c("alt", "fail"), c("lcp", "fail"), c("new", "fail"), c("same", "fail")];
+    const d = diffAudits(before, after);
+    assert.deepEqual(d.fixed.map((x) => x.id), ["csp"]);
+    assert.deepEqual(d.regressed.map((x) => x.id), ["hsts"]);
+    assert.deepEqual(d.changed.map((x) => `${x.check.id}:${x.from}->${x.check.status}`), ["alt:warn->fail"]);
+  });
+});

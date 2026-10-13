@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Google+Sans+Code:wght@400;500&display=swap");
 @import "tailwindcss";
 
 /* Light. Text tokens are AA (≥4.5:1) on both --bg and --surface. */
@@ -10,13 +9,13 @@
   --line-strong: #d4d4d4;
   --fg: #0a0a0a;
   --muted: #5f5f5f;
-  --faint: #8a8a8a;
+  --faint: #6e6e6e;
   --invert: #0a0a0a;
   --invert-fg: #ffffff;
   --pass: #15803d;
   --warn: #a15c07;
   --fail: #c4231b;
-  --skip: #737373;
+  --skip: #6b6b6b;
   --ring: #0a0a0a;
   color-scheme: light;
 }
@@ -30,7 +29,7 @@
     --line-strong: #333333;
     --fg: #f2f2f2;
     --muted: #a3a3a3;
-    --faint: #777777;
+    --faint: #8c8c8c;
     --invert: #f2f2f2;
     --invert-fg: #0a0a0a;
     --pass: #4ade80;
@@ -57,8 +56,8 @@
   --color-warn: var(--warn);
   --color-fail: var(--fail);
   --color-skip: var(--skip);
-  --font-sans: "Google Sans Flex", "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-google-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-google-sans-code), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {

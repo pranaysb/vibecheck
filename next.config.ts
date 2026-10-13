@@ -1,28 +1,21 @@
 import type { NextConfig } from "next";
 
-import { execSync } from "node:child_process";
-
-function getGitCommitSha(): string {
-  if (process.env.VERCEL_GIT_COMMIT_SHA) {
-    return process.env.VERCEL_GIT_COMMIT_SHA;
-  }
-  try {
-    return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-  } catch {
-    return "";
-  }
-}
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min"],
   outputFileTracingIncludes: {
-    "/**": [
-      "./node_modules/playwright-core/**/*",
-      "./node_modules/playwright-core/browsers.json",
-    ],
+    "/**": ["./node_modules/playwright-core/**/*", "./node_modules/playwright-core/browsers.json"],
   },
-  env: {
-    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: getGitCommitSha(),
+  async headers() {
+    // /preview serves uploaded sites with its own stricter, sandboxed headers.
+    return [{ source: "/((?!preview/).*)", headers: securityHeaders }];
   },
 };
 

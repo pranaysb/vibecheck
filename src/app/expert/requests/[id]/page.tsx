@@ -7,6 +7,7 @@ import { releaseRequest } from "@/app/actions/reviews";
 import { computeScore, type AuditMeta, type CheckResult } from "@/lib/audit/types";
 import { ScoreRing, SOURCE_LABEL, sortChecks } from "@/components/audit-ui";
 import { ReviewForm } from "./ReviewForm";
+import { CLAIM_TIMEOUT_DAYS } from "@/lib/retention";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Write review" };
@@ -64,6 +65,12 @@ export default async function Workspace({ params }: { params: Promise<{ id: stri
             <input type="hidden" name="id" value={req.id} />
             <button type="submit" className="btn btn-ghost btn-sm">Release back to the queue</button>
           </form>
+          {req.claimedAt && (
+            <p className="text-xs text-muted px-1">
+              Claims without a review are released on{" "}
+              {new Date(req.claimedAt.getTime() + CLAIM_TIMEOUT_DAYS * 86400_000).toLocaleDateString("en", { month: "short", day: "numeric" })} ({CLAIM_TIMEOUT_DAYS} days after claiming).
+            </p>
+          )}
         </aside>
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">Your review</h1>

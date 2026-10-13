@@ -4,6 +4,7 @@ import net from "node:net";
 import zlib from "node:zlib";
 import type { TLSSocket } from "node:tls";
 import { validateTargetDestination } from "@/lib/security/ssrf";
+import { CookieJar } from "./cookie-jar";
 
 export const USER_AGENT =
   "Mozilla/5.0 (compatible; VibeCheckAudit/2.0; +https://github.com/pranaysb/vibecheck)";
@@ -46,8 +47,9 @@ export class BlockedDestinationError extends Error {}
  * exact IP that passed validation, so a DNS answer cannot change between check and connect.
  */
 export async function safeFetch(input: string, opts: SafeFetchOptions = {}): Promise<FetchResult> {
-  const { maxRedirects = 5, maxBytes = 2 * 1024 * 1024, timeoutMs = 10_000, followRedirects = true } = opts;
+  const { maxRedirects = 8, maxBytes = 2 * 1024 * 1024, timeoutMs = 10_000, followRedirects = true } = opts;
   const redirects: { url: string; status: number }[] = [];
+  const jar = new CookieJar();
   let url = input;
   const started = performance.now();
 
@@ -56,7 +58,8 @@ export async function safeFetch(input: string, opts: SafeFetchOptions = {}): Pro
     if (!check.allowed || !check.resolvedIp) {
       throw new BlockedDestinationError(`Blocked destination ${url}: ${check.reason ?? "not allowed"}`);
     }
-    const res = await requestOnce(url, check.resolvedIp, maxBytes, timeoutMs);
+    const res = await requestOnce(url, check.resolvedIp, maxBytes, timeoutMs, jar.header(url));
+    jar.store(res.setCookies, url);
     const location = res.headers["location"];
     if (followRedirects && res.status >= 300 && res.status < 400 && location) {
       redirects.push({ url, status: res.status });
@@ -72,7 +75,8 @@ function requestOnce(
   url: string,
   pinnedIp: string,
   maxBytes: number,
-  timeoutMs: number
+  timeoutMs: number,
+  cookie?: string
 ): Promise<Omit<FetchResult, "redirects" | "totalMs">> {
   const parsed = new URL(url);
   const isHttps = parsed.protocol === "https:";
@@ -96,6 +100,7 @@ function requestOnce(
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Encoding": "gzip, deflate, br",
           "Accept-Language": "en-US,en;q=0.9",
+          ...(cookie ? { Cookie: cookie } : {}),
         },
         timeout: timeoutMs,
       },
