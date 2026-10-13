@@ -1,6 +1,6 @@
 import { getUser } from "@/lib/auth/session";
 import { runAudit, type AuditEvent, type AuditInput } from "@/lib/audit/run";
-import { checkRateLimit, extractTargetDomain, getClientIp } from "@/lib/security/rate-limit";
+import { rateLimit, extractTargetDomain, getClientIp } from "@/lib/security/rate-limit";
 import { isSameOrigin } from "@/lib/security/origin";
 
 export const runtime = "nodejs";
@@ -38,11 +38,15 @@ export async function POST(req: Request) {
     } else return fail(400, "Provide a URL, a GitHub repository, or a .zip file.");
   }
 
-  const limit = checkRateLimit(
-    { ip: user ? `user:${user.id}` : getClientIp(req), domain: input.source === "URL" ? extractTargetDomain(input.url) : null },
-    { maxPerIp: user ? 10 : 4, maxPerDomain: 3 }
-  );
-  if (!limit.allowed) return fail(429, limit.reason ?? "Too many audits; try again shortly.", { "Retry-After": String(limit.retryAfterSeconds) });
+  const who = user ? `user:${user.id}` : `ip:${getClientIp(req)}`;
+  const mine = await rateLimit(`audit:${who}`, user ? 10 : 4, 60);
+  if (!mine.allowed) return fail(429, `You've hit the audit limit (${mine.limit} per minute). Try again in ${mine.retryAfterSeconds}s.`, { "Retry-After": String(mine.retryAfterSeconds) });
+  // Per-target cooldown so VibeCheck can't be used to hammer someone else's site.
+  const domain = input.source === "URL" ? extractTargetDomain(input.url) : null;
+  if (domain) {
+    const target = await rateLimit(`audit-target:${domain}`, 3, 60);
+    if (!target.allowed) return fail(429, `${domain} was audited several times in the last minute. Try again in ${target.retryAfterSeconds}s.`, { "Retry-After": String(target.retryAfterSeconds) });
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

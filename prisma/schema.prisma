@@ -181,3 +181,13 @@ model ExpertReview {
 
   @@schema("vibecheck")
 }
+
+/// Fixed-window request counters shared by every server instance (see lib/security/rate-limit.ts).
+model RateLimit {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+
+  @@index([windowStart])
+  @@schema("vibecheck")
+}
