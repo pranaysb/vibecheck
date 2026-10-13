@@ -63,7 +63,7 @@ export const CATALOG: CatalogEntry[] = [
   // Reliability
   { id: "rel-status", title: "Page responds 2xx", category: "reliability", severity: "high", method: "http", appliesTo: ["url"], how: "Final HTTP status after redirects." },
   { id: "rel-console-errors", title: "No JavaScript errors", category: "reliability", severity: "medium", method: "browser", appliesTo: ["url", "site"], how: "console.error calls and uncaught exceptions during load: 0 pass, ≤ 2 warn." },
-  { id: "rel-failed-requests", title: "All resources load", category: "reliability", severity: "medium", method: "browser", appliesTo: ["url", "site"], how: "Network failures and 4xx/5xx responses; third-party-only failures warn." },
+  { id: "rel-failed-requests", title: "All resources load", category: "reliability", severity: "medium", method: "browser", appliesTo: ["url", "site"], how: "Network failures and 4xx/5xx responses; third-party-only failures warn. Requests the browser cancels itself (ERR_ABORTED, e.g. dropped prefetches) are not failures." },
   { id: "rel-broken-refs", title: "No broken local references", category: "reliability", severity: "medium", method: "files", appliesTo: ["site"], how: "Every local src/href with a file extension resolves to a file in the upload." },
   // Code
   { id: "code-dependency-vulns", title: "Known vulnerable dependencies", category: "code", severity: "high", method: "osv", appliesTo: ["files"], how: "Exact versions from package-lock, pnpm-lock, yarn.lock, requirements.txt (== pins), poetry.lock or uv.lock, queried against OSV.dev. High/critical fails." },

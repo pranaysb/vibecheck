@@ -257,6 +257,9 @@ export async function runBrowserAudit(target: { url: string } | { site: ArchiveS
       requests++;
       const reason = req.failure()?.errorText ?? "failed";
       if (reason.includes("BLOCKED_BY_CLIENT")) return; // our own SSRF filter
+      // ERR_ABORTED means the browser cancelled the request itself (prefetches dropped at navigation or
+      // teardown, superseded fetches); nothing failed to load. Counting it flagged almost every Next.js site.
+      if (reason.includes("ERR_ABORTED")) return;
       failed.push({ url: req.url(), reason, sameOrigin: req.url().startsWith(origin) });
     });
 
