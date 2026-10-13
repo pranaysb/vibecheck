@@ -60,9 +60,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="border-t border-line">
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-[13px] text-muted">
               <p>VibeCheck · MIT licensed · every check is open source and documented.</p>
-              <nav className="flex gap-5" aria-label="Footer">
+              <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer">
                 <Link href="/methodology" className="hover:text-fg">Methodology</Link>
                 <Link href="/experts" className="hover:text-fg">Experts</Link>
+                <Link href="/privacy" className="hover:text-fg">Privacy</Link>
+                <Link href="/terms" className="hover:text-fg">Terms</Link>
                 <a href="https://github.com/pranaysb/vibecheck" className="hover:text-fg">Source</a>
               </nav>
             </div>

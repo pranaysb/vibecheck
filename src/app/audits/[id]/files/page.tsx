@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth/session";
 import { canViewAudit } from "@/lib/access";
+import { readStored } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Files", robots: { index: false } };
@@ -15,6 +16,7 @@ export default async function FilesPage({ params, searchParams }: { params: Prom
 
   const files = await prisma.auditFile.findMany({ where: { auditId: id }, select: { path: true, size: true, contentType: true }, orderBy: { path: "asc" } });
   const selected = path ? await prisma.auditFile.findUnique({ where: { auditId_path: { auditId: id, path } } }) : null;
+  const selectedBytes = selected ? await readStored(selected) : null;
   const isText = selected && /^(text\/|application\/(json|xml|manifest))|svg/.test(selected.contentType);
 
   return (
@@ -47,7 +49,7 @@ export default async function FilesPage({ params, searchParams }: { params: Prom
             <>
               <p className="px-4 py-3 border-b border-line font-mono text-[12.5px]">{selected.path}</p>
               <pre className="p-4 font-mono text-[12.5px] leading-relaxed overflow-auto max-h-[70vh]">
-                {Buffer.from(selected.data).toString("utf8").split("\n").map((line, i) => (
+                {Buffer.from(selectedBytes ?? new Uint8Array()).toString("utf8").split("\n").map((line, i) => (
                   <div key={i} className="flex">
                     <span className="select-none w-10 shrink-0 pr-3 text-right text-faint">{i + 1}</span>
                     <span className="whitespace-pre">{line}</span>

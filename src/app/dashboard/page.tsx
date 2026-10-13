@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/session";
 import { cancelRequest } from "@/app/actions/reviews";
 import { ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { VERDICT } from "@/components/review-ui";
+import { DeleteAccount } from "./DeleteAccount";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -94,6 +95,15 @@ export default async function Dashboard() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-16 border-t border-line pt-8" aria-labelledby="danger">
+        <h2 id="danger" className="text-base font-semibold">Delete my account</h2>
+        <p className="mt-1 text-sm text-muted max-w-xl">
+          Removes your account, uploads, review requests, expert profile and reviews, and your sign-in. Audits of public URLs stay, without your name.{" "}
+          <Link href="/privacy" className="underline underline-offset-4">Details</Link>
+        </p>
+        <DeleteAccount />
       </section>
     </div>
   );

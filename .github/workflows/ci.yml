@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vibecheck
+          POSTGRES_PASSWORD: vibecheck
+          POSTGRES_DB: vibecheck_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vibecheck" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://vibecheck:vibecheck@localhost:5432/vibecheck_ci
+      # Placeholder Clerk keys: enough to build and serve signed-out pages. No secrets needed.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA==
+      CLERK_SECRET_KEY: sk_test_ciplaceholder
+      CLERK_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+      SESSION_SECRET: ci-only-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma db push --skip-generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Install Chromium for browser checks
+        run: npx playwright-core install --with-deps chromium
+      - name: Smoke test the production build
+        run: |
+          npx next start -p 3000 > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 1; done
+          node scripts/smoke.mjs http://localhost:3000 --require-browser
+      - name: Server log
+        if: failure()
+        run: cat server.log

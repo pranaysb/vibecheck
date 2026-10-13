@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { upload } from "@vercel/blob/client";
 
 type Tab = "url" | "github" | "zip";
 type Step = { label: string; startedAt: number; endedAt?: number };
@@ -13,7 +14,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "zip", label: "Upload .zip" },
 ];
 
-export function AuditForm({ signedIn, maxUploadMb }: { signedIn: boolean; maxUploadMb: number }) {
+/** `uploadPrefix` is set when the server has Blob storage: the .zip then goes browser → storage directly. */
+export function AuditForm({ signedIn, maxUploadMb, uploadPrefix }: { signedIn: boolean; maxUploadMb: number; uploadPrefix: string | null }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("url");
   const [url, setUrl] = useState("");
@@ -41,21 +43,36 @@ export function AuditForm({ signedIn, maxUploadMb }: { signedIn: boolean; maxUpl
     setFailedId(null);
     setSteps([]);
 
-    let init: RequestInit;
     if (tab === "zip") {
       if (!file) return setError("Choose a .zip file first.");
       if (file.size > maxUploadMb * 1024 * 1024) return setError(`That file is ${(file.size / 1024 / 1024).toFixed(1)} MB; the limit is ${maxUploadMb} MB.`);
-      const fd = new FormData();
-      fd.append("file", file);
-      init = { method: "POST", body: fd };
-    } else {
-      const body = tab === "url" ? { source: "URL", url } : { source: "GITHUB", repo };
-      init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
     }
 
     setRunning(true);
     setNow(Date.now());
     try {
+      let init: RequestInit;
+      if (tab === "zip" && file && uploadPrefix) {
+        const started = Date.now();
+        const mb = (file.size / 1024 / 1024).toFixed(1);
+        setSteps([{ label: `Uploading ${mb} MB`, startedAt: started }]);
+        const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+/, "") || "upload.zip";
+        const blob = await upload(`${uploadPrefix}${safeName}`, file, {
+          access: "private",
+          handleUploadUrl: "/api/uploads",
+          multipart: file.size > 8 * 1024 * 1024,
+          onUploadProgress: ({ percentage }) => setSteps([{ label: `Uploading ${mb} MB · ${Math.round(percentage)}%`, startedAt: started }]),
+        });
+        setSteps([{ label: `Uploaded ${mb} MB`, startedAt: started, endedAt: Date.now() }]);
+        init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ source: "ZIP", blobKey: blob.pathname, filename: file.name }) };
+      } else if (tab === "zip" && file) {
+        const fd = new FormData();
+        fd.append("file", file);
+        init = { method: "POST", body: fd };
+      } else {
+        const body = tab === "url" ? { source: "URL", url } : { source: "GITHUB", repo };
+        init = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+      }
       const res = await fetch("/api/audits", init);
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({}));

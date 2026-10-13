@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { verifyPreviewToken } from "@/lib/preview";
+import { readStored } from "@/lib/storage";
 import type { AuditMeta } from "@/lib/audit/types";
 
 export const runtime = "nodejs";
@@ -24,19 +25,20 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; to
 
   const candidates = [rel, rel + ".html", rel + "/index.html"].map((p) => prefix + p);
   const file = await prisma.auditFile.findFirst({ where: { auditId: id, path: { in: candidates } } });
-  if (!file) return new Response("Not found in upload", { status: 404 });
+  const bytes = file ? await readStored(file) : null;
+  if (!file || !bytes) return new Response("Not found in upload", { status: 404 });
 
-  let body: BodyInit = new Uint8Array(file.data);
+  let body: BodyInit = new Uint8Array(bytes);
   const base = `/preview/${id}/${token}/`;
   // Root-relative URLs ("/style.css") would otherwise hit VibeCheck itself; point them into the upload.
   if (file.contentType.startsWith("text/html")) {
     // Next.js drops trailing slashes, so pin relative URLs to the served file's directory.
     const dir = file.path.slice(prefix.length).split("/").slice(0, -1).map(encodeURIComponent).join("/");
     const baseTag = `<base href="${base}${dir ? dir + "/" : ""}">`;
-    const html = Buffer.from(file.data).toString("utf8").replace(/(\s(?:src|href|action|poster)\s*=\s*["'])\/(?!\/)/gi, `$1${base}`);
+    const html = Buffer.from(bytes).toString("utf8").replace(/(\s(?:src|href|action|poster)\s*=\s*["'])\/(?!\/)/gi, `$1${base}`);
     body = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + baseTag) : baseTag + html;
   } else if (file.contentType.startsWith("text/css")) {
-    body = Buffer.from(file.data).toString("utf8").replace(/url\(\s*(["']?)\/(?!\/)/gi, `url($1${base}`);
+    body = Buffer.from(bytes).toString("utf8").replace(/url\(\s*(["']?)\/(?!\/)/gi, `url($1${base}`);
   }
 
   return new Response(body, {

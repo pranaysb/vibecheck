@@ -82,6 +82,8 @@ model Audit {
   checks     Json?
   meta       Json?
   durationMs Int?
+  /// Set when retention deleted this audit's files and screenshots (results are kept).
+  filesPurgedAt DateTime?
   ownerId    String?
   owner      User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   createdAt  DateTime    @default(now())
@@ -103,7 +105,9 @@ model AuditFile {
   path        String
   contentType String
   size        Int
-  data        Bytes
+  /// Object key in Vercel Blob. Null when stored inline (local dev without Blob, or pre-Blob rows).
+  blobKey     String?
+  data        Bytes?
 
   @@unique([auditId, path])
 
@@ -117,7 +121,8 @@ model Screenshot {
   kind    String
   width   Int
   height  Int
-  data    Bytes
+  blobKey String?
+  data    Bytes?
 
   @@unique([auditId, kind])
 

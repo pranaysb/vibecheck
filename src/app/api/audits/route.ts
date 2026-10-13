@@ -2,6 +2,7 @@ import { getUser } from "@/lib/auth/session";
 import { runAudit, type AuditEvent, type AuditInput } from "@/lib/audit/run";
 import { rateLimit, extractTargetDomain, getClientIp } from "@/lib/security/rate-limit";
 import { isSameOrigin } from "@/lib/security/origin";
+import { deleteByPrefix, uploadPrefix } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
   } else {
     const body = await req.json().catch(() => null);
     if (body?.source === "URL" && typeof body.url === "string" && body.url.trim()) input = { source: "URL", url: body.url.slice(0, 2048) };
+    else if (body?.source === "ZIP" && typeof body.blobKey === "string") {
+      // A .zip the browser already uploaded to private Blob storage via /api/uploads.
+      if (!user) return fail(401, "Sign in to upload files.");
+      if (!body.blobKey.startsWith(uploadPrefix(user.id)) || body.blobKey.includes("..") || !/\.zip$/i.test(body.blobKey)) return fail(400, "Invalid upload.");
+      const filename = typeof body.filename === "string" && /\.zip$/i.test(body.filename) ? body.filename.slice(0, 120) : "upload.zip";
+      input = { source: "ZIP", filename, blobKey: body.blobKey };
+    }
     else if (body?.source === "GITHUB" && typeof body.repo === "string" && body.repo.trim()) {
       if (!user) return fail(401, "Sign in to import a repository.");
       input = { source: "GITHUB", repo: body.repo.slice(0, 300) };
@@ -60,6 +68,8 @@ export async function POST(req: Request) {
       };
       try {
         await runAudit(input, user?.id ?? null, send);
+        // The raw upload is no longer needed once its files are extracted (or the audit failed).
+        if (input.source === "ZIP" && "blobKey" in input) await deleteByPrefix([input.blobKey]).catch(() => {});
       } catch (err) {
         send({ type: "error", message: (err as Error).message });
       } finally {

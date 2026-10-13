@@ -113,6 +113,12 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
             </p>
           )}
 
+          {audit.filesPurgedAt && (
+            <p className="mt-6 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+              Screenshots and uploaded files were deleted on {audit.filesPurgedAt.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })} under the 90-day retention policy. The results below are kept.
+            </p>
+          )}
+
           {/* Screenshots */}
           {audit.screenshots.length > 0 && (
             <section className="mt-10" aria-labelledby="shots">

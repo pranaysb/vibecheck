@@ -5,10 +5,21 @@ import { auditFiles, type StoredFile } from "./files-audit";
 import { downloadRepo, parseRepo } from "./github";
 import { computeScore, type AuditMeta, type CheckResult } from "./types";
 import { auditUrl, normalizeUrl } from "./url-audit";
+import { auditPrefix, blobEnabled, deleteByPrefix, getObject, putObject } from "@/lib/storage";
+
+/** Runs `fn` over items with at most `limit` in flight. */
+async function pool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) await fn(items[i++]);
+  }));
+}
 
 export type AuditInput =
   | { source: "URL"; url: string }
   | { source: "ZIP"; filename: string; data: Uint8Array }
+  /** A .zip the browser uploaded straight to Blob storage (bypasses the 4.5 MB request limit). */
+  | { source: "ZIP"; filename: string; blobKey: string }
   | { source: "GITHUB"; repo: string };
 
 export type AuditEvent = { type: "audit"; id: string } | { type: "step"; label: string } | { type: "done"; id: string; score: number | null } | { type: "error"; message: string; id?: string };
@@ -58,6 +69,11 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
         const dl = await downloadRepo(parseRepo(input.repo));
         zip = dl.zip;
         github = { repo: dl.fullName, ref: dl.ref, htmlUrl: dl.htmlUrl, commitUrl: `${dl.htmlUrl}/tree/${dl.sha}` };
+      } else if ("blobKey" in input) {
+        step("Reading the uploaded archive");
+        const bytes = await getObject(input.blobKey, { fresh: true });
+        if (!bytes) throw new Error("The uploaded file could not be read back from storage. Upload it again.");
+        zip = bytes;
       } else {
         zip = input.data;
       }
@@ -73,11 +89,25 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
     steps[steps.length - 1].ms = Math.round(performance.now() - stepStart);
     meta.steps = steps;
 
+    // Files and screenshots go to private Blob storage when it's connected; otherwise inline in Postgres.
+    const useBlob = blobEnabled();
+    const fileRows = stored.map((f) => ({ auditId: audit.id, path: f.path, contentType: f.contentType, size: f.data.length, blobKey: null as string | null, data: new Uint8Array(f.data) as Uint8Array<ArrayBuffer> | null }));
+    const shotRows = screenshots.map((s) => ({ auditId: audit.id, kind: s.kind, width: s.width, height: s.height, blobKey: null as string | null, data: new Uint8Array(s.data) as Uint8Array<ArrayBuffer> | null }));
+    if (useBlob && (fileRows.length || shotRows.length)) {
+      step("Saving files to storage");
+      await pool(fileRows, 16, async (r) => {
+        r.blobKey = await putObject(`${auditPrefix(audit.id)}files/${r.path}`, r.data!, r.contentType);
+        r.data = null;
+      });
+      await pool(shotRows, 2, async (r) => {
+        r.blobKey = await putObject(`${auditPrefix(audit.id)}shots/${r.kind}.jpg`, r.data!, "image/jpeg");
+        r.data = null;
+      });
+    }
+
     await prisma.$transaction([
-      ...(stored.length
-        ? [prisma.auditFile.createMany({ data: stored.map((f) => ({ auditId: audit.id, path: f.path, contentType: f.contentType, size: f.data.length, data: new Uint8Array(f.data) })) })]
-        : []),
-      ...(screenshots.length ? [prisma.screenshot.createMany({ data: screenshots.map((s) => ({ auditId: audit.id, kind: s.kind, width: s.width, height: s.height, data: new Uint8Array(s.data) })) })] : []),
+      ...(fileRows.length ? [prisma.auditFile.createMany({ data: fileRows })] : []),
+      ...(shotRows.length ? [prisma.screenshot.createMany({ data: shotRows })] : []),
       prisma.audit.update({
         where: { id: audit.id },
         data: {
@@ -94,6 +124,7 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
     emit({ type: "done", id: audit.id, score: score.score });
   } catch (err) {
     const message = (err as Error).message || "The audit failed.";
+    await deleteByPrefix([auditPrefix(audit.id)]).catch(() => {});
     await prisma.audit.update({ where: { id: audit.id }, data: { status: "FAILED", error: message, durationMs: Math.round(performance.now() - started) } });
     emit({ type: "error", message, id: audit.id });
   }
