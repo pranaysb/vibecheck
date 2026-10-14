@@ -158,3 +158,24 @@ describe("URL input", async () => {
     }
   });
 });
+
+describe("transient network retry", async () => {
+  const { withRetry, isTransient } = await import("../src/lib/audit/url-audit");
+  const { BlockedDestinationError } = await import("../src/lib/net/safe-fetch");
+  const reset = Object.assign(new Error("Could not reach x: read ECONNRESET"), { code: "ECONNRESET" });
+
+  test("retries a dropped connection once", async () => {
+    let calls = 0;
+    const v = await withRetry(async () => (++calls === 1 ? Promise.reject(reset) : "ok"), 1);
+    assert.equal(v, "ok");
+    assert.equal(calls, 2);
+  });
+  test("does not retry real answers, and gives up after one retry", async () => {
+    assert.equal(isTransient(Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" })), false);
+    assert.equal(isTransient(Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" })), false);
+    assert.equal(isTransient(new BlockedDestinationError("Blocked destination http://127.0.0.1/: Loopback")), false);
+    let calls = 0;
+    await assert.rejects(withRetry(async () => { calls++; throw reset; }, 1), /ECONNRESET/);
+    assert.equal(calls, 2);
+  });
+});

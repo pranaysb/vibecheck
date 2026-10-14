@@ -89,7 +89,14 @@ async function newContext(browser: Browser, viewport: { width: number; height: n
 class BlockedRenderError extends Error {}
 
 async function settle(page: Page, url: string, fetchedStatus?: number) {
-  const res = await page.goto(url, { waitUntil: "load", timeout: 20_000 });
+  // Wait for the document, not for "load": pages with endless trackers or ads may never fire it.
+  const go = () => page.goto(url, { waitUntil: "domcontentloaded", timeout: 20_000 });
+  // One retry for dropped connections (ERR_CONNECTION_RESET and friends), not for real errors.
+  const res = await go().catch(async (err: Error) => {
+    if (!/ERR_CONNECTION_(RESET|CLOSED|ABORTED)|ERR_NETWORK_CHANGED|ERR_TIMED_OUT/.test(err.message)) throw err;
+    await page.waitForTimeout(800);
+    return go();
+  });
   // A 4xx/5xx document is not the page the user asked about; judging it would produce confident results
   // about the wrong document.
   if (res && res.status() >= 400) {
@@ -99,6 +106,7 @@ async function settle(page: Page, url: string, fetchedStatus?: number) {
         : `The site answered the headless browser with HTTP ${res.status()} while a direct request got the page, which usually means bot protection (e.g. a Cloudflare challenge). Rendered checks were not run; HTML checks use the page fetched directly.`
     );
   }
+  await page.waitForLoadState("load", { timeout: 10_000 }).catch(() => {});
   await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {});
 }
 
@@ -393,7 +401,16 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes };
   } catch (err) {
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
-    return { ran: false, reason: `Browser pass failed: ${(err as Error).message.split("\n")[0]}`, checks: [], screenshots };
+    const msg = (err as Error).message.split("\n")[0];
+    if (/page\.goto: Timeout/.test(msg)) {
+      return {
+        ran: false,
+        reason: "The page answered our HTTP request but never finished loading in a headless browser within 20 seconds. Some sites stall automated browsers on purpose (bot protection), so the in-browser checks were not run.",
+        checks: [],
+        screenshots,
+      };
+    }
+    return { ran: false, reason: `Browser pass failed: ${msg}`, checks: [], screenshots };
   } finally {
     await desktop?.close().catch(() => {});
     await mobile?.close().catch(() => {});

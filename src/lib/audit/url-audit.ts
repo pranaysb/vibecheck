@@ -55,7 +55,7 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   step("Fetching the page");
   let page: FetchResult;
   try {
-    page = await safeFetch(target, { maxBytes: 3 * 1024 * 1024 });
+    page = await withRetry(() => safeFetch(target, { maxBytes: 3 * 1024 * 1024 }));
   } catch (err) {
     if (err instanceof BlockedDestinationError) throw friendlyBlocked(err.message, new URL(target).hostname);
     const e = err as Error & { code?: string };
@@ -321,4 +321,22 @@ function friendlyBlocked(message: string, requestedHost: string): AuditInputErro
   if (/localhost|Loopback|Private|Link-Local|Metadata|Carrier-Grade|Unique Local|forbidden/i.test(message))
     return new AuditInputError(`${via} is a private or local address that VibeCheck can't reach. Deploy the site publicly, or upload its build as a .zip.`.replace(`, which is a`, ` — a`));
   return new AuditInputError(`VibeCheck can't audit ${host}: ${message.replace(/^Blocked destination [^:]+:\s*/, "")}`);
+}
+
+/** Connection-level failures worth one more try; real answers (DNS, refused, blocked, HTTP errors) are not. */
+export function isTransient(err: unknown): boolean {
+  const e = err as Error & { code?: string };
+  if (err instanceof BlockedDestinationError) return false;
+  return ["ECONNRESET", "ETIMEDOUT", "EPIPE", "ECONNABORTED", "EAI_AGAIN"].includes(e.code ?? "") || /timed out|socket hang up|ECONNRESET/i.test(e.message ?? "");
+}
+
+/** Retries once after a short pause when the failure looks like a dropped connection. */
+export async function withRetry<T>(fn: () => Promise<T>, pauseMs = 800): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isTransient(err)) throw err;
+    await new Promise((r) => setTimeout(r, pauseMs));
+    return fn();
+  }
 }
