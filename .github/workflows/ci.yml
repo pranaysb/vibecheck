@@ -41,11 +41,23 @@ jobs:
       - run: npm run build
       - name: Install Chromium for browser checks
         run: npx playwright-core install --with-deps chromium
-      - name: Smoke test the production build
+      - name: Start the production build
+        env:
+          # Test-only sign-in for the e2e suite (never active on Vercel). CI-only value, not a secret.
+          E2E_AUTH_SECRET: ci-e2e-only
+          ADMIN_EMAILS: admin@e2e.test
+          # Authenticated GitHub API calls for the repo-import step (60/h anonymous is shared per runner IP).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx next start -p 3000 > server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000/ && break; sleep 1; done
-          node scripts/smoke.mjs http://localhost:3000 --require-browser
+      - name: Smoke test
+        run: node scripts/smoke.mjs http://localhost:3000 --require-browser
+      - name: End-to-end workflow (builder, expert, admin, bystander)
+        env:
+          E2E_AUTH_SECRET: ci-e2e-only
+          E2E_ADMIN_EMAIL: admin@e2e.test
+        run: node scripts/e2e.mjs http://localhost:3000 --target=www.wikipedia.org
       - name: Server log
         if: failure()
         run: cat server.log

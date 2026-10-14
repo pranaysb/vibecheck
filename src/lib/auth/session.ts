@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { E2E_COOKIE, e2eAuthEnabled, verifyE2eCookie } from "./e2e";
 import type { User } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
@@ -46,6 +48,15 @@ async function linkClerkUser(clerkId: string) {
 }
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
+  // Test-only sign-in for the e2e suite; inert on Vercel and without E2E_AUTH_SECRET (see e2e.ts).
+  if (e2eAuthEnabled()) {
+    const id = verifyE2eCookie((await cookies()).get(E2E_COOKIE)?.value);
+    const testUser = id ? await prisma.user.findUnique({ where: { id }, select: SELECT }) : null;
+    if (testUser) {
+      const { expertProfile, ...u } = testUser;
+      return { ...u, isAdmin: isAdminEmail(u.email), expertStatus: expertProfile?.status ?? null };
+    }
+  }
   const { userId, sessionClaims } = await auth();
   if (!userId) return null;
   let user = (await prisma.user.findUnique({ where: { clerkId: userId }, select: SELECT })) ?? (await linkClerkUser(userId));

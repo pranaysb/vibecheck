@@ -18,6 +18,15 @@
         "ADMIN_EMAILS=admin@vibecheck.test npx next dev -p 3200"
       ],
       "port": 3200
+    },
+    {
+      "name": "vibecheck-e2e",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "E2E_AUTH_SECRET=local-e2e-only ADMIN_EMAILS=admin@vibecheck.test npx next start -p 3200"
+      ],
+      "port": 3200
     }
   ]
 }
