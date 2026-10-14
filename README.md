@@ -22,22 +22,39 @@ Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload
 
 ## Running locally
 
+Requirements: Node 24, PostgreSQL 16+.
+
 ```bash
-cp .env.example .env      # DATABASE_URL, ADMIN_EMAILS, SESSION_SECRET, Clerk keys (`clerk env pull`)
+git clone https://github.com/pranaysb/vibecheck.git && cd vibecheck
 npm install
-npx playwright-core install chromium   # browser checks; skipped (not faked) if missing
+cp .env.example .env
+createdb vibecheck                      # then set DATABASE_URL in .env, including your Postgres user
+npx clerk@latest init                   # writes Clerk dev keys to .env; no Clerk account needed
+npx playwright-core install chromium    # browser checks; without it they're reported as "not run"
 npm run db:push
-npm run dev
+npm run dev                             # http://localhost:3000
 ```
 
-Sign in with an email listed in `ADMIN_EMAILS` to get `/admin`, where you approve expert applications.
+Sign in with an email listed in `ADMIN_EMAILS` to get `/admin`, where you approve expert applications. Use `npx clerk@latest link` instead of `init` to point at an existing Clerk app.
+
+### Checks
 
 ```bash
-npm test          # unit tests for checks, scoring, secrets, archives, lockfiles, SSRF, preview tokens
+npm test                 # unit + database tests (checks, scoring, secrets, archives, lockfiles, SSRF, storage, moderation)
 npm run typecheck
 npm run lint
 npm run build
 ```
+
+With a production build running (`npm run build && npm start`), two end-to-end scripts drive it like real users:
+
+```bash
+node scripts/smoke.mjs http://localhost:3000 --require-browser                 # pages + one real audit
+E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
+  node scripts/e2e.mjs http://localhost:3000                                   # the whole workflow, 27 steps
+```
+
+`e2e.mjs` needs the server started with the same `E2E_AUTH_SECRET` and with `E2E_ADMIN_EMAIL` in `ADMIN_EMAILS`. That enables a test-only sign-in (four throwaway users, cleaned up afterwards). It never activates on Vercel. CI runs all of the above on every push.
 
 ## Platform
 

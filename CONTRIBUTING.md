@@ -1,6 +1,6 @@
 # Contributing to VibeCheck
 
-Thank you for your interest in contributing to VibeCheck! We are building an open-source, enterprise-grade code quality benchmark and security audit platform.
+Thanks for your interest in contributing. VibeCheck is an open-source website audit (deterministic checks with evidence) plus human expert reviews.
 
 ---
 
@@ -12,40 +12,15 @@ All contributors and maintainers are expected to uphold a respectful, inclusive,
 
 ## Development Setup
 
-### Prerequisites
-- **Node.js**: >= 20.0.0
-- **npm** (or pnpm / bun)
-- **PostgreSQL**: local instance or cloud connection (Neon / Vercel Postgres)
+Follow **Running locally** in the [README](README.md#running-locally): Node 24, PostgreSQL 16+, `npx clerk@latest init` for dev keys, `npm run db:push`, `npm run dev`.
 
-### Local Installation
+Before opening a pull request, run what CI runs:
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/pranaysb/vibecheck.git
-   cd vibecheck
-   ```
+```bash
+npm run lint && npm run typecheck && npm test && npm run build
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**:
-   Create a `.env` file in the root directory:
-   ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/vibecheck?schema=public"
-   ```
-
-4. **Create the database schema**:
-   ```bash
-   npm run db:push
-   ```
-
-5. **Start the Next.js development server**:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+and, against a production build, `scripts/smoke.mjs` and `scripts/e2e.mjs` (see the README).
 
 ---
 
@@ -78,6 +53,5 @@ New automated checks must be added to `src/lib/audit/catalog.ts`; `tests/catalog
 
 ## Reporting Security Vulnerabilities
 
-If you discover a potential vulnerability in VibeCheck's scanner or server:
-- **Do not open a public GitHub issue.**
-- Email details and reproduction steps to **security@vibecheck.dev** or report directly via our Coordinated Disclosure Program at [`/security`](https://vibecheck-ten-omega.vercel.app/security).
+If you find a vulnerability in VibeCheck's scanner or server, please don't open a public issue. Report it privately through GitHub: the repository's **Security** tab → **Report a vulnerability**
+([direct link](https://github.com/pranaysb/vibecheck/security/advisories/new)). Include the steps to reproduce it.
