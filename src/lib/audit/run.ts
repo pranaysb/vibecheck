@@ -68,7 +68,7 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
         step("Downloading the repository from GitHub");
         const dl = await downloadRepo(parseRepo(input.repo));
         zip = dl.zip;
-        github = { repo: dl.fullName, ref: dl.ref, htmlUrl: dl.htmlUrl, commitUrl: `${dl.htmlUrl}/tree/${dl.sha}` };
+        github = { repo: dl.fullName, ref: dl.ref, htmlUrl: dl.htmlUrl, commitUrl: dl.sha ? `${dl.htmlUrl}/tree/${dl.sha}` : dl.htmlUrl };
       } else if ("blobKey" in input) {
         step("Reading the uploaded archive");
         const bytes = await getObject(input.blobKey, { fresh: true });

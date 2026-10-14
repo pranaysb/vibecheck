@@ -6,8 +6,11 @@ import type { TLSSocket } from "node:tls";
 import { validateTargetDestination } from "@/lib/security/ssrf";
 import { CookieJar } from "./cookie-jar";
 
+// A browser-style UA with VibeCheck appended (the convention Lighthouse uses). Some sites silently drop
+// requests from bot-only UAs (stripe.com never answers "compatible; VibeCheckAudit"), which made them look
+// down. The VibeCheckAudit token still identifies us to anyone reading their logs.
 export const USER_AGENT =
-  "Mozilla/5.0 (compatible; VibeCheckAudit/2.0; +https://github.com/pranaysb/vibecheck)";
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 VibeCheckAudit/2.0 (+https://github.com/pranaysb/vibecheck)";
 
 export interface TlsInfo {
   authorized: boolean;

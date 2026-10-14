@@ -124,3 +124,21 @@ describe("GitHub input parsing", () => {
     assert.throws(() => parseRepo("../../etc"));
   });
 });
+
+describe("GitHub archives", async () => {
+  const { zipComment, zipTopFolder } = await import("../src/lib/audit/github");
+  test("reads the commit SHA from the archive comment and the branch folder", () => {
+    // fflate can't write archive comments, so append one the way GitHub does: patch the EOCD record.
+    const zip = zipSync({ "slugify-main/readme.md": strToU8("# hi") });
+    const sha = "3b17b2e84b97624a683aafaa38184bf2746fab22";
+    const withComment = new Uint8Array(zip.length + sha.length);
+    withComment.set(zip);
+    withComment.set(strToU8(sha), zip.length);
+    const eocd = zip.length - 22;
+    withComment[eocd + 20] = sha.length & 0xff;
+    withComment[eocd + 21] = sha.length >> 8;
+    assert.equal(zipComment(withComment), sha);
+    assert.equal(zipComment(zip), "");
+    assert.equal(zipTopFolder(zip), "slugify-main");
+  });
+});
