@@ -13,11 +13,23 @@ export interface AuditOutput {
   screenshots: BrowserRun["screenshots"];
 }
 
+/** Errors meant to be shown to the person who typed the URL, in plain words. */
+export class AuditInputError extends Error {}
+
 export function normalizeUrl(input: string): string {
   let s = input.trim();
   if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) s = "https://" + s;
-  const u = new URL(s);
-  if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Only http and https URLs can be audited.");
+  let u: URL;
+  try {
+    u = new URL(s);
+  } catch {
+    throw new AuditInputError("That doesn't look like a web address. Try something like example.com or https://example.com/pricing.");
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") throw new AuditInputError("Only web pages (http:// or https://) can be audited.");
+  if (u.hostname === "localhost" || u.hostname.endsWith(".localhost")) {
+    throw new AuditInputError("localhost is your own computer, which VibeCheck's servers can't reach. Deploy the site publicly, or upload its build folder as a .zip.");
+  }
+  if (!u.hostname.includes(".") && !u.hostname.includes(":")) throw new AuditInputError(`"${u.hostname}" isn't a public web address. Include the full domain, like ${u.hostname}.com.`);
   u.hash = "";
   return u.toString();
 }
@@ -45,7 +57,7 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   try {
     page = await safeFetch(target, { maxBytes: 3 * 1024 * 1024 });
   } catch (err) {
-    if (err instanceof BlockedDestinationError) throw err;
+    if (err instanceof BlockedDestinationError) throw friendlyBlocked(err.message, new URL(target).hostname);
     const e = err as Error & { code?: string };
     if (e.code && /CERT|SSL|TLS|SELF_SIGNED|UNABLE_TO_VERIFY/i.test(e.code)) {
       checks.push({
@@ -60,9 +72,17 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
       });
       return { checks, meta, screenshots: [] };
     }
+    if (e.code === "ECONNREFUSED") throw new AuditInputError(`${new URL(target).hostname} refused the connection. Is the site running and reachable from the internet?`);
+    if (/timed out/i.test(e.message)) throw new AuditInputError(`${new URL(target).hostname} didn't respond within 10 seconds.`);
     throw err;
   }
   const finalUrl = page.url;
+
+  // Audit web pages, not files or APIs; a JSON endpoint scored on "page title" and "alt text" is noise.
+  const type = page.headers["content-type"] ?? "";
+  if (page.status < 400 && type && !/text\/html|application\/xhtml\+xml/i.test(type)) {
+    throw new AuditInputError(`That address returns ${type.split(";")[0]}, not a web page. Enter the URL of a page people visit in a browser.`);
+  }
   const isHttps = finalUrl.startsWith("https:");
   const origin = new URL(finalUrl).origin;
   meta.statusCode = page.status;
@@ -75,7 +95,8 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   checks.push({
     id: "rel-status",
     category: "reliability",
-    severity: "high",
+    // Critical: an error page isn't the site the user meant to audit, so its other results mustn't look healthy.
+    severity: "critical",
     method: "http",
     title: "Page responds successfully",
     status: page.status >= 200 && page.status < 300 ? "pass" : "fail",
@@ -85,7 +106,9 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   checks.push({
     id: "sec-https",
     category: "security",
-    severity: "high",
+    // Critical: without HTTPS every password and form field crosses the network in plain text,
+    // and browsers label the page "Not secure". Such a site shouldn't score above the critical cap.
+    severity: "critical",
     method: "http",
     title: "Served over HTTPS",
     status: isHttps ? "pass" : "fail",
@@ -273,7 +296,7 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
 
   // 5. Browser
   step("Rendering in headless Chromium (desktop + 390px mobile)");
-  const browser = await runBrowserAudit({ url: finalUrl });
+  const browser = await runBrowserAudit({ url: finalUrl, fetchedStatus: page.status });
   meta.browser = { ran: browser.ran, reason: browser.reason, requests: browser.requests, transferBytes: browser.transferBytes };
   checks.push(...browser.checks);
 
@@ -284,4 +307,18 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   checks.push(...htmlChecks([{ label: finalUrl, html: docHtml }], { isHttps }));
 
   return { checks, meta, finalUrl, screenshots: browser.screenshots };
+}
+
+/** Turns SSRF/DNS rejections into something a non-engineer can act on. */
+function friendlyBlocked(message: string, requestedHost: string): AuditInputError {
+  // safeFetch reports the hop that was blocked, which may be a redirect target rather than the requested host.
+  let host = requestedHost;
+  try {
+    host = new URL(message.match(/^Blocked destination (\S+): /)?.[1] ?? "").hostname || requestedHost;
+  } catch {}
+  const via = host !== requestedHost ? `${requestedHost} redirected to ${host}, which` : `${host}`;
+  if (/DNS resolution failed|zero records/i.test(message)) return new AuditInputError(`We couldn't find ${host}. Check the spelling, or that the domain is live.`);
+  if (/localhost|Loopback|Private|Link-Local|Metadata|Carrier-Grade|Unique Local|forbidden/i.test(message))
+    return new AuditInputError(`${via} is a private or local address that VibeCheck can't reach. Deploy the site publicly, or upload its build as a .zip.`.replace(`, which is a`, ` — a`));
+  return new AuditInputError(`VibeCheck can't audit ${host}: ${message.replace(/^Blocked destination [^:]+:\s*/, "")}`);
 }

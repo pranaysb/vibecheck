@@ -84,11 +84,6 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
       if (github) meta.github = github;
     }
 
-    step("Scoring");
-    const score = computeScore(checks);
-    steps[steps.length - 1].ms = Math.round(performance.now() - stepStart);
-    meta.steps = steps;
-
     // Files and screenshots go to private Blob storage when it's connected; otherwise inline in Postgres.
     const useBlob = blobEnabled();
     const fileRows = stored.map((f) => ({ auditId: audit.id, path: f.path, contentType: f.contentType, size: f.data.length, blobKey: null as string | null, data: new Uint8Array(f.data) as Uint8Array<ArrayBuffer> | null }));
@@ -104,6 +99,12 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
         r.data = null;
       });
     }
+
+    // Scoring is the last timed step, so every earlier step (including saving) has its real duration.
+    step("Scoring");
+    const score = computeScore(checks);
+    steps[steps.length - 1].ms = Math.round(performance.now() - stepStart);
+    meta.steps = steps;
 
     await prisma.$transaction([
       ...(fileRows.length ? [prisma.auditFile.createMany({ data: fileRows })] : []),

@@ -1,5 +1,6 @@
 import { getUser } from "@/lib/auth/session";
 import { runAudit, type AuditEvent, type AuditInput } from "@/lib/audit/run";
+import { AuditInputError, normalizeUrl } from "@/lib/audit/url-audit";
 import { rateLimit, extractTargetDomain, getClientIp } from "@/lib/security/rate-limit";
 import { isSameOrigin } from "@/lib/security/origin";
 import { deleteByPrefix, uploadPrefix } from "@/lib/storage";
@@ -32,7 +33,15 @@ export async function POST(req: Request) {
     input = { source: "ZIP", filename: file.name.slice(0, 120), data: new Uint8Array(await file.arrayBuffer()) };
   } else {
     const body = await req.json().catch(() => null);
-    if (body?.source === "URL" && typeof body.url === "string" && body.url.trim()) input = { source: "URL", url: body.url.slice(0, 2048) };
+    if (body?.source === "URL" && typeof body.url === "string" && body.url.trim()) {
+      // Reject typos before they count against the rate limit.
+      try {
+        normalizeUrl(body.url.slice(0, 2048));
+      } catch (err) {
+        return fail(400, err instanceof AuditInputError ? err.message : "That doesn't look like a web address.");
+      }
+      input = { source: "URL", url: body.url.slice(0, 2048) };
+    }
     else if (body?.source === "ZIP" && typeof body.blobKey === "string") {
       // A .zip the browser already uploaded to private Blob storage via /api/uploads.
       if (!user) return fail(401, "Sign in to upload files.");

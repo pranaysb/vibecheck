@@ -6,7 +6,7 @@ import { previewPath } from "@/lib/preview";
 import { getUser } from "@/lib/auth/session";
 import { canViewAudit } from "@/lib/access";
 import { computeScore, CRITICAL_CAP, type AuditMeta, type CheckResult } from "@/lib/audit/types";
-import { CategorySummary, CheckGroups, ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
+import { CategorySummary, CheckGroups, FixFirst, ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { RequestReviewForm } from "./RequestReviewForm";
 import { RerunButton } from "./RerunButton";
 import { diffAudits } from "@/lib/audit/compare";
@@ -127,6 +127,8 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
           </div>
+
+          <FixFirst checks={checks} />
 
           {previous && diff && (
             <section className="mt-6 card p-5" aria-labelledby="changes">

@@ -395,7 +395,7 @@ export function htmlChecks(docs: HtmlDoc[], opts: { isHttps: boolean }): CheckRe
         { id: "sec-mixed-content", category: "security", severity: "medium", method: "html", title: "No insecure (http://) subresources", fix: "Load every script, stylesheet, image and form target over https://." },
         collect(facts, (f) => f.insecureRefs, multi),
         "Every subresource is referenced over HTTPS.",
-        (n) => `${n} subresource(s) are referenced over plain http://. Browsers block active mixed content outright.`
+        (n) => `${n} file(s) on this HTTPS page load over plain http://. Browsers block insecure scripts outright and flag the page as not fully secure.`
       )
     );
   }

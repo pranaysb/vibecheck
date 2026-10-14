@@ -27,11 +27,11 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
     title: "Content-Security-Policy",
     status: !csp ? "fail" : !scriptSrc || unsafeInline ? "warn" : "pass",
     detail: !csp
-      ? "No CSP header. If any XSS bug slips in, the browser will run injected scripts without restriction."
+      ? "No Content-Security-Policy. If an attacker ever manages to inject code into your page (cross-site scripting), browsers will run it with nothing to stop them."
       : !scriptSrc
         ? "A CSP is set but defines neither script-src nor default-src, so scripts are unrestricted."
         : unsafeInline
-          ? "script-src allows 'unsafe-inline' without a nonce or hash, which cancels most XSS protection."
+          ? "The policy allows inline scripts ('unsafe-inline') without a nonce or hash, which cancels most of its protection against injected code."
           : `script-src is restricted${unsafeEval ? " (allows 'unsafe-eval')" : ""}.`,
     evidence: csp ? [csp.length > 300 ? csp.slice(0, 300) + "…" : csp] : undefined,
     fix: "Start with Content-Security-Policy-Report-Only, then enforce. Prefer nonces over 'unsafe-inline'.",
@@ -49,7 +49,7 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
       title: "Strict-Transport-Security",
       status: !hsts ? "fail" : maxAge < 15_552_000 ? "warn" : "pass",
       detail: !hsts
-        ? "No HSTS header; a first visit over http:// can be intercepted before the redirect to HTTPS."
+        ? "Browsers aren't told to always use HTTPS (no HSTS header), so a visit that starts on http:// can be intercepted on public Wi-Fi before it switches to HTTPS."
         : `max-age is ${Math.round(maxAge / 86400)} days${maxAge < 15_552_000 ? "; at least 180 days is recommended" : ""}.`,
       evidence: hsts ? [hsts] : undefined,
       fix: "Strict-Transport-Security: max-age=63072000; includeSubDomains",
@@ -69,7 +69,7 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
     status: framed ? "pass" : "fail",
     detail: framed
       ? `Framing is restricted via ${frameAncestors ? `CSP frame-ancestors ${frameAncestors}` : `X-Frame-Options: ${xfo}`}.`
-      : "Any site can embed this page in an invisible iframe and trick users into clicking.",
+      : "Any other website can load this page invisibly inside its own and trick visitors into clicking your buttons (clickjacking).",
     fix: "Content-Security-Policy: frame-ancestors 'self'  (or X-Frame-Options: DENY)",
   });
 
@@ -81,7 +81,7 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
     method: "http",
     title: "X-Content-Type-Options: nosniff",
     status: nosniff ? "pass" : "fail",
-    detail: nosniff ? "MIME sniffing is disabled." : "Browsers may guess content types and execute uploaded files as scripts.",
+    detail: nosniff ? "Browsers are told not to guess file types." : "Browsers may guess what a file is, so an uploaded text or image file could be run as code.",
     fix: "X-Content-Type-Options: nosniff",
   });
 
@@ -111,7 +111,7 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
     method: "http",
     title: "No software version disclosure",
     status: leaks.length ? "warn" : "pass",
-    detail: leaks.length ? "Response headers name the exact server software, which helps attackers match known CVEs." : "Headers don't reveal software versions.",
+    detail: leaks.length ? "Your server announces exactly which software it runs, which helps attackers look up known security holes for that version." : "Headers don't reveal software versions.",
     evidence: leaks.length ? leaks : undefined,
     fix: "In Next.js set poweredByHeader: false; in nginx set server_tokens off.",
   });
@@ -137,7 +137,7 @@ export function headerChecks(h: Headers, setCookies: string[], isHttps: boolean)
       title: "Cookie attributes",
       status: problems.length ? "fail" : "pass",
       detail: problems.length
-        ? `${problems.length} of ${setCookies.length} cookie(s) set on the first response lack protective attributes.`
+        ? `${problems.length} of ${setCookies.length} cookie(s) are missing protective settings, which can let them leak over insecure connections or to other sites.`
         : `All ${setCookies.length} cookie(s) set on the first response have Secure and SameSite.`,
       evidence: problems.length ? problems : undefined,
       fix: "Set-Cookie: name=value; Secure; HttpOnly; SameSite=Lax; Path=/",

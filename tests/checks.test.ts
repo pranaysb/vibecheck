@@ -145,3 +145,16 @@ describe("diffAudits", async () => {
     assert.deepEqual(d.changed.map((x) => `${x.check.id}:${x.from}->${x.check.status}`), ["alt:warn->fail"]);
   });
 });
+
+describe("URL input", async () => {
+  const { normalizeUrl, AuditInputError } = await import("../src/lib/audit/url-audit");
+  test("accepts bare domains and paths", () => {
+    assert.equal(normalizeUrl("Example.com/pricing#plans"), "https://example.com/pricing");
+    assert.equal(normalizeUrl(" http://example.com "), "http://example.com/");
+  });
+  test("rejects non-addresses with plain-language errors", () => {
+    for (const [input, re] of [["not a url at all", /doesn't look like a web address/], ["localhost:3000", /your own computer/], ["ftp://example.com", /Only web pages/], ["intranet", /isn't a public web address/]] as const) {
+      assert.throws(() => normalizeUrl(input), (e: Error) => e instanceof AuditInputError && re.test(e.message), input);
+    }
+  });
+});

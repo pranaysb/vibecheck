@@ -1,4 +1,4 @@
-import { CATEGORY_LABEL, METHOD_LABEL, type Category, type CheckResult, type Status } from "@/lib/audit/types";
+import { CATEGORY_LABEL, METHOD_LABEL, SEVERITY_WEIGHT, type Category, type CheckResult, type Status } from "@/lib/audit/types";
 
 export function scoreTone(score: number | null) {
   if (score === null) return "text-skip";
@@ -101,10 +101,40 @@ export function CategorySummary({ checks }: { checks: CheckResult[] }) {
   );
 }
 
+/** The failures that cost the most score, in the order a builder should tackle them. */
+export function topPriorities(checks: CheckResult[], limit = 5): CheckResult[] {
+  const impact = (c: CheckResult) => SEVERITY_WEIGHT[c.severity] * (c.status === "fail" ? 1 : 0.5);
+  return checks.filter((c) => c.status === "fail" || c.status === "warn").sort((a, b) => impact(b) - impact(a)).slice(0, limit);
+}
+
+export function FixFirst({ checks }: { checks: CheckResult[] }) {
+  const top = topPriorities(checks);
+  if (!top.length) return null;
+  return (
+    <section className="mt-6 card p-5" aria-labelledby="fix-first">
+      <h2 id="fix-first" className="font-semibold">Fix these first</h2>
+      <p className="mt-1 text-sm text-muted">The problems that hurt your score most, biggest first. Each links to its evidence below.</p>
+      <ol className="mt-4 space-y-3">
+        {top.map((c, i) => (
+          <li key={c.id} className="flex gap-3">
+            <span className="font-mono text-xs text-faint mt-1 w-4 shrink-0">{i + 1}</span>
+            <div className="min-w-0">
+              <a href={`#check-${c.id}`} className="font-medium underline-offset-4 hover:underline">{c.title}</a>
+              <span className={`ml-2 text-[11px] font-medium uppercase tracking-wide ${c.severity === "critical" || c.severity === "high" ? "text-fail" : "text-muted"}`}>{c.severity}</span>
+              <p className="text-sm text-muted leading-relaxed">{c.detail}</p>
+              {c.fix && <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap"><span className="text-muted">Fix: </span>{c.fix}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function CheckRow({ check }: { check: CheckResult }) {
   const hasBody = Boolean(check.evidence?.length || check.fix);
   return (
-    <li className="border-b border-line last:border-b-0">
+    <li id={`check-${check.id}`} className="border-b border-line last:border-b-0 scroll-mt-20">
       <details className="group" open={check.status === "fail" && check.severity === "critical"}>
         <summary className="flex items-start gap-3 py-3.5 px-4 hover:bg-surface rounded-lg">
           <StatusIcon status={check.status} className="mt-0.5" />

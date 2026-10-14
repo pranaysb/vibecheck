@@ -13,7 +13,7 @@ export interface CatalogEntry {
 /** Every check the engine can emit. tests/catalog.test.ts fails if the engine emits an id that isn't listed here. */
 export const CATALOG: CatalogEntry[] = [
   // Security
-  { id: "sec-https", title: "Served over HTTPS", category: "security", severity: "high", method: "http", appliesTo: ["url"], how: "The final URL after redirects uses https." },
+  { id: "sec-https", title: "Served over HTTPS", category: "security", severity: "critical", method: "http", appliesTo: ["url"], how: "The final URL after redirects uses https." },
   { id: "sec-tls", title: "Valid TLS certificate", category: "security", severity: "critical", method: "http", appliesTo: ["url"], how: "Node's TLS stack verifies the chain; warns if expiry is under 14 days." },
   { id: "sec-http-redirect", title: "HTTP redirects to HTTPS", category: "security", severity: "medium", method: "http", appliesTo: ["url"], how: "Requests http://host/ without following redirects and checks for a 3xx to https." },
   { id: "sec-hsts", title: "Strict-Transport-Security", category: "security", severity: "medium", method: "http", appliesTo: ["url"], how: "Header present with max-age ≥ 180 days." },
@@ -61,7 +61,7 @@ export const CATALOG: CatalogEntry[] = [
   { id: "seo-robots", title: "robots.txt", category: "seo", severity: "low", method: "http", appliesTo: ["url"], how: "/robots.txt answers 200 with non-HTML content." },
   { id: "seo-sitemap", title: "XML sitemap", category: "seo", severity: "low", method: "http", appliesTo: ["url"], how: "/sitemap.xml is a urlset/sitemapindex, or robots.txt declares one." },
   // Reliability
-  { id: "rel-status", title: "Page responds 2xx", category: "reliability", severity: "high", method: "http", appliesTo: ["url"], how: "Final HTTP status after redirects." },
+  { id: "rel-status", title: "Page responds 2xx", category: "reliability", severity: "critical", method: "http", appliesTo: ["url"], how: "Final HTTP status after redirects." },
   { id: "rel-console-errors", title: "No JavaScript errors", category: "reliability", severity: "medium", method: "browser", appliesTo: ["url", "site"], how: "console.error calls and uncaught exceptions during load: 0 pass, ≤ 2 warn." },
   { id: "rel-failed-requests", title: "All resources load", category: "reliability", severity: "medium", method: "browser", appliesTo: ["url", "site"], how: "Network failures and 4xx/5xx responses; third-party-only failures warn. Requests the browser cancels itself (ERR_ABORTED, e.g. dropped prefetches) are not failures." },
   { id: "rel-broken-refs", title: "No broken local references", category: "reliability", severity: "medium", method: "files", appliesTo: ["site"], how: "Every local src/href with a file extension resolves to a file in the upload." },

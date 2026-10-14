@@ -85,8 +85,20 @@ async function newContext(browser: Browser, viewport: { width: number; height: n
   return ctx;
 }
 
-async function settle(page: Page, url: string) {
-  await page.goto(url, { waitUntil: "load", timeout: 20_000 });
+/** Thrown when the site answers the headless browser with an error page (usually bot protection). */
+class BlockedRenderError extends Error {}
+
+async function settle(page: Page, url: string, fetchedStatus?: number) {
+  const res = await page.goto(url, { waitUntil: "load", timeout: 20_000 });
+  // A 4xx/5xx document is not the page the user asked about; judging it would produce confident results
+  // about the wrong document.
+  if (res && res.status() >= 400) {
+    throw new BlockedRenderError(
+      fetchedStatus !== undefined && fetchedStatus >= 400
+        ? `The page itself returned HTTP ${res.status()}, so there was no page to render.`
+        : `The site answered the headless browser with HTTP ${res.status()} while a direct request got the page, which usually means bot protection (e.g. a Cloudflare challenge). Rendered checks were not run; HTML checks use the page fetched directly.`
+    );
+  }
   await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {});
 }
 
@@ -216,7 +228,7 @@ function mobileAudit() {
   return { vw, sw, overflowing, small };
 }
 
-export async function runBrowserAudit(target: { url: string } | { site: ArchiveSite }): Promise<BrowserRun> {
+export async function runBrowserAudit(target: { url: string; fetchedStatus?: number } | { site: ArchiveSite }): Promise<BrowserRun> {
   let browser: Browser | null = null;
   const site = "site" in target ? target.site : undefined;
   const url = "url" in target ? target.url : `${UPLOAD_ORIGIN}/${target.site.entry}`;
@@ -263,7 +275,7 @@ export async function runBrowserAudit(target: { url: string } | { site: ArchiveS
       failed.push({ url: req.url(), reason, sameOrigin: req.url().startsWith(origin) });
     });
 
-    await settle(page, url);
+    await settle(page, url, "url" in target ? target.fetchedStatus : undefined);
     await page.waitForTimeout(800);
     const renderedHtml = await page.content();
     const vitals = (await page.evaluate("window.__vc")) as { lcp: number; cls: number } | undefined;
@@ -273,7 +285,7 @@ export async function runBrowserAudit(target: { url: string } | { site: ArchiveS
     // ---------- Mobile pass ----------
     mobile = await newContext(browser, MOBILE, true, site);
     const mpage = await mobile.newPage();
-    await settle(mpage, url);
+    await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
     await mpage.waitForTimeout(500);
     const m = await mpage.evaluate(mobileAudit);
     screenshots.push({ kind: "mobile", ...MOBILE, data: await mpage.screenshot({ type: "jpeg", quality: 72 }) });
@@ -380,6 +392,7 @@ export async function runBrowserAudit(target: { url: string } | { site: ArchiveS
     }
     return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes };
   } catch (err) {
+    if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
     return { ran: false, reason: `Browser pass failed: ${(err as Error).message.split("\n")[0]}`, checks: [], screenshots };
   } finally {
     await desktop?.close().catch(() => {});
