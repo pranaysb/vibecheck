@@ -21,9 +21,12 @@ jobs:
           --health-cmd "pg_isready -U vibecheck" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://vibecheck:vibecheck@localhost:5432/vibecheck_ci
-      # Placeholder Clerk keys: enough to build and serve signed-out pages. No secrets needed.
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA==
-      CLERK_SECRET_KEY: sk_test_ciplaceholder
+      # Clerk development-instance keys (repo secrets). Browsers loading pages go through Clerk's dev
+      # handshake, which needs a real instance. Forks without secrets fall back to placeholders, which are
+      # enough to build and smoke-test, and the e2e step is skipped.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY || 'pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA==' }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_ciplaceholder' }}
+      HAS_CLERK_KEYS: ${{ secrets.CLERK_SECRET_KEY != '' }}
       CLERK_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
       SESSION_SECRET: ci-only-not-a-secret
@@ -54,6 +57,7 @@ jobs:
       - name: Smoke test
         run: node scripts/smoke.mjs http://localhost:3000 --require-browser
       - name: End-to-end workflow (builder, expert, admin, bystander)
+        if: env.HAS_CLERK_KEYS == 'true'
         env:
           E2E_AUTH_SECRET: ci-e2e-only
           E2E_ADMIN_EMAIL: admin@e2e.test
