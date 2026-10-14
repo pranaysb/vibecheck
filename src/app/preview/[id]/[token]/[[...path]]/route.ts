@@ -48,6 +48,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; to
       "x-content-type-options": "nosniff",
       "referrer-policy": "no-referrer",
       "cache-control": "private, max-age=300",
+      // The sandboxed page has an opaque ("null") origin, and module scripts, fonts and crossorigin assets are
+      // always fetched with CORS, so without this they'd be blocked. Access is granted by the signed token in
+      // the URL, not by cookies, so allowing any origin (without credentials) exposes nothing new.
+      "access-control-allow-origin": "*",
     },
   });
 }

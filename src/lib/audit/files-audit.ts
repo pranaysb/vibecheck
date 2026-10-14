@@ -3,7 +3,10 @@ import { contentTypeFor, findSiteRoot, isProbablyBinary, isTextPath, type Archiv
 import { runBrowserAudit, type BrowserRun } from "./browser";
 import { extractFacts, htmlChecks } from "./html-checks";
 import { dedupe, parsePackageLock, parsePnpmLock, parseRequirements, parseTomlLock, parseYarnLock, queryOsv, type Pkg } from "./osv";
+import { buildInSandbox, buildPlan, sandboxAvailable } from "./sandbox-build";
 import { envAssignments, findSecrets, isEnvFile } from "./secrets";
+import { withRetry } from "./url-audit";
+import { safeFetch } from "@/lib/net/safe-fetch";
 import type { AuditMeta, CheckResult, ProgressFn } from "./types";
 
 export interface StoredFile {
@@ -20,6 +23,7 @@ export interface FilesAuditOutput {
 }
 
 const STORE_BUDGET = 25 * 1024 * 1024;
+const UNBUILT = /<script[^>]+src=["'][^"']+\.(tsx?|jsx)["']/i;
 const MAX_HTML_DOCS = 60;
 
 function evidence(items: string[], max = 8) {
@@ -205,83 +209,176 @@ export async function auditFiles(archive: Archive, opts: { source: "ZIP" | "GITH
     });
   }
 
-  // ---------- Static site ----------
-  const root = findSiteRoot(paths);
-  const prefix = root ? root + "/" : "";
-  const siteFiles = root === null ? [] : files.filter((f) => f.path.startsWith(prefix));
-  meta.files = { total: files.length, stored: 0, bytes: files.reduce((n, f) => n + f.data.length, 0), root };
-  let screenshots: BrowserRun["screenshots"] = [];
-
-  if (root !== null) {
-    const entryHtml = text(prefix + "index.html");
-    const unbuilt = /<script[^>]+src=["'][^"']+\.(tsx?|jsx)["']/i.test(entryHtml);
-    const htmlFiles = siteFiles.filter((f) => /\.html?$/i.test(f.path)).sort((a, b) => (a.path === prefix + "index.html" ? -1 : b.path === prefix + "index.html" ? 1 : a.path.localeCompare(b.path)));
-
-    if (unbuilt) {
-      meta.browser = { ran: false, reason: `${prefix}index.html loads TypeScript/JSX directly, so it is a dev template, not a build. Run your build and upload the output folder, or audit the deployed URL.` };
+  // ---------- Build (source-only projects) ----------
+  let root = findSiteRoot(paths);
+  const isUnbuilt = (r: string | null) => r !== null && UNBUILT.test(text((r ? r + "/" : "") + "index.html"));
+  let allFiles = files;
+  let serverUrl: string | null = null;
+  let disposeSandbox: (() => Promise<void>) | null = null;
+  let buildFailed = false;
+  const plan = buildPlan(files, root, isUnbuilt(root));
+  if (plan) {
+    if (!sandboxAvailable()) {
+      meta.build = { ran: false, reason: "This project needs a build step, and build sandboxes aren't configured on this server." };
     } else {
-      step(`Checking ${Math.min(htmlFiles.length, MAX_HTML_DOCS)} HTML file(s)`);
-      const docs = htmlFiles.slice(0, MAX_HTML_DOCS).map((f) => ({ label: f.path, html: strFromU8(f.data) }));
-      checks.push(...htmlChecks(docs, { isHttps: true }));
-
-      // Broken local references
-      const sitePaths = new Set(siteFiles.map((f) => f.path));
-      const broken: string[] = [];
-      for (const d of docs) {
-        for (const ref of new Set(extractFacts(d).localRefs)) {
-          if (!/\.[a-z0-9]{1,6}$/i.test(ref.split(/[?#]/)[0])) continue; // extensionless refs may be client routes
-          const resolved = resolveRef(d.label, ref, root);
-          if (resolved !== null && !sitePaths.has(resolved)) broken.push(`${d.label} → ${ref}`);
+      const { outcome, dispose } = await buildInSandbox(files, plan, step);
+      disposeSandbox = dispose;
+      if (outcome.kind === "unavailable") {
+        meta.build = { ran: false, reason: outcome.message };
+      } else {
+        const how = `${plan.pm} install, then ${plan.pm} run build${plan.framework ? ` (${plan.framework})` : ""}`;
+        meta.build = { ran: true, ok: outcome.kind !== "failed", packageManager: plan.pm, framework: plan.framework, ms: outcome.ms };
+        if (outcome.kind === "failed") {
+          buildFailed = true;
+          meta.build.reason = outcome.message;
+          checks.push({
+            id: "rel-build",
+            category: "reliability",
+            severity: "medium",
+            method: "sandbox",
+            // An install failure is the project's fault; a build failure may only be missing env vars we never provide.
+            status: outcome.phase === "install" ? "fail" : "warn",
+            title: "Builds from a clean install",
+            detail: `${outcome.phase === "install" ? "Installing dependencies" : outcome.phase === "build" ? "The build" : "Serving the build"} failed in an isolated sandbox (${how}). ${outcome.message} The sandbox gets no environment variables or secrets, so builds that need them at build time fail here.`,
+            evidence: outcome.log,
+            fix: outcome.phase === "install" ? "Commit a lockfile that installs cleanly with no cached node_modules." : "Make the build succeed without secrets (read them at runtime), or audit the deployed URL instead.",
+          });
+        } else {
+          checks.push({
+            id: "rel-build",
+            category: "reliability",
+            severity: "medium",
+            method: "sandbox",
+            status: "pass",
+            title: "Builds from a clean install",
+            detail: `${how} succeeded in an isolated sandbox in ${Math.round(outcome.ms / 1000)}s with no environment variables.${outcome.kind === "static" ? ` The static output in ${outcome.dir}/ is what was audited below.` : " The app was started with its start script and audited while running, with outbound network disabled."}`,
+            evidence: outcome.log.slice(-8),
+          });
+          if (outcome.kind === "static") {
+            meta.build.outputDir = outcome.dir;
+            allFiles = [...files.filter((f) => !f.path.startsWith(outcome.dir + "/")), ...outcome.files];
+            root = outcome.dir;
+          } else {
+            meta.build.mode = "server";
+            serverUrl = outcome.url;
+          }
         }
       }
-      checks.push({
-        id: "rel-broken-refs",
-        category: "reliability",
-        severity: "medium",
-        method: "files",
-        title: "No broken local file references",
-        status: broken.length ? "fail" : "pass",
-        detail: broken.length ? `${broken.length} reference(s) point at files that are not in the upload.` : "Every local script, stylesheet, image and file link resolves.",
-        evidence: evidence(broken),
-      });
-
-      // Heavy assets
-      const heavy = siteFiles
-        .filter((f) => (/\.(png|jpe?g|gif|webp|avif|bmp|tiff?)$/i.test(f.path) && f.data.length > 400 * 1024) || (/\.m?js$/i.test(f.path) && f.data.length > 1024 * 1024) || (/\.(mp4|webm|mov)$/i.test(f.path) && f.data.length > 8 * 1024 * 1024))
-        .sort((a, b) => b.data.length - a.data.length)
-        .map((f) => `${f.path} ${(f.data.length / 1024).toFixed(0)} KB`);
-      checks.push({
-        id: "perf-heavy-assets",
-        category: "performance",
-        severity: "medium",
-        method: "files",
-        title: "No oversized assets",
-        status: heavy.length === 0 ? "pass" : heavy.length <= 2 ? "warn" : "fail",
-        detail: heavy.length ? `${heavy.length} file(s) exceed the budget (images 400 KB, scripts 1 MB, video 8 MB).` : "Images, scripts and video are within size budgets.",
-        evidence: evidence(heavy),
-        fix: "Resize images to their display size and export as AVIF or WebP; code-split large bundles.",
-      });
-
-      step("Rendering the site in headless Chromium (desktop + 390px mobile)");
-      const site = {
-        entry: "index.html",
-        files: new Map(siteFiles.map((f) => [f.path.slice(prefix.length), { data: f.data, contentType: contentTypeFor(f.path) }])),
-      };
-      const browser = await runBrowserAudit({ site });
-      meta.browser = { ran: browser.ran, reason: browser.reason, requests: browser.requests, transferBytes: browser.transferBytes };
-      checks.push(...browser.checks);
-      screenshots = browser.screenshots;
-      const titleMatch = entryHtml.match(/<title[^>]*>([^<]*)<\/title>/i);
-      if (titleMatch) meta.title = titleMatch[1].trim();
     }
-  } else {
-    meta.browser = { ran: false, reason: "No index.html found, so there is no page to render. Upload your build output (dist/, build/, out/) or audit the deployed URL." };
+  }
+
+  // ---------- Site ----------
+  const prefix = root ? root + "/" : "";
+  const siteFiles = root === null || serverUrl ? [] : allFiles.filter((f) => f.path.startsWith(prefix));
+  const siteText = (path: string) => {
+    const f = siteFiles.find((x) => x.path === path);
+    return f ? strFromU8(f.data) : "";
+  };
+  meta.files = { total: files.length, stored: 0, bytes: files.reduce((n, f) => n + f.data.length, 0), root: serverUrl ? null : root };
+  let screenshots: BrowserRun["screenshots"] = [];
+
+  try {
+    if (serverUrl) {
+      const url = serverUrl;
+      step("Checking the rendered HTML");
+      const page = await withRetry(() => safeFetch(url, { maxBytes: 3 * 1024 * 1024, timeoutMs: 20_000 })).catch((err: Error) => {
+        meta.browser = { ran: false, reason: `The app started in the sandbox, but its page couldn't be fetched (${err.message}).` };
+        return null;
+      });
+      if (page) {
+        const html = page.body.toString("utf8");
+        checks.push(...htmlChecks([{ label: "/", html }], { isHttps: true }));
+        step("Rendering the running app in headless Chromium (desktop + 390px mobile)");
+        const browser = await runBrowserAudit({ url, fetchedStatus: page.status });
+        meta.browser = { ran: browser.ran, reason: browser.reason, requests: browser.requests, transferBytes: browser.transferBytes };
+        // Load timing here reflects a cold sandbox, not the project's real hosting, so it isn't scored.
+        checks.push(...browser.checks.filter((c) => c.id !== "perf-lcp"));
+        screenshots = browser.screenshots;
+        const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+        if (titleMatch) meta.title = titleMatch[1].trim();
+      }
+    } else if (root !== null) {
+      const entryHtml = siteText(prefix + "index.html");
+      const htmlFiles = siteFiles.filter((f) => /\.html?$/i.test(f.path)).sort((a, b) => (a.path === prefix + "index.html" ? -1 : b.path === prefix + "index.html" ? 1 : a.path.localeCompare(b.path)));
+
+      if (UNBUILT.test(entryHtml)) {
+        meta.browser = {
+          ran: false,
+          reason: buildFailed
+            ? "The project couldn't be built (see “Builds from a clean install”), so there is no page to render. Upload your build output, or audit the deployed URL."
+            : `${prefix}index.html loads TypeScript/JSX directly, so it is a dev template, not a build. Run your build and upload the output folder, or audit the deployed URL.`,
+        };
+      } else {
+        step(`Checking ${Math.min(htmlFiles.length, MAX_HTML_DOCS)} HTML file(s)`);
+        const docs = htmlFiles.slice(0, MAX_HTML_DOCS).map((f) => ({ label: f.path, html: strFromU8(f.data) }));
+        checks.push(...htmlChecks(docs, { isHttps: true }));
+
+        // Broken local references
+        const sitePaths = new Set(siteFiles.map((f) => f.path));
+        const broken: string[] = [];
+        for (const d of docs) {
+          for (const ref of new Set(extractFacts(d).localRefs)) {
+            if (!/\.[a-z0-9]{1,6}$/i.test(ref.split(/[?#]/)[0])) continue; // extensionless refs may be client routes
+            const resolved = resolveRef(d.label, ref, root);
+            if (resolved !== null && !sitePaths.has(resolved)) broken.push(`${d.label} → ${ref}`);
+          }
+        }
+        checks.push({
+          id: "rel-broken-refs",
+          category: "reliability",
+          severity: "medium",
+          method: "files",
+          title: "No broken local file references",
+          status: broken.length ? "fail" : "pass",
+          detail: broken.length ? `${broken.length} reference(s) point at files that are not in the upload.` : "Every local script, stylesheet, image and file link resolves.",
+          evidence: evidence(broken),
+        });
+
+        // Heavy assets
+        const heavy = siteFiles
+          .filter((f) => (/\.(png|jpe?g|gif|webp|avif|bmp|tiff?)$/i.test(f.path) && f.data.length > 400 * 1024) || (/\.m?js$/i.test(f.path) && f.data.length > 1024 * 1024) || (/\.(mp4|webm|mov)$/i.test(f.path) && f.data.length > 8 * 1024 * 1024))
+          .sort((a, b) => b.data.length - a.data.length)
+          .map((f) => `${f.path} ${(f.data.length / 1024).toFixed(0)} KB`);
+        checks.push({
+          id: "perf-heavy-assets",
+          category: "performance",
+          severity: "medium",
+          method: "files",
+          title: "No oversized assets",
+          status: heavy.length === 0 ? "pass" : heavy.length <= 2 ? "warn" : "fail",
+          detail: heavy.length ? `${heavy.length} file(s) exceed the budget (images 400 KB, scripts 1 MB, video 8 MB).` : "Images, scripts and video are within size budgets.",
+          evidence: evidence(heavy),
+          fix: "Resize images to their display size and export as AVIF or WebP; code-split large bundles.",
+        });
+
+        step("Rendering the site in headless Chromium (desktop + 390px mobile)");
+        const site = {
+          entry: "index.html",
+          files: new Map(siteFiles.map((f) => [f.path.slice(prefix.length), { data: f.data, contentType: contentTypeFor(f.path) }])),
+        };
+        const browser = await runBrowserAudit({ site });
+        meta.browser = { ran: browser.ran, reason: browser.reason, requests: browser.requests, transferBytes: browser.transferBytes };
+        checks.push(...browser.checks);
+        screenshots = browser.screenshots;
+        const titleMatch = entryHtml.match(/<title[^>]*>([^<]*)<\/title>/i);
+        if (titleMatch) meta.title = titleMatch[1].trim();
+      }
+    } else {
+      meta.browser = {
+        ran: false,
+        reason: buildFailed
+          ? "The project couldn't be built (see “Builds from a clean install”), so there is no page to render. Upload your build output, or audit the deployed URL."
+          : "No index.html found, so there is no page to render. Upload your build output (dist/, build/, out/) or audit the deployed URL.",
+      };
+    }
+  } finally {
+    if (disposeSandbox) await disposeSandbox();
   }
 
   // ---------- Choose what to keep for expert review ----------
   const stored: StoredFile[] = [];
   let budget = STORE_BUDGET;
-  const ordered = [...siteFiles, ...files.filter((f) => !f.path.startsWith(prefix) || root === null)];
+  const ordered = [...siteFiles, ...allFiles.filter((f) => !f.path.startsWith(prefix) || root === null)];
   const seen = new Set<string>();
   for (const f of ordered) {
     if (seen.has(f.path)) continue;
@@ -294,7 +391,7 @@ export async function auditFiles(archive: Archive, opts: { source: "ZIP" | "GITH
     stored.push({ path: f.path, contentType: contentTypeFor(f.path), data: f.data });
   }
   meta.files.stored = stored.length;
-  meta.files.truncated = stored.length < files.length;
+  meta.files.truncated = stored.length < allFiles.length;
 
   return { checks, meta, stored, screenshots };
 }

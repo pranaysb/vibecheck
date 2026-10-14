@@ -3,7 +3,7 @@
 // browser contexts: builder, expert, admin, bystander. Requires the server to run with E2E_AUTH_SECRET
 // (test-only sign-in, impossible on Vercel) and ADMIN_EMAILS containing E2E_ADMIN_EMAIL.
 //
-// Usage: E2E_AUTH_SECRET=... node scripts/e2e.mjs [baseUrl] [--target=example.com] [--repo=owner/name] [--headed]
+// Usage: E2E_AUTH_SECRET=... node scripts/e2e.mjs [baseUrl] [--target=example.com] [--repo=owner/name] [--sandbox] [--headed]
 import { chromium } from "playwright-core";
 import { zipSync, strToU8 } from "fflate";
 
@@ -71,6 +71,26 @@ try {
   if (view.origin !== "null" || view.h1 !== "Hello from the upload" || view.color !== "rgb(10, 120, 40)") throw new Error(`preview: ${JSON.stringify(view)}`);
   await preview.close();
   ok("sandboxed preview renders the upload with its CSS, on an opaque origin");
+
+  // Opt-in (needs Vercel Sandbox credentials on the server): a source-only Vite + React project is built, then audited.
+  if (process.argv.includes("--sandbox")) {
+    const src = zipSync({
+      "package.json": strToU8(JSON.stringify({ name: "e2e-vite", private: true, type: "module", scripts: { build: "vite build" }, dependencies: { react: "^19.0.0", "react-dom": "^19.0.0" }, devDependencies: { vite: "^7.0.0", "@vitejs/plugin-react": "^5.0.0" } })),
+      "vite.config.js": strToU8(`import { defineConfig } from "vite"; import react from "@vitejs/plugin-react"; export default defineConfig({ plugins: [react()] });`),
+      "index.html": strToU8(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>E2E source ${tag}</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>`),
+      "src/main.jsx": strToU8(`import { createRoot } from "react-dom/client"; createRoot(document.getElementById("root")).render(<h1 id="hello">Rendered by React ${tag}</h1>);`),
+    });
+    await runAudit(builder, "Upload .zip", () => builder.locator("#audit-input").setInputFiles({ name: `e2e-src-${tag}.zip`, mimeType: "application/zip", buffer: Buffer.from(src) }));
+    await expectText(builder, "Built in an isolated Vercel Sandbox", null);
+    await expectText(builder, "The site checks below audit the built output in dist/", null);
+    if (await builder.getByText("Browser checks did not run").count()) throw new Error("browser checks did not run on the built site");
+    const [built] = await Promise.all([builder.waitForEvent("popup"), builder.getByRole("link", { name: "Open preview" }).click()]);
+    await built.locator("#hello").waitFor();
+    if ((await built.locator("#hello").textContent()) !== `Rendered by React ${tag}`) throw new Error("built preview did not render React");
+    await built.close();
+    ok("source-only Vite + React .zip was built in a Vercel Sandbox, audited, and its built preview renders");
+    await builder.goto(zipAudit);
+  }
   await builder.getByRole("link", { name: "Browse files" }).click();
   await builder.getByRole("link", { name: /^index\.html/ }).click(); // the single wrapper folder is stripped
   await expectText(builder, "Hello from the upload", "file browser shows the uploaded source");
@@ -180,6 +200,15 @@ try {
 } catch (err) {
   exitCode = 1;
   console.error(`\n✗ step ${step + 1} failed: ${err.message.split("\n")[0]}`);
+  // Leave evidence of what each user was looking at, for debugging the failure.
+  const dir = process.env.E2E_ARTIFACTS ?? "e2e-artifacts";
+  await import("node:fs").then((fs) => fs.mkdirSync(dir, { recursive: true }));
+  for (const [i, p] of browser.contexts().flatMap((c) => c.pages()).entries()) {
+    await p.screenshot({ path: `${dir}/page-${i}.png`, fullPage: true }).catch(() => {});
+    const text = await p.evaluate(() => document.body.innerText).catch(() => "");
+    await import("node:fs").then((fs) => fs.writeFileSync(`${dir}/page-${i}.txt`, `${p.url()}\n\n${text}`));
+  }
+  console.error(`  page screenshots and text saved to ${dir}/`);
 } finally {
   // Whether or not the run passed, remove its users (and their uploads, requests, reviews).
   await fetch(`${base}/api/e2e/cleanup`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ secret, tag }) }).catch(() => {});

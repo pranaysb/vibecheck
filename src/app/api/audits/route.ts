@@ -7,7 +7,8 @@ import { deleteByPrefix, uploadPrefix } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Source-only projects are installed and built in a sandbox first (capped at about 4.5 minutes in total).
+export const maxDuration = 300;
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB ?? 25) * 1024 * 1024;
 

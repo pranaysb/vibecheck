@@ -12,13 +12,13 @@ Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload
 | Input | What runs |
 | --- | --- |
 | Live URL | Pinned-IP HTTP fetch (TLS, redirects, headers, cookies), probes for `/.env`, `/.git`, source maps, `robots.txt`, `sitemap.xml`; secret scan of HTML and same-origin JS; headless Chromium at 1280px and 390px (contrast, overflow, tap targets, LCP, CLS, console errors, failed requests, screenshots); HTML structure checks on the rendered DOM. |
-| GitHub / .zip | Secret and `.env` scan of every text file; lockfiles (npm, pnpm, yarn, pip, poetry, uv) checked against [OSV.dev](https://osv.dev); if a built `index.html` exists, every HTML file is checked, broken local references are found, and the site is rendered in Chromium from memory. |
+| GitHub / .zip | Secret and `.env` scan of every text file; lockfiles (npm, pnpm, yarn, pip, poetry, uv) checked against [OSV.dev](https://osv.dev); if a built `index.html` exists, every HTML file is checked, broken local references are found, and the site is rendered in Chromium from memory. Source-only web projects (Vite, Next.js, Astro, SvelteKit, …) are first installed and built in a [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) microVM; static output is audited like an upload, and server apps are started and audited while running. |
 
 **Score.** The score is the weighted share of checks that ran and passed: critical 10, high 6, medium 3, low 1; a warning earns half. A failed critical check caps the score at 40. Checks that couldn't run are excluded, never counted as passes.
 
 **Accounts.** [Clerk](https://clerk.com) handles sign-up and sign-in (email code, Google, GitHub; password optional) and verifies every email address. Each Clerk user is linked to a VibeCheck user row by `clerkId`; on first sign-in, an existing row with the same verified email is claimed. Admin access requires a Clerk-verified email listed in `ADMIN_EMAILS`.
 
-**Safety.** All outbound requests (including Chromium's subrequests) are blocked from private, loopback, link-local and metadata ranges, and sockets are pinned to the validated IP to defeat DNS rebinding. Uploaded sites are previewed under `Content-Security-Policy: sandbox` (opaque origin) via expiring HMAC-signed links. Real `.env` files are never stored.
+**Safety.** All outbound requests (including Chromium's subrequests) are blocked from private, loopback, link-local and metadata ranges, and sockets are pinned to the validated IP to defeat DNS rebinding. Uploaded sites are previewed under `Content-Security-Policy: sandbox` (opaque origin) via expiring HMAC-signed links. Real `.env` files are never stored. Build sandboxes are throwaway microVMs that get no secrets and no `.env` files; their network allows only package registries while installing, adds font hosts while building, and is cut off entirely while the app runs. Each sandbox is deleted when the audit ends.
 
 ## Running locally
 
@@ -58,6 +58,7 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 
 ## Platform
 
+- **Build sandboxes.** On Vercel the SDK authenticates with the project's OIDC token automatically. Locally it uses `VERCEL_OIDC_TOKEN` from `vercel env pull` (valid 12 hours); without credentials, builds are reported as not run. Set `SANDBOX_BUILDS=off` to disable them. Each build uses a 4 vCPU sandbox for up to about 4.5 minutes, billed to the Vercel team.
 - **Storage.** Uploaded files and screenshots live in a private Vercel Blob store (keys prefixed by environment) and are only served through routes that check access. Without a store (local dev, CI) they are kept in Postgres. `.zip` uploads go straight from the browser to Blob (up to `MAX_DIRECT_UPLOAD_MB`, default 50), so the 4.5 MB request limit doesn't apply.
 - **Retention.** A daily Vercel Cron (`/api/cron/cleanup`, authorized by `CRON_SECRET`) deletes files and screenshots 90 days after an audit unless a review is in progress, fails abandoned audits, removes orphaned uploads, and prunes rate-limit counters.
 - **Rate limiting.** Counters live in Postgres (`RateLimit`), so limits hold across serverless instances.

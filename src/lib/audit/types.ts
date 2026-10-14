@@ -2,7 +2,7 @@ export type Category = "security" | "performance" | "accessibility" | "seo" | "r
 export type Severity = "critical" | "high" | "medium" | "low";
 /** `skip` = not applicable or could not run; excluded from the score. */
 export type Status = "pass" | "warn" | "fail" | "skip";
-export type Method = "http" | "html" | "browser" | "files" | "osv";
+export type Method = "http" | "html" | "browser" | "files" | "osv" | "sandbox";
 
 export interface CheckResult {
   id: string;
@@ -33,6 +33,7 @@ export const METHOD_LABEL: Record<Method, string> = {
   browser: "Headless Chromium",
   files: "File scan",
   osv: "OSV.dev database",
+  sandbox: "Vercel Sandbox build",
 };
 
 export const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 10, high: 6, medium: 3, low: 1 };
@@ -78,6 +79,8 @@ export interface AuditMeta {
   browser?: { ran: boolean; reason?: string; requests?: number; transferBytes?: number };
   files?: { total: number; stored: number; bytes: number; root?: string | null; truncated?: boolean };
   github?: { repo: string; ref: string; commitUrl?: string; htmlUrl: string };
+  /** Source-only projects are installed and built in a Vercel Sandbox before the site checks run. */
+  build?: { ran: boolean; ok?: boolean; reason?: string; packageManager?: string; framework?: string | null; ms?: number; outputDir?: string; mode?: "server" };
   steps?: { label: string; ms: number }[];
 }
 

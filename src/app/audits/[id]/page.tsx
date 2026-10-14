@@ -164,6 +164,20 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
             </section>
           )}
 
+          {meta.build && !meta.build.ran && meta.build.reason && (
+            <p className="mt-6 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+              <span className="font-medium text-fg">Build step did not run.</span> {meta.build.reason}
+            </p>
+          )}
+          {meta.build?.ok && (
+            <p className="mt-6 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+              <span className="font-medium text-fg">Built in an isolated Vercel Sandbox.</span>{" "}
+              {meta.build.packageManager} install and build ran in {Math.round((meta.build.ms ?? 0) / 1000)}s with no secrets.{" "}
+              {meta.build.mode === "server"
+                ? "The app was started and audited while running with outbound network disabled; the sandbox was then deleted, so there is no live preview, only screenshots and source files."
+                : `The site checks below audit the built output in ${meta.build.outputDir}/.`}
+            </p>
+          )}
           {meta.browser && !meta.browser.ran && meta.browser.reason && (
             <p className="mt-6 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
               <span className="font-medium text-fg">Browser checks did not run.</span> {meta.browser.reason}
