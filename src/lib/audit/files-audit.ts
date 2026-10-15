@@ -291,8 +291,8 @@ export async function auditFiles(archive: Archive, opts: { source: "ZIP" | "GITH
         step("Rendering the running app in headless Chromium (desktop + 390px mobile)");
         const browser = await runBrowserAudit({ url, fetchedStatus: page.status });
         meta.browser = { ran: browser.ran, reason: browser.reason, requests: browser.requests, transferBytes: browser.transferBytes };
-        // Load timing here reflects a cold sandbox, not the project's real hosting, so it isn't scored.
-        checks.push(...browser.checks.filter((c) => c.id !== "perf-lcp"));
+        // Load timing would reflect a cold sandbox, not the project's real hosting, so mobile performance isn't run.
+        checks.push(...browser.checks);
         screenshots = browser.screenshots;
         const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
         if (titleMatch) meta.title = titleMatch[1].trim();

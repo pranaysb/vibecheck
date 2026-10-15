@@ -20,6 +20,8 @@ export interface BrowserRun {
   screenshots: { kind: "desktop" | "mobile"; width: number; height: number; data: Buffer }[];
   requests?: number;
   transferBytes?: number;
+  /** Desktop, unthrottled LCP in ms, shown next to the throttled mobile figure for comparison. */
+  desktopLcp?: number;
 }
 
 const DESKTOP = { width: 1280, height: 800 };
@@ -69,16 +71,18 @@ function makeRouter(site?: ArchiveSite) {
   };
 }
 
-async function newContext(browser: Browser, viewport: { width: number; height: number }, mobile: boolean, site?: ArchiveSite) {
+async function newContext(browser: Browser, viewport: { width: number; height: number }, mobile: boolean, site?: ArchiveSite, device?: { userAgent: string; deviceScaleFactor: number }) {
   const ctx = await browser.newContext({
     viewport,
     isMobile: mobile,
     hasTouch: mobile,
-    deviceScaleFactor: 1,
+    deviceScaleFactor: device?.deviceScaleFactor ?? 1,
     serviceWorkers: "block",
-    userAgent: mobile
-      ? "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 VibeCheckAudit/2.0"
-      : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 VibeCheckAudit/2.0",
+    userAgent:
+      device?.userAgent ??
+      (mobile
+        ? "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 VibeCheckAudit/2.0"
+        : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 VibeCheckAudit/2.0"),
   });
   // Some bundlers wrap functions in a __name() helper; define it so serialized page.evaluate code runs.
   await ctx.addInitScript("globalThis.__name = globalThis.__name || ((f) => f);");
@@ -381,21 +385,6 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
       detail: `${mb >= 1 ? `${mb.toFixed(2)} MB` : `${Math.max(1, Math.round(transferBytes / 1024))} KB`} transferred across ${requests} requests to render the first screen and settle.`,
       fix: "Serve images as AVIF/WebP at display size, lazy-load below-the-fold media, and split large JS bundles.",
     });
-    if (!isUpload && vitals) {
-      const lcp = Math.round(vitals.lcp);
-      checks.push({
-        id: "perf-lcp",
-        category: "performance",
-        severity: "medium",
-        method: "browser",
-        title: "Largest Contentful Paint",
-        status: lcp === 0 ? "skip" : lcp < 2500 ? "pass" : lcp < 4000 ? "warn" : "fail",
-        detail:
-          lcp === 0
-            ? "The browser reported no LCP entry."
-            : `${(lcp / 1000).toFixed(2)}s on a desktop viewport from a datacenter connection without throttling. Real phones on cellular will be slower.`,
-      });
-    }
     if (vitals) {
       const cls = Math.round(vitals.cls * 1000) / 1000;
       checks.push({
@@ -411,7 +400,7 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     }
     checks.push(axeCheck(axe));
     checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
-    return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes };
+    return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
   } catch (err) {
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
     const msg = (err as Error).message.split("\n")[0];
@@ -518,4 +507,183 @@ export function privacyCheck(pageHost: string, requestHosts: Map<string, number>
       : undefined,
     fix: found ? "Load these tags only after the visitor accepts (most consent tools and Google Consent Mode can gate them), or switch to a cookieless analytics service." : undefined,
   };
+}
+
+/**
+ * Lighthouse's mobile profile, applied in the browser the way Lighthouse's "devtools" throttling does it:
+ * Slow 4G (150 ms RTT and 1.6 Mbps down, with DevTools' packet-level adjustments) and the CPU slowed 4×.
+ */
+export const MOBILE_THROTTLING = { latencyMs: 562.5, downloadKbps: 1474.56, uploadKbps: 675, cpuSlowdown: 4 };
+/** Lighthouse's emulated phone (a Moto G Power), so sites serve the same mobile variant Lighthouse sees. */
+const LIGHTHOUSE_PHONE = {
+  viewport: { width: 412, height: 823 },
+  userAgent: "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36 VibeCheckAudit/2.0",
+  deviceScaleFactor: 1.75,
+};
+const THROTTLED_TIMEOUT_MS = 45_000;
+
+const MOBILE_PERF_INIT = `
+  window.__vcm = { lcp: 0, fcp: 0, long: [], res: [] };
+  try {
+    performance.setResourceTimingBufferSize(2000);
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__vcm.res.push([e.startTime, e.responseEnd || e.startTime]); }).observe({ type: "resource", buffered: true });
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__vcm.lcp = e.startTime; }).observe({ type: "largest-contentful-paint", buffered: true });
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) if (e.name === "first-contentful-paint") window.__vcm.fcp = e.startTime; }).observe({ type: "paint", buffered: true });
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__vcm.long.push([e.startTime, e.duration]); }).observe({ type: "longtask", buffered: true });
+  } catch {}
+`;
+
+export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: number } | { timedOut: true } | { error: string };
+
+/**
+ * Lighthouse-style mobile performance for a live URL, in its own browser so it can run alongside the crawl
+ * (which only waits on the network) instead of after it.
+ */
+export async function runMobilePerf(url: string, desktopLcp?: number): Promise<CheckResult[]> {
+  let browser: Browser;
+  try {
+    browser = await launch();
+  } catch (err) {
+    return mobilePerfChecks({ error: `Headless Chromium is unavailable (${(err as Error).message.split("\n")[0]})` });
+  }
+  try {
+    return mobilePerfChecks(await throttledMobileRun(browser, url), desktopLcp);
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
+/** A cold-cache phone load under MOBILE_THROTTLING, in a fresh context so nothing is cached from earlier passes. */
+async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveSite): Promise<ThrottledRun> {
+  const ctx = await newContext(browser, LIGHTHOUSE_PHONE.viewport, true, site, LIGHTHOUSE_PHONE);
+  try {
+    await ctx.addInitScript(MOBILE_PERF_INIT);
+    const page = await ctx.newPage();
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
+    await cdp.send("Network.emulateNetworkConditions", {
+      offline: false,
+      latency: MOBILE_THROTTLING.latencyMs,
+      downloadThroughput: (MOBILE_THROTTLING.downloadKbps * 1024) / 8,
+      uploadThroughput: (MOBILE_THROTTLING.uploadKbps * 1024) / 8,
+    });
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: MOBILE_THROTTLING.cpuSlowdown });
+    const started = Date.now();
+    try {
+      await page.goto(url, { waitUntil: "load", timeout: THROTTLED_TIMEOUT_MS });
+    } catch (err) {
+      if (/Timeout/.test((err as Error).message)) {
+        // The document may still have painted; judge what rendered by the deadline.
+        const partial = (await page.evaluate("window.__vcm").catch(() => null)) as { lcp: number } | null;
+        if (!partial?.lcp) return { timedOut: true };
+      } else throw err;
+    }
+    const loadMs = Date.now() - started;
+    // Keep watching until the page reaches Time to Interactive (a 5 s window with no long tasks and at most two
+    // requests in flight), for up to 20 s after load. Pages that never settle are judged on what was observed.
+    const quietBy = Date.now() + 20_000;
+    type Observed = { lcp: number; fcp: number; long: [number, number][]; res: [number, number][]; now: number };
+    const observe = () => page.evaluate("Object.assign({}, window.__vcm, { now: performance.now() })") as Promise<Observed>;
+    let m = await observe();
+    while (Date.now() < quietBy && timeToInteractive(m.fcp, m.long, m.res, m.now) === null) {
+      await page.waitForTimeout(1_000);
+      m = await observe();
+    }
+    const tti = timeToInteractive(m.fcp, m.long, m.res, m.now) ?? m.now;
+    return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs };
+  } catch (err) {
+    return { error: (err as Error).message.split("\n")[0] };
+  } finally {
+    await ctx.close().catch(() => {});
+  }
+}
+
+/**
+ * Time to Interactive as Lighthouse defines it: find the first 5 s window after First Contentful Paint with no
+ * long tasks and never more than two network requests in flight; TTI is the end of the last long task before
+ * that window, or FCP. Returns null when no such window has been observed yet.
+ */
+export function timeToInteractive(fcp: number, longTasks: [start: number, duration: number][], resources: [start: number, end: number][], observedUntil: number): number | null {
+  const tasks = longTasks.map(([start, d]) => [start, start + d] as const).filter(([, end]) => end > fcp);
+  // A quiet window can open at FCP, when a long task ends, or when the network drops back to two requests.
+  const candidates = [fcp, ...tasks.map(([, end]) => end), ...resources.map(([, end]) => end).filter((t) => t > fcp)].sort((a, b) => a - b);
+  const inFlightAt = (t: number) => resources.reduce((n, [start, end]) => n + (start <= t && t < end ? 1 : 0), 0);
+  for (const c of candidates) {
+    const windowEnd = c + 5_000;
+    if (windowEnd > observedUntil) return null;
+    if (tasks.some(([start, end]) => start < windowEnd && end > c)) continue;
+    // In-flight count only rises at request starts, so checking the window start and every start inside it suffices.
+    const points = [c, ...resources.map(([start]) => start).filter((t) => t > c && t < windowEnd)];
+    // TTI is the end of the last long task before the quiet window (or FCP if there was none).
+    if (points.every((t) => inFlightAt(t) <= 2)) return tasks.reduce((tti, [, end]) => (end <= c ? Math.max(tti, end) : tti), fcp);
+  }
+  return null;
+}
+
+/** Total Blocking Time: for each long task between FCP and TTI, the part beyond 50 ms. */
+export function totalBlockingTime(fcp: number, tti: number, longTasks: [start: number, duration: number][]): number {
+  let blocking = 0;
+  for (const [start, d] of longTasks) {
+    const from = Math.max(start, fcp);
+    const to = Math.min(start + d, tti);
+    // Lighthouse (tbt-utils) clips each task to the FCP–TTI range and counts what exceeds 50 ms of the clipped part.
+    blocking += Math.max(0, to - from - 50);
+  }
+  return Math.round(blocking);
+}
+
+const sec = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
+
+export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckResult[] {
+  const profile = "Lighthouse's mobile profile (a Moto G Power on Slow 4G: 1.6 Mbps, 150 ms RTT, CPU slowed 4×)";
+  const base = { category: "performance", method: "browser" } as const;
+  if ("error" in run || "timedOut" in run) {
+    const timedOut = "timedOut" in run;
+    const detail = timedOut
+      ? `Nothing large had painted after ${THROTTLED_TIMEOUT_MS / 1000}s on ${profile}, though the page loaded on the unthrottled passes.`
+      : `The throttled phone run failed (${run.error}), so these weren't measured.`;
+    const status = timedOut ? "fail" : "skip";
+    return [
+      { ...base, id: "perf-lcp", severity: "high", title: "Largest Contentful Paint (mobile)", status, detail, fix: timedOut ? "Cut what loads before first render: render-blocking scripts and CSS, web fonts, and large hero images." : undefined },
+      { ...base, id: "perf-fcp", severity: "medium", title: "First Contentful Paint (mobile)", status: "skip", detail: timedOut ? "Not measured: the page didn't finish rendering under throttling." : detail },
+      { ...base, id: "perf-tbt", severity: "medium", title: "Total Blocking Time (mobile)", status: "skip", detail: timedOut ? "Not measured: the page didn't finish rendering under throttling." : detail },
+    ];
+  }
+  // Thresholds are Lighthouse's mobile "good" (score ≥ 90) and "poor" (score < 50) boundaries.
+  // Graded on the value as displayed (10 ms steps), so "1.80s" is never judged worse than "good is 1.8s or less".
+  const grade = (v: number, good: number, poor: number) => {
+    const shown = Math.round(v / 10) * 10;
+    return (shown <= good ? "pass" : shown <= poor ? "warn" : "fail") as CheckResult["status"];
+  };
+  return [
+    {
+      ...base,
+      id: "perf-lcp",
+      severity: "high",
+      title: "Largest Contentful Paint (mobile)",
+      status: run.lcp === 0 ? "skip" : grade(run.lcp, 2500, 4000),
+      detail: run.lcp === 0 ? "The browser reported no Largest Contentful Paint for this page." : `The main content appeared after ${sec(run.lcp)} on ${profile}. Good is 2.5s or less; over 4s is poor.`,
+      evidence: [`Throttled load event: ${sec(run.loadMs)}`, ...(desktopLcp ? [`Desktop, unthrottled LCP for comparison: ${sec(desktopLcp)}`] : [])],
+      fix: run.lcp > 2500 ? "Serve the hero image at phone size in AVIF/WebP with fetchpriority=\"high\", inline critical CSS, and defer non-essential scripts." : undefined,
+    },
+    {
+      ...base,
+      id: "perf-fcp",
+      severity: "medium",
+      title: "First Contentful Paint (mobile)",
+      status: run.fcp === 0 ? "skip" : grade(run.fcp, 1800, 3000),
+      detail: run.fcp === 0 ? "The browser reported no first paint." : `Something first appeared after ${sec(run.fcp)} on the same throttled phone. Good is 1.8s or less; over 3s is poor.`,
+      fix: run.fcp > 1800 ? "Reduce render-blocking CSS and scripts in <head>, and use font-display: swap." : undefined,
+    },
+    {
+      ...base,
+      id: "perf-tbt",
+      severity: "medium",
+      title: "Total Blocking Time (mobile)",
+      status: grade(run.tbt, 200, 600),
+      detail: `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), so taps and scrolls went unanswered. Good is 200 ms or less; over 600 ms is poor.`,
+      fix: run.tbt > 200 ? "Split large JavaScript bundles, defer third-party scripts, and move heavy work off the main thread." : undefined,
+    },
+  ];
 }
