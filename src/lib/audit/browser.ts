@@ -253,13 +253,65 @@ function mobileAudit() {
   return { vw, sw, overflowing, small };
 }
 
-export async function runBrowserAudit(target: { url: string; fetchedStatus?: number } | { site: ArchiveSite }): Promise<BrowserRun> {
+type BrowserTarget = { url: string; fetchedStatus?: number } | { site: ArchiveSite };
+interface Progress {
+  phase: string;
+  browser: Browser | null;
+  set: (phase: string) => void;
+}
+
+function progressFor(label: string): Progress {
+  const t0 = Date.now();
+  const p: Progress = {
+    phase: "starting Chromium",
+    browser: null,
+    set(phase) {
+      // One line per phase in the server logs, so a slow site shows exactly where the time went.
+      console.log(`[browser] ${label} +${Date.now() - t0}ms: finished ${p.phase}, now ${phase}`);
+      p.phase = phase;
+    },
+  };
+  return p;
+}
+
+/**
+ * Stops waiting at the budget even if Chromium itself is stuck (closing a browser whose page is wedged can hang
+ * too), so the rest of the audit always completes. The browser is closed in the background.
+ */
+async function withBrowserBudget<T>(budgetMs: number, progress: Progress, work: Promise<T>, onTimeout: (phase: string) => T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      console.warn(`[browser] over the ${budgetMs}ms budget while ${progress.phase}; abandoning`);
+      progress.browser?.close().catch(() => {});
+      resolve(onTimeout(progress.phase));
+    }, budgetMs);
+  });
+  try {
+    return await Promise.race([work, limit]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function runBrowserAudit(target: BrowserTarget): Promise<BrowserRun> {
+  const progress = progressFor("url" in target ? new URL(target.url).host : "upload");
+  return withBrowserBudget(BROWSER_BUDGET_MS, progress, browserAudit(target, progress), (phase) => ({
+    ran: false,
+    reason: `The browser checks didn't finish within ${BROWSER_BUDGET_MS / 1000} seconds (stuck while ${phase}), so they were stopped. Pages that keep a browser busy this long are usually very script-heavy.`,
+    checks: [],
+    screenshots: [],
+  }));
+}
+
+async function browserAudit(target: BrowserTarget, progress: Progress): Promise<BrowserRun> {
   let browser: Browser | null = null;
   const site = "site" in target ? target.site : undefined;
   const url = "url" in target ? target.url : `${UPLOAD_ORIGIN}/${target.site.entry}`;
   const isUpload = Boolean(site);
   try {
     browser = await launch();
+    progress.browser = browser;
   } catch (err) {
     return { ran: false, reason: `Headless Chromium is unavailable on this server (${(err as Error).message.split("\n")[0]}).`, checks: [], screenshots: [] };
   }
@@ -268,15 +320,7 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
   const screenshots: BrowserRun["screenshots"] = [];
   let desktop: BrowserContext | null = null;
   let mobile: BrowserContext | null = null;
-  // Hard budget: if any step hangs (a page that keeps the main thread busy can stall evaluate() indefinitely),
-  // closing the browser rejects every pending call, and the audit continues without the rendered checks.
-  let phase = "loading the desktop page";
-  let overBudget = false;
-  const openBrowser = browser;
-  const killer = setTimeout(() => {
-    overBudget = true;
-    openBrowser.close().catch(() => {});
-  }, BROWSER_BUDGET_MS);
+  progress.set("loading the desktop page");
   try {
     // ---------- Desktop pass ----------
     desktop = await newContext(browser, DESKTOP, false, site);
@@ -320,24 +364,24 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     await page.waitForTimeout(800);
     const renderedHtml = await page.content();
     const vitals = (await page.evaluate("window.__vc")) as { lcp: number; cls: number } | undefined;
-    phase = "measuring text contrast";
+    progress.set("measuring text contrast");
     const contrast = await page.evaluate(contrastAudit);
     const cookies = await desktop.cookies().catch(() => []);
-    phase = "running axe-core";
+    progress.set("running axe-core");
     const axe = await runAxe(page);
-    phase = "taking the desktop screenshot";
+    progress.set("taking the desktop screenshot");
     const shot = await capture(page);
     if (shot) screenshots.push({ kind: "desktop", ...DESKTOP, data: shot });
 
     // ---------- Mobile pass ----------
     mobile = await newContext(browser, MOBILE, true, site);
     const mpage = await mobile.newPage();
-    phase = "loading the phone page";
+    progress.set("loading the phone page");
     await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
     await mpage.waitForTimeout(500);
-    phase = "checking the phone layout";
+    progress.set("checking the phone layout");
     const m = await mpage.evaluate(mobileAudit);
-    phase = "taking the phone screenshot";
+    progress.set("taking the phone screenshot");
     const mshot = await capture(mpage);
     if (mshot) screenshots.push({ kind: "mobile", ...MOBILE, data: mshot });
 
@@ -430,9 +474,6 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
     return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
   } catch (err) {
-    if (overBudget) {
-      return { ran: false, reason: `The browser checks didn't finish within ${BROWSER_BUDGET_MS / 1000} seconds (stuck while ${phase}), so they were stopped. Pages that keep the browser busy this long are usually very script-heavy.`, checks: [], screenshots };
-    }
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
     const msg = (err as Error).message.split("\n")[0];
     if (/page\.goto: Timeout/.test(msg)) {
@@ -445,7 +486,7 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     }
     return { ran: false, reason: `Browser pass failed: ${msg}`, checks: [], screenshots };
   } finally {
-    clearTimeout(killer);
+    progress.set("closing the browser");
     await desktop?.close().catch(() => {});
     await mobile?.close().catch(() => {});
     await browser.close().catch(() => {});
@@ -572,27 +613,28 @@ export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: numb
  * (which only waits on the network) instead of after it.
  */
 export async function runMobilePerf(url: string, desktopLcp?: number): Promise<CheckResult[]> {
-  let browser: Browser;
-  try {
-    browser = await launch();
-  } catch (err) {
-    return mobilePerfChecks({ error: `Headless Chromium is unavailable (${(err as Error).message.split("\n")[0]})` });
-  }
-  try {
-    return mobilePerfChecks(await throttledMobileRun(browser, url), desktopLcp);
-  } finally {
-    await browser.close().catch(() => {});
-  }
+  const progress = progressFor(`${new URL(url).host} (throttled phone)`);
+  const work = (async () => {
+    let browser: Browser;
+    try {
+      browser = await launch();
+      progress.browser = browser;
+    } catch (err) {
+      return mobilePerfChecks({ error: `Headless Chromium is unavailable (${(err as Error).message.split("\n")[0]})` });
+    }
+    try {
+      progress.set("loading under throttling");
+      return mobilePerfChecks(await throttledMobileRun(browser, url), desktopLcp);
+    } finally {
+      await browser.close().catch(() => {});
+    }
+  })();
+  return withBrowserBudget(MOBILE_PERF_BUDGET_MS, progress, work, (phase) => mobilePerfChecks({ error: `it didn't finish within ${MOBILE_PERF_BUDGET_MS / 1000} seconds (stuck while ${phase})` }));
 }
 
 /** A cold-cache phone load under MOBILE_THROTTLING, in a fresh context so nothing is cached from earlier passes. */
 async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveSite): Promise<ThrottledRun> {
   const ctx = await newContext(browser, LIGHTHOUSE_PHONE.viewport, true, site, LIGHTHOUSE_PHONE);
-  let overBudget = false;
-  const killer = setTimeout(() => {
-    overBudget = true;
-    ctx.close().catch(() => {});
-  }, MOBILE_PERF_BUDGET_MS);
   try {
     await ctx.addInitScript(MOBILE_PERF_INIT);
     const page = await ctx.newPage();
@@ -630,10 +672,8 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
     const tti = timeToInteractive(m.fcp, m.long, m.res, m.now) ?? m.now;
     return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs };
   } catch (err) {
-    if (overBudget) return { error: `it didn't finish within ${MOBILE_PERF_BUDGET_MS / 1000} seconds and was stopped` };
     return { error: (err as Error).message.split("\n")[0] };
   } finally {
-    clearTimeout(killer);
     await ctx.close().catch(() => {});
   }
 }
