@@ -380,13 +380,22 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     const axe = await runAxe(page);
 
     // ---------- Mobile pass ----------
+    // Independent of the desktop pass: if the phone layout won't load, only the two phone checks are lost.
     mobile = await newContext(browser, MOBILE, true, site);
-    const mpage = await mobile.newPage();
-    progress.set("loading the phone page");
-    await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
-    await mpage.waitForTimeout(500);
-    progress.set("checking the phone layout");
-    const m = await mpage.evaluate(mobileAudit);
+    let mpage: Page | null = await mobile.newPage();
+    let m: Awaited<ReturnType<typeof mobileAudit>> | null = null;
+    let mobileError = "";
+    try {
+      progress.set("loading the phone page");
+      await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
+      await mpage.waitForTimeout(500);
+      progress.set("checking the phone layout");
+      m = await mpage.evaluate(mobileAudit);
+    } catch (err) {
+      mobileError = /Timeout/.test((err as Error).message) ? "the 390px phone layout never finished loading (twice: 20 and 15 seconds)" : `the 390px phone layout failed to load (${(err as Error).message.split("\n")[0]})`;
+      mpage = null;
+    }
+    const phoneSkip = (id: string, title: string): CheckResult => ({ id, category: "accessibility", severity: id === "resp-overflow" ? "medium" : "low", method: "browser", title, status: "skip", detail: `Not measured: ${mobileError}. The desktop checks still ran.` });
 
     // ---------- Checks ----------
     checks.push({
@@ -402,28 +411,32 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
       evidence: contrast.failures.slice(0, 8).map((f) => `${f.selector} "${f.text}" ${f.ratio}:1 (needs ${f.required}:1) ${f.fg} on ${f.bg}`),
       fix: "Darken the text or lighten the background until the ratio clears the threshold.",
     });
-    checks.push({
-      id: "resp-overflow",
-      category: "accessibility",
-      severity: "medium",
-      method: "browser",
-      title: "No sideways scrolling on a 390px phone",
-      status: m.sw > m.vw + 1 ? "fail" : "pass",
-      detail: m.sw > m.vw + 1 ? `The page is ${m.sw}px wide in a ${m.vw}px viewport, so content scrolls sideways (WCAG 1.4.10).` : `Content fits within the ${m.vw}px viewport.`,
-      evidence: m.overflowing.length ? m.overflowing : undefined,
-      fix: "Look for fixed widths, long unbroken strings, and wide tables or images; use max-width: 100% and min-width: 0 in flex/grid children.",
-    });
-    checks.push({
-      id: "resp-tap-targets",
-      category: "accessibility",
-      severity: "low",
-      method: "browser",
-      title: "Touch targets at least 24×24px (WCAG 2.5.8)",
-      status: m.small.length === 0 ? "pass" : m.small.length <= 5 ? "warn" : "fail",
-      detail: m.small.length ? `${m.small.length} interactive element(s) on the 390px layout are smaller than 24×24 CSS pixels.` : "Every interactive element on the mobile layout is at least 24×24px.",
-      evidence: m.small.length ? m.small.slice(0, 8) : undefined,
-      fix: "Add padding to small icon buttons and links; 44×44px is the comfortable target.",
-    });
+    if (!m) {
+      checks.push(phoneSkip("resp-overflow", "No sideways scrolling on a 390px phone"), phoneSkip("resp-tap-targets", "Touch targets at least 24×24px (WCAG 2.5.8)"));
+    } else {
+      checks.push({
+        id: "resp-overflow",
+        category: "accessibility",
+        severity: "medium",
+        method: "browser",
+        title: "No sideways scrolling on a 390px phone",
+        status: m.sw > m.vw + 1 ? "fail" : "pass",
+        detail: m.sw > m.vw + 1 ? `The page is ${m.sw}px wide in a ${m.vw}px viewport, so content scrolls sideways (WCAG 1.4.10).` : `Content fits within the ${m.vw}px viewport.`,
+        evidence: m.overflowing.length ? m.overflowing : undefined,
+        fix: "Look for fixed widths, long unbroken strings, and wide tables or images; use max-width: 100% and min-width: 0 in flex/grid children.",
+      });
+      checks.push({
+        id: "resp-tap-targets",
+        category: "accessibility",
+        severity: "low",
+        method: "browser",
+        title: "Touch targets at least 24×24px (WCAG 2.5.8)",
+        status: m.small.length === 0 ? "pass" : m.small.length <= 5 ? "warn" : "fail",
+        detail: m.small.length ? `${m.small.length} interactive element(s) on the 390px layout are smaller than 24×24 CSS pixels.` : "Every interactive element on the mobile layout is at least 24×24px.",
+        evidence: m.small.length ? m.small.slice(0, 8) : undefined,
+        fix: "Add padding to small icon buttons and links; 44×44px is the comfortable target.",
+      });
+    }
 
     const thirdPartyOnly = failed.length > 0 && failed.every((f) => !f.sameOrigin);
     checks.push({
@@ -483,7 +496,7 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     const shot = await capture(page);
     if (shot) screenshots.push({ kind: "desktop", ...DESKTOP, data: shot });
     progress.set("taking the phone screenshot");
-    const mshot = await capture(mpage);
+    const mshot = mpage ? await capture(mpage) : null;
     if (mshot) screenshots.push({ kind: "mobile", ...MOBILE, data: mshot });
     return result;
   } catch (err) {
