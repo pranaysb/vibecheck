@@ -58,7 +58,7 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 
 ## Platform
 
-- **Build sandboxes.** On Vercel the SDK authenticates with the project's OIDC token automatically. Locally it uses `VERCEL_OIDC_TOKEN` from `vercel env pull` (valid 12 hours); without credentials, builds are reported as not run. Set `SANDBOX_BUILDS=off` to disable them. Each build uses a 4 vCPU sandbox for up to about 4.5 minutes, billed to the Vercel team.
+- **Build sandboxes.** On Vercel the SDK authenticates with the project's OIDC token automatically. Locally it uses `VERCEL_OIDC_TOKEN` from `vercel env pull` (valid 12 hours); without credentials, builds are reported as not run. Set `SANDBOX_BUILDS=off` to disable them. Each build uses a 4 vCPU sandbox for up to about 3.5 minutes (install and build are capped at 90 s each), billed to the Vercel team.
 - **Storage.** Uploaded files and screenshots live in a private Vercel Blob store (keys prefixed by environment) and are only served through routes that check access. Without a store (local dev, CI) they are kept in Postgres. `.zip` uploads go straight from the browser to Blob (up to `MAX_DIRECT_UPLOAD_MB`, default 50), so the 4.5 MB request limit doesn't apply.
 - **Retention.** A daily Vercel Cron (`/api/cron/cleanup`, authorized by `CRON_SECRET`) deletes files and screenshots 90 days after an audit unless a review is in progress, fails abandoned audits, removes orphaned uploads, and prunes rate-limit counters.
 - **Rate limiting.** Counters live in Postgres (`RateLimit`), so limits hold across serverless instances.

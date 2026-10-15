@@ -22,6 +22,21 @@ export type AuditInput =
   | { source: "ZIP"; filename: string; blobKey: string }
   | { source: "GITHUB"; repo: string };
 
+/**
+ * Analysis must finish inside this budget so there is always time to save results (or the failure) before the
+ * 300 s function limit. Without it, a site that hangs a step leaves the audit stuck as "running".
+ */
+const ANALYSIS_BUDGET_MS = 255_000;
+
+function withinBudget<T>(work: Promise<T>, since = performance.now()): Promise<T> {
+  const left = ANALYSIS_BUDGET_MS - (performance.now() - since);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`The audit ran out of time (over ${Math.round(ANALYSIS_BUDGET_MS / 60_000 * 10) / 10} minutes) and was stopped. Try again; if it keeps happening, this site or project is too slow or too large to audit in one pass.`)), Math.max(0, left));
+  });
+  return Promise.race([work, limit]).finally(() => clearTimeout(timer));
+}
+
 export type AuditEvent = { type: "audit"; id: string } | { type: "step"; label: string } | { type: "done"; id: string; score: number | null } | { type: "error"; message: string; id?: string };
 
 function initial(input: AuditInput): { target: string; label: string } {
@@ -59,7 +74,7 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
     let stored: StoredFile[] = [];
 
     if (input.source === "URL") {
-      const out = await auditUrl(input.url, step);
+      const out = await withinBudget(auditUrl(input.url, step), started);
       ({ checks, meta, finalUrl, screenshots } = out);
     } else {
       let zip: Uint8Array;
@@ -79,7 +94,7 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
       }
       step("Unpacking files");
       const archive = readZip(zip);
-      const out = await auditFiles(archive, { source: input.source }, step);
+      const out = await withinBudget(auditFiles(archive, { source: input.source }, step), started);
       ({ checks, meta, stored, screenshots } = out);
       if (github) meta.github = github;
     }

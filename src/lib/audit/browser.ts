@@ -25,6 +25,9 @@ export interface BrowserRun {
 }
 
 const DESKTOP = { width: 1280, height: 800 };
+/** Upper bounds that keep a full URL audit well inside the 300 s function limit, whatever a site does. */
+const BROWSER_BUDGET_MS = 100_000;
+const MOBILE_PERF_BUDGET_MS = 85_000;
 const MOBILE = { width: 390, height: 844 };
 
 async function launch(): Promise<Browser> {
@@ -257,6 +260,15 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
   const screenshots: BrowserRun["screenshots"] = [];
   let desktop: BrowserContext | null = null;
   let mobile: BrowserContext | null = null;
+  // Hard budget: if any step hangs (a page that keeps the main thread busy can stall evaluate() indefinitely),
+  // closing the browser rejects every pending call, and the audit continues without the rendered checks.
+  let phase = "loading the desktop page";
+  let overBudget = false;
+  const openBrowser = browser;
+  const killer = setTimeout(() => {
+    overBudget = true;
+    openBrowser.close().catch(() => {});
+  }, BROWSER_BUDGET_MS);
   try {
     // ---------- Desktop pass ----------
     desktop = await newContext(browser, DESKTOP, false, site);
@@ -300,16 +312,21 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     await page.waitForTimeout(800);
     const renderedHtml = await page.content();
     const vitals = (await page.evaluate("window.__vc")) as { lcp: number; cls: number } | undefined;
+    phase = "measuring text contrast";
     const contrast = await page.evaluate(contrastAudit);
     const cookies = await desktop.cookies().catch(() => []);
+    phase = "running axe-core";
     const axe = await runAxe(page);
+    phase = "taking the desktop screenshot";
     screenshots.push({ kind: "desktop", ...DESKTOP, data: await page.screenshot({ type: "jpeg", quality: 72 }) });
 
     // ---------- Mobile pass ----------
     mobile = await newContext(browser, MOBILE, true, site);
     const mpage = await mobile.newPage();
+    phase = "loading the phone page";
     await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
     await mpage.waitForTimeout(500);
+    phase = "checking the phone layout";
     const m = await mpage.evaluate(mobileAudit);
     screenshots.push({ kind: "mobile", ...MOBILE, data: await mpage.screenshot({ type: "jpeg", quality: 72 }) });
 
@@ -402,6 +419,9 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
     return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
   } catch (err) {
+    if (overBudget) {
+      return { ran: false, reason: `The browser checks didn't finish within ${BROWSER_BUDGET_MS / 1000} seconds (stuck while ${phase}), so they were stopped. Pages that keep the browser busy this long are usually very script-heavy.`, checks: [], screenshots };
+    }
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
     const msg = (err as Error).message.split("\n")[0];
     if (/page\.goto: Timeout/.test(msg)) {
@@ -414,6 +434,7 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     }
     return { ran: false, reason: `Browser pass failed: ${msg}`, checks: [], screenshots };
   } finally {
+    clearTimeout(killer);
     await desktop?.close().catch(() => {});
     await mobile?.close().catch(() => {});
     await browser.close().catch(() => {});
@@ -556,6 +577,11 @@ export async function runMobilePerf(url: string, desktopLcp?: number): Promise<C
 /** A cold-cache phone load under MOBILE_THROTTLING, in a fresh context so nothing is cached from earlier passes. */
 async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveSite): Promise<ThrottledRun> {
   const ctx = await newContext(browser, LIGHTHOUSE_PHONE.viewport, true, site, LIGHTHOUSE_PHONE);
+  let overBudget = false;
+  const killer = setTimeout(() => {
+    overBudget = true;
+    ctx.close().catch(() => {});
+  }, MOBILE_PERF_BUDGET_MS);
   try {
     await ctx.addInitScript(MOBILE_PERF_INIT);
     const page = await ctx.newPage();
@@ -593,8 +619,10 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
     const tti = timeToInteractive(m.fcp, m.long, m.res, m.now) ?? m.now;
     return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs };
   } catch (err) {
+    if (overBudget) return { error: `it didn't finish within ${MOBILE_PERF_BUDGET_MS / 1000} seconds and was stopped` };
     return { error: (err as Error).message.split("\n")[0] };
   } finally {
+    clearTimeout(killer);
     await ctx.close().catch(() => {});
   }
 }

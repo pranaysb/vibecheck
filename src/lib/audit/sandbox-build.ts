@@ -24,7 +24,8 @@ const REGISTRIES = [
 ];
 const BUILD_EXTRA = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
-const LIMITS = { installMs: 120_000, buildMs: 120_000, startMs: 30_000, outputFiles: 3000, outputBytes: 60 * 1024 * 1024, fileBytes: 15 * 1024 * 1024 };
+// Install + build + start (200 s at most) plus the rendered audit must fit the audit's 255 s analysis budget.
+const LIMITS = { installMs: 90_000, buildMs: 90_000, startMs: 20_000, outputFiles: 3000, outputBytes: 60 * 1024 * 1024, fileBytes: 15 * 1024 * 1024 };
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 
