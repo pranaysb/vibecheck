@@ -84,7 +84,9 @@ async function newContext(browser: Browser, viewport: { width: number; height: n
     userAgent:
       device?.userAgent ??
       (mobile
-        ? "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 VibeCheckAudit/2.0"
+        ? // An Android Chrome identity, matching the engine: claiming iOS Safari sends some sites down Safari-only
+          // code paths that then stall in Chromium.
+          "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36 VibeCheckAudit/2.0"
         : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 VibeCheckAudit/2.0"),
   });
   // Some bundlers wrap functions in a __name() helper; define it so serialized page.evaluate code runs.
