@@ -98,7 +98,14 @@ async function newContext(browser: Browser, viewport: { width: number; height: n
  * be captured (heavy WebGL on a GPU-less server can stall it), the checks stand without the picture.
  */
 async function capture(page: Page): Promise<Buffer | null> {
-  return page.screenshot({ type: "jpeg", quality: 72, animations: "disabled", caret: "hide", timeout: 12_000 }).catch(() => null);
+  // Raced explicitly: on production a wedged renderer ignored Playwright's own screenshot timeout.
+  return settleWithin(12_000, page.screenshot({ type: "jpeg", quality: 72, animations: "disabled", caret: "hide", timeout: 12_000 }));
+}
+
+/** Resolves with the value, or null after `ms` or on error. Never rejects. */
+function settleWithin<T>(ms: number, work: Promise<T>): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([work.catch(() => null), new Promise<null>((r) => (timer = setTimeout(() => r(null), ms)))]).finally(() => clearTimeout(timer));
 }
 
 /** Thrown when the site answers the headless browser with an error page (usually bot protection). */
@@ -257,6 +264,8 @@ type BrowserTarget = { url: string; fetchedStatus?: number } | { site: ArchiveSi
 interface Progress {
   phase: string;
   browser: Browser | null;
+  /** Complete results, set before the optional screenshot step. */
+  result?: BrowserRun;
   set: (phase: string) => void;
 }
 
@@ -296,12 +305,12 @@ async function withBrowserBudget<T>(budgetMs: number, progress: Progress, work: 
 
 export async function runBrowserAudit(target: BrowserTarget): Promise<BrowserRun> {
   const progress = progressFor("url" in target ? new URL(target.url).host : "upload");
-  return withBrowserBudget(BROWSER_BUDGET_MS, progress, browserAudit(target, progress), (phase) => ({
+  return withBrowserBudget(BROWSER_BUDGET_MS, progress, browserAudit(target, progress), (phase) => progress.result ?? {
     ran: false,
     reason: `The browser checks didn't finish within ${BROWSER_BUDGET_MS / 1000} seconds (stuck while ${phase}), so they were stopped. Pages that keep a browser busy this long are usually very script-heavy.`,
     checks: [],
     screenshots: [],
-  }));
+  });
 }
 
 async function browserAudit(target: BrowserTarget, progress: Progress): Promise<BrowserRun> {
@@ -369,9 +378,6 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     const cookies = await desktop.cookies().catch(() => []);
     progress.set("running axe-core");
     const axe = await runAxe(page);
-    progress.set("taking the desktop screenshot");
-    const shot = await capture(page);
-    if (shot) screenshots.push({ kind: "desktop", ...DESKTOP, data: shot });
 
     // ---------- Mobile pass ----------
     mobile = await newContext(browser, MOBILE, true, site);
@@ -381,9 +387,6 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     await mpage.waitForTimeout(500);
     progress.set("checking the phone layout");
     const m = await mpage.evaluate(mobileAudit);
-    progress.set("taking the phone screenshot");
-    const mshot = await capture(mpage);
-    if (mshot) screenshots.push({ kind: "mobile", ...MOBILE, data: mshot });
 
     // ---------- Checks ----------
     checks.push({
@@ -472,7 +475,17 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     }
     checks.push(axeCheck(axe));
     checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
-    return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
+    const result: BrowserRun = { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
+    // Every measurement is in. Screenshots come last because they are the step most likely to wedge Chromium
+    // on a GPU-less server; if the budget runs out now, the wrapper returns these results without pictures.
+    progress.result = result;
+    progress.set("taking the desktop screenshot");
+    const shot = await capture(page);
+    if (shot) screenshots.push({ kind: "desktop", ...DESKTOP, data: shot });
+    progress.set("taking the phone screenshot");
+    const mshot = await capture(mpage);
+    if (mshot) screenshots.push({ kind: "mobile", ...MOBILE, data: mshot });
+    return result;
   } catch (err) {
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
     const msg = (err as Error).message.split("\n")[0];
@@ -487,9 +500,8 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     return { ran: false, reason: `Browser pass failed: ${msg}`, checks: [], screenshots };
   } finally {
     progress.set("closing the browser");
-    await desktop?.close().catch(() => {});
-    await mobile?.close().catch(() => {});
-    await browser.close().catch(() => {});
+    // Closing can hang when a page is wedged; never let it hold up the audit.
+    await settleWithin(5_000, Promise.all([desktop?.close(), mobile?.close()]).then(() => browser.close()));
   }
 }
 
@@ -626,7 +638,7 @@ export async function runMobilePerf(url: string, desktopLcp?: number): Promise<C
       progress.set("loading under throttling");
       return mobilePerfChecks(await throttledMobileRun(browser, url), desktopLcp);
     } finally {
-      await browser.close().catch(() => {});
+      await settleWithin(5_000, browser.close());
     }
   })();
   return withBrowserBudget(MOBILE_PERF_BUDGET_MS, progress, work, (phase) => mobilePerfChecks({ error: `it didn't finish within ${MOBILE_PERF_BUDGET_MS / 1000} seconds (stuck while ${phase})` }));
@@ -674,7 +686,7 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
   } catch (err) {
     return { error: (err as Error).message.split("\n")[0] };
   } finally {
-    await ctx.close().catch(() => {});
+    await settleWithin(5_000, ctx.close());
   }
 }
 
