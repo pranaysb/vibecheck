@@ -25,7 +25,9 @@ describe("notification fan-out (database)", async () => {
     const pending = await mk("pending", ["Security"], "PENDING");
     const requester = await mk("requester", ["Security"]); // an approved expert who is also the requester
     await notifyExperts(["Security", "Mobile"], requester.id, `${tag} request`, "/expert");
-    const got = await prisma.notification.findMany({ where: { title: `${tag} request` }, select: { userId: true } });
+    // Other test files run in parallel on the same database, so only this test's accounts are compared.
+    const mine = [security.id, seoOnly.id, pending.id, requester.id];
+    const got = await prisma.notification.findMany({ where: { title: `${tag} request`, userId: { in: mine } }, select: { userId: true } });
     assert.deepEqual(got.map((n) => n.userId), [security.id]);
     assert.ok(![seoOnly.id, pending.id, requester.id].some((id) => got.some((n) => n.userId === id)));
   });
@@ -40,7 +42,7 @@ describe("notification fan-out (database)", async () => {
     } finally {
       process.env.ADMIN_EMAILS = saved;
     }
-    const got = await prisma.notification.findMany({ where: { title: `${tag} admin` }, select: { userId: true } });
+    const got = await prisma.notification.findMany({ where: { title: `${tag} admin`, userId: { in: [admin.id, other.id] } }, select: { userId: true } });
     assert.deepEqual(got.map((n) => n.userId), [admin.id]);
     assert.ok(!got.some((n) => n.userId === other.id));
   });
