@@ -1,3 +1,4 @@
+import { availableParallelism } from "node:os";
 import type { Browser, BrowserContext, Page, Route } from "playwright-core";
 import { validateTargetDestination } from "@/lib/security/ssrf";
 import { isNecessaryCookie, siteOf, trackerFor } from "./privacy";
@@ -816,7 +817,14 @@ export function totalBlockingTime(fcp: number, tti: number, longTasks: [start: n
 
 const sec = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
 
-export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckResult[] {
+/**
+ * Fewer cores than this and Chromium's own rendering threads compete with page scripts, inflating long tasks
+ * several-fold on script-heavy pages (stripe.com: 3.5–4.8 s TBT on a 2-core server vs 0.6 s on a laptop that
+ * matched Lighthouse). Load timings are dominated by the throttled network and stay comparable.
+ */
+export const MIN_CORES_FOR_TBT = 4;
+
+export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number, cores = availableParallelism()): CheckResult[] {
   const profile = "Lighthouse's mobile profile (a Moto G Power on Slow 4G: 1.6 Mbps, 150 ms RTT, with a phone-class CPU)";
   const base = { category: "performance", method: "browser" } as const;
   if ("error" in run || "timedOut" in run) {
@@ -861,15 +869,24 @@ export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckR
       detail: run.fcp === 0 ? "The browser reported no first paint." : `Something first appeared after ${sec(run.fcp)} on the same throttled phone. Good is 1.8s or less; over 3s is poor.`,
       fix: run.fcp > 1800 ? "Reduce render-blocking CSS and scripts in <head>, and use font-display: swap." : undefined,
     },
-    {
-      ...base,
-      id: "perf-tbt",
-      severity: "medium",
-      title: "Total Blocking Time (mobile)",
-      status: grade(run.tbt, 200, 600),
-      detail: `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), so taps and scrolls went unanswered. Good is 200 ms or less; over 600 ms is poor.`,
-      evidence: run.cpuScale !== undefined && run.cpuScale < 1 ? [`The audit server's CPU was slower than the ${TARGET_CPU_INDEX} phone target, so long-task durations were scaled by ${run.cpuScale.toFixed(2)} before computing this, as Lighthouse's simulated throttling does.`] : undefined,
-      fix: run.tbt > 200 ? "Split large JavaScript bundles, defer third-party scripts, and move heavy work off the main thread." : undefined,
-    },
+    cores < MIN_CORES_FOR_TBT
+      ? {
+          ...base,
+          id: "perf-tbt",
+          severity: "medium",
+          title: "Total Blocking Time (mobile)",
+          status: "skip",
+          detail: `Measured ${run.tbt} ms, but not scored: this audit server has ${cores} CPU core(s), and with fewer than ${MIN_CORES_FOR_TBT} the browser's own rendering threads compete with page scripts and inflate blocking time several-fold compared with Lighthouse on a typical computer. Run Lighthouse in Chrome DevTools for this one.`,
+        }
+      : {
+          ...base,
+          id: "perf-tbt",
+          severity: "medium",
+          title: "Total Blocking Time (mobile)",
+          status: grade(run.tbt, 200, 600),
+          detail: `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), so taps and scrolls went unanswered. Good is 200 ms or less; over 600 ms is poor.`,
+          evidence: run.cpuScale !== undefined && run.cpuScale < 1 ? [`The audit server's CPU was slower than the ${TARGET_CPU_INDEX} phone target, so long-task durations were scaled by ${run.cpuScale.toFixed(2)} before computing this, as Lighthouse's simulated throttling does.`] : undefined,
+          fix: run.tbt > 200 ? "Split large JavaScript bundles, defer third-party scripts, and move heavy work off the main thread." : undefined,
+        },
   ];
 }

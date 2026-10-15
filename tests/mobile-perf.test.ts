@@ -16,9 +16,12 @@ test("TBT counts the part of each long task beyond 50 ms, clipped to FCP–TTI",
 });
 
 test("throttled results grade on Lighthouse's mobile boundaries; a no-paint timeout fails LCP", () => {
-  const [lcp, fcp, tbt] = mobilePerfChecks({ lcp: 2400, fcp: 2000, tbt: 700, loadMs: 5000 });
+  const [lcp, fcp, tbt] = mobilePerfChecks({ lcp: 2400, fcp: 2000, tbt: 700, loadMs: 5000 }, undefined, 8);
   assert.deepEqual([lcp.status, fcp.status, tbt.status], ["pass", "warn", "fail"]);
-  assert.equal(mobilePerfChecks({ lcp: 2504, fcp: 1803, tbt: 0, loadMs: 1 })[1].status, "pass", "1803 ms shows as 1.80s");
+  assert.equal(mobilePerfChecks({ lcp: 2504, fcp: 1803, tbt: 0, loadMs: 1 }, undefined, 8)[1].status, "pass", "1803 ms shows as 1.80s");
+  const twoCores = mobilePerfChecks({ lcp: 2400, fcp: 2000, tbt: 4800, loadMs: 5000 }, undefined, 2);
+  assert.equal(twoCores[2].status, "skip", "TBT isn't scored on a 2-core server");
+  assert.match(twoCores[2].detail, /Measured 4800 ms/);
   const timedOut = mobilePerfChecks({ timedOut: true });
   assert.deepEqual(timedOut.map((c) => c.status), ["fail", "skip", "skip"]);
   assert.deepEqual(mobilePerfChecks({ error: "boom" }).map((c) => c.status), ["skip", "skip", "skip"]);
