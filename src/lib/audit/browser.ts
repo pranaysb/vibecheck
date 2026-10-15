@@ -702,7 +702,7 @@ const MOBILE_PERF_INIT = `
   } catch {}
 `;
 
-export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: number; benchmarkIndex?: number; cpuSlowdown?: number } | { timedOut: true } | { error: string };
+export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: number; benchmarkIndex?: number; cpuSlowdown?: number; cpuScale?: number } | { timedOut: true } | { error: string };
 
 /**
  * Lighthouse-style mobile performance for a live URL, in its own browser so it can run alongside the crawl
@@ -767,8 +767,12 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
       await page.waitForTimeout(1_000);
       m = await observe();
     }
-    const tti = timeToInteractive(m.fcp, m.long, m.res, m.now) ?? m.now;
-    return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs, benchmarkIndex, cpuSlowdown };
+    // A server slower than the target phone can't be slowed down to it. Like Lighthouse's simulated throttling,
+    // scale the measured CPU work (long-task durations) to the target speed before computing TTI and TBT.
+    const cpuScale = Math.min(1, benchmarkIndex / TARGET_CPU_INDEX);
+    const tasks = m.long.map(([start, d]) => [start, d * cpuScale] as [number, number]);
+    const tti = timeToInteractive(m.fcp, tasks, m.res, m.now) ?? m.now;
+    return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, tasks), loadMs, benchmarkIndex, cpuSlowdown, cpuScale };
   } catch (err) {
     return { error: (err as Error).message.split("\n")[0] };
   } finally {
@@ -843,7 +847,7 @@ export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckR
       detail: run.lcp === 0 ? "The browser reported no Largest Contentful Paint for this page." : `The main content appeared after ${sec(run.lcp)} on ${profile}. Good is 2.5s or less; over 4s is poor.`,
       evidence: [
         `Throttled load event: ${sec(run.loadMs)}`,
-        ...(run.benchmarkIndex ? [`Audit server CPU: Lighthouse BenchmarkIndex ${run.benchmarkIndex}, slowed ${run.cpuSlowdown}× to emulate a phone at ${TARGET_CPU_INDEX}${run.benchmarkIndex < TARGET_CPU_INDEX ? " (the server was already slower than that, so timings may read slow)" : ""}`] : []),
+        ...(run.benchmarkIndex ? [`Audit server CPU: Lighthouse BenchmarkIndex ${run.benchmarkIndex}, ${run.benchmarkIndex < TARGET_CPU_INDEX ? `already slower than the ${TARGET_CPU_INDEX} phone target, so not slowed further; paint times may read a little slow` : `slowed ${run.cpuSlowdown}× to emulate a phone at ${TARGET_CPU_INDEX}`}`] : []),
         ...(desktopLcp ? [`Desktop, unthrottled LCP for comparison: ${sec(desktopLcp)}`] : []),
       ],
       fix: run.lcp > 2500 ? "Serve the hero image at phone size in AVIF/WebP with fetchpriority=\"high\", inline critical CSS, and defer non-essential scripts." : undefined,
@@ -864,6 +868,7 @@ export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckR
       title: "Total Blocking Time (mobile)",
       status: grade(run.tbt, 200, 600),
       detail: `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), so taps and scrolls went unanswered. Good is 200 ms or less; over 600 ms is poor.`,
+      evidence: run.cpuScale !== undefined && run.cpuScale < 1 ? [`The audit server's CPU was slower than the ${TARGET_CPU_INDEX} phone target, so long-task durations were scaled by ${run.cpuScale.toFixed(2)} before computing this, as Lighthouse's simulated throttling does.`] : undefined,
       fix: run.tbt > 200 ? "Split large JavaScript bundles, defer third-party scripts, and move heavy work off the main thread." : undefined,
     },
   ];
