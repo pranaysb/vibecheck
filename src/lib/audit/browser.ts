@@ -641,6 +641,48 @@ export function privacyCheck(pageHost: string, requestHosts: Map<string, number>
  * Slow 4G (150 ms RTT and 1.6 Mbps down, with DevTools' packet-level adjustments) and the CPU slowed 4×.
  */
 export const MOBILE_THROTTLING = { latencyMs: 562.5, downloadKbps: 1474.56, uploadKbps: 675, cpuSlowdown: 4 };
+/**
+ * CPU speed of the emulated phone, in Lighthouse BenchmarkIndex units. Lighthouse applies a fixed 4× slowdown,
+ * which emulates different phones on different hosts; VibeCheck instead measures the host and picks the
+ * slowdown that reaches this target. 1000 equals Lighthouse's default 4× on a current laptop (index ≈ 4000),
+ * the setup these metrics were validated against.
+ */
+export const TARGET_CPU_INDEX = 1000;
+
+/** Lighthouse's BenchmarkIndex (core/lib/page-functions.js, Apache-2.0), run in the page before throttling. */
+function computeBenchmarkIndex() {
+  function benchmarkIndexGC() {
+    const start = Date.now();
+    let iterations = 0;
+    while (Date.now() - start < 500) {
+      let s = "";
+      for (let j = 0; j < 10000; j++) s += "a";
+      if (s.length === 1) throw new Error("will never happen, but prevents compiler optimizations");
+      iterations++;
+    }
+    return Math.round(iterations / 10 / ((Date.now() - start) / 1000));
+  }
+  function benchmarkIndexNoGC() {
+    const arrA: number[] = [];
+    const arrB: number[] = [];
+    for (let i = 0; i < 100000; i++) arrA[i] = arrB[i] = i;
+    const start = Date.now();
+    let iterations = 0;
+    while (iterations % 10 !== 0 || Date.now() - start < 500) {
+      const src = iterations % 2 === 0 ? arrA : arrB;
+      const tgt = iterations % 2 === 0 ? arrB : arrA;
+      for (let j = 0; j < src.length; j++) tgt[j] = src[j];
+      iterations++;
+    }
+    return Math.round(iterations / 10 / ((Date.now() - start) / 1000));
+  }
+  return (benchmarkIndexGC() + benchmarkIndexNoGC()) / 2;
+}
+
+/** The slowdown that brings this host down to the target phone: never below 1×, never above Lighthouse's 4×. */
+export function cpuSlowdownFor(benchmarkIndex: number): number {
+  return Math.round(Math.min(MOBILE_THROTTLING.cpuSlowdown, Math.max(1, benchmarkIndex / TARGET_CPU_INDEX)) * 10) / 10;
+}
 /** Lighthouse's emulated phone (a Moto G Power), so sites serve the same mobile variant Lighthouse sees. */
 const LIGHTHOUSE_PHONE = {
   viewport: { width: 412, height: 823 },
@@ -660,7 +702,7 @@ const MOBILE_PERF_INIT = `
   } catch {}
 `;
 
-export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: number } | { timedOut: true } | { error: string };
+export type ThrottledRun = { lcp: number; fcp: number; tbt: number; loadMs: number; benchmarkIndex?: number; cpuSlowdown?: number } | { timedOut: true } | { error: string };
 
 /**
  * Lighthouse-style mobile performance for a live URL, in its own browser so it can run alongside the crawl
@@ -701,7 +743,9 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
       downloadThroughput: (MOBILE_THROTTLING.downloadKbps * 1024) / 8,
       uploadThroughput: (MOBILE_THROTTLING.uploadKbps * 1024) / 8,
     });
-    await cdp.send("Emulation.setCPUThrottlingRate", { rate: MOBILE_THROTTLING.cpuSlowdown });
+    const benchmarkIndex = Math.round(((await settleWithin(5_000, page.evaluate(computeBenchmarkIndex))) as number | null) ?? TARGET_CPU_INDEX * MOBILE_THROTTLING.cpuSlowdown);
+    const cpuSlowdown = cpuSlowdownFor(benchmarkIndex);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: cpuSlowdown });
     const started = Date.now();
     try {
       await page.goto(url, { waitUntil: "load", timeout: THROTTLED_TIMEOUT_MS });
@@ -724,7 +768,7 @@ async function throttledMobileRun(browser: Browser, url: string, site?: ArchiveS
       m = await observe();
     }
     const tti = timeToInteractive(m.fcp, m.long, m.res, m.now) ?? m.now;
-    return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs };
+    return { lcp: Math.round(m.lcp), fcp: Math.round(m.fcp), tbt: totalBlockingTime(m.fcp, tti, m.long), loadMs, benchmarkIndex, cpuSlowdown };
   } catch (err) {
     return { error: (err as Error).message.split("\n")[0] };
   } finally {
@@ -769,7 +813,7 @@ export function totalBlockingTime(fcp: number, tti: number, longTasks: [start: n
 const sec = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
 
 export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckResult[] {
-  const profile = "Lighthouse's mobile profile (a Moto G Power on Slow 4G: 1.6 Mbps, 150 ms RTT, CPU slowed 4×)";
+  const profile = "Lighthouse's mobile profile (a Moto G Power on Slow 4G: 1.6 Mbps, 150 ms RTT, with a phone-class CPU)";
   const base = { category: "performance", method: "browser" } as const;
   if ("error" in run || "timedOut" in run) {
     const timedOut = "timedOut" in run;
@@ -797,7 +841,11 @@ export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number): CheckR
       title: "Largest Contentful Paint (mobile)",
       status: run.lcp === 0 ? "skip" : grade(run.lcp, 2500, 4000),
       detail: run.lcp === 0 ? "The browser reported no Largest Contentful Paint for this page." : `The main content appeared after ${sec(run.lcp)} on ${profile}. Good is 2.5s or less; over 4s is poor.`,
-      evidence: [`Throttled load event: ${sec(run.loadMs)}`, ...(desktopLcp ? [`Desktop, unthrottled LCP for comparison: ${sec(desktopLcp)}`] : [])],
+      evidence: [
+        `Throttled load event: ${sec(run.loadMs)}`,
+        ...(run.benchmarkIndex ? [`Audit server CPU: Lighthouse BenchmarkIndex ${run.benchmarkIndex}, slowed ${run.cpuSlowdown}× to emulate a phone at ${TARGET_CPU_INDEX}${run.benchmarkIndex < TARGET_CPU_INDEX ? " (the server was already slower than that, so timings may read slow)" : ""}`] : []),
+        ...(desktopLcp ? [`Desktop, unthrottled LCP for comparison: ${sec(desktopLcp)}`] : []),
+      ],
       fix: run.lcp > 2500 ? "Serve the hero image at phone size in AVIF/WebP with fetchpriority=\"high\", inline critical CSS, and defer non-essential scripts." : undefined,
     },
     {

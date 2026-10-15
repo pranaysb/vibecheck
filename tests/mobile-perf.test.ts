@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mobilePerfChecks, timeToInteractive, totalBlockingTime } from "../src/lib/audit/browser";
+import { cpuSlowdownFor, mobilePerfChecks, timeToInteractive, totalBlockingTime } from "../src/lib/audit/browser";
 
 test("TTI waits for both CPU and network quiet", () => {
   const tasks: [number, number][] = [[1500, 500]]; // ends 2000
@@ -22,4 +22,11 @@ test("throttled results grade on Lighthouse's mobile boundaries; a no-paint time
   const timedOut = mobilePerfChecks({ timedOut: true });
   assert.deepEqual(timedOut.map((c) => c.status), ["fail", "skip", "skip"]);
   assert.deepEqual(mobilePerfChecks({ error: "boom" }).map((c) => c.status), ["skip", "skip", "skip"]);
+});
+
+test("CPU slowdown is calibrated to the host: 4× on a fast laptop, less on slower servers, never below 1×", () => {
+  assert.equal(cpuSlowdownFor(4000), 4);
+  assert.equal(cpuSlowdownFor(9000), 4, "capped at Lighthouse's 4×");
+  assert.equal(cpuSlowdownFor(1500), 1.5);
+  assert.equal(cpuSlowdownFor(600), 1);
 });
