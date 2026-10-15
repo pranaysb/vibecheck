@@ -15,6 +15,7 @@ export default async function Queue({ searchParams }: { searchParams: Promise<{ 
   const { error } = await searchParams;
 
   const include = { audit: { select: { id: true, label: true, source: true, score: true } }, requester: { select: { name: true } } } as const;
+  const profile = await prisma.expertProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
   const [open, mine, done] = await Promise.all([
     prisma.reviewRequest.findMany({ where: { status: "OPEN", requesterId: { not: user.id } }, orderBy: { createdAt: "asc" }, include }),
     prisma.reviewRequest.findMany({ where: { status: "CLAIMED", expertId: user.id }, orderBy: { claimedAt: "asc" }, include }),
@@ -23,8 +24,13 @@ export default async function Queue({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-14">
-      <h1 className="text-3xl font-semibold">Review queue</h1>
-      <p className="mt-1 text-muted">Claim a request to lock it to you, then submit your written review.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">Review queue</h1>
+          <p className="mt-1 text-muted">Claim a request to lock it to you, then submit your written review.</p>
+        </div>
+        {profile && <Link href={`/experts/${profile.id}`} className="btn btn-secondary btn-sm">Your public profile</Link>}
+      </div>
       {error === "unavailable" && <p role="alert" className="mt-4 text-sm text-fail">Someone else claimed that request first.</p>}
 
       <section className="mt-10" aria-labelledby="mine">

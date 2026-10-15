@@ -52,7 +52,9 @@ export default async function Experts() {
                     {e.user.name.slice(0, 1).toUpperCase()}
                   </span>
                   <div className="min-w-0">
-                    <h2 className="font-semibold">{e.user.name}</h2>
+                    <h2 className="font-semibold">
+                      <Link href={`/experts/${e.id}`} className="hover:underline underline-offset-4">{e.user.name}</Link>
+                    </h2>
                     <p className="text-sm text-muted">{e.headline}</p>
                   </div>
                 </div>
@@ -81,11 +83,12 @@ export default async function Experts() {
                     ))}
                   </span>
                 </div>
-                {viewer && viewer.id !== e.user.id && (
-                  <div className="mt-3 flex justify-end">
-                    <ReportButton targetType="EXPERT" targetId={e.id} label="Report" />
-                  </div>
-                )}
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <Link href={`/experts/${e.id}`} className="text-sm underline underline-offset-4 text-muted hover:text-fg">
+                    Profile and reviews
+                  </Link>
+                  {viewer && viewer.id !== e.user.id && <ReportButton targetType="EXPERT" targetId={e.id} label="Report" />}
+                </div>
               </li>
             );
           })}

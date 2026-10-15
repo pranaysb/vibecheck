@@ -140,9 +140,10 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
     emit({ type: "done", id: audit.id, score: score.score });
   } catch (err) {
     const message = (err as Error).message || "The audit failed.";
-    await deleteByPrefix([auditPrefix(audit.id)]).catch(() => {});
+    // Record the failure first: cleanup talks to storage, and a slow storage call must never delay the result.
     await prisma.audit.update({ where: { id: audit.id }, data: { status: "FAILED", error: message, durationMs: Math.round(performance.now() - started) } });
     emit({ type: "error", message, id: audit.id });
+    await Promise.race([deleteByPrefix([auditPrefix(audit.id)]).catch(() => {}), new Promise((r) => setTimeout(r, 15_000))]);
   }
   return audit.id;
 }

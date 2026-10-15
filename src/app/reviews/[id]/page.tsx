@@ -18,7 +18,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     prisma.expertReview.findUnique({
       where: { id },
       include: {
-        expert: { select: { name: true, expertProfile: { select: { headline: true } } } },
+        expert: { select: { name: true, expertProfile: { select: { id: true, headline: true, status: true } } } },
         request: { include: { audit: { select: { id: true, label: true, source: true, ownerId: true, requests: { select: { status: true, expertId: true } } } } } },
       },
     }),
@@ -56,7 +56,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
       <div className="mt-6 flex items-center gap-3 border-y border-line py-4">
         <span className="size-9 rounded-full bg-invert text-invert-fg grid place-items-center font-semibold" aria-hidden="true">{review.expert.name.slice(0, 1).toUpperCase()}</span>
         <div className="text-sm">
-          <p className="font-medium">{review.expert.name}</p>
+          <p className="font-medium">
+            {review.expert.expertProfile?.status === "APPROVED" ? (
+              <Link href={`/experts/${review.expert.expertProfile.id}`} className="hover:underline underline-offset-4">{review.expert.name}</Link>
+            ) : (
+              review.expert.name
+            )}
+          </p>
           <p className="text-muted">
             {review.expert.expertProfile?.headline} · {review.createdAt.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
           </p>

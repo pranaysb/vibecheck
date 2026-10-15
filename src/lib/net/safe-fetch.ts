@@ -74,7 +74,8 @@ export async function safeFetch(input: string, opts: SafeFetchOptions = {}): Pro
   throw new Error(`Too many redirects (more than ${maxRedirects})`);
 }
 
-function requestOnce(
+/** One request to an already-validated IP. Exported for tests; callers use safeFetch, which validates first. */
+export function requestOnce(
   url: string,
   pinnedIp: string,
   maxBytes: number,
@@ -86,7 +87,16 @@ function requestOnce(
   const family = net.isIPv6(pinnedIp) ? 6 : 4;
   const started = performance.now();
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve: (v: Omit<FetchResult, "redirects" | "totalMs">) => void, reject: (e: Error) => void) => {
+    // `timeout` below only fires after timeoutMs of silence; a server trickling bytes would never trip it.
+    // This caps the whole request (connect, headers and body) at twice that.
+    const hardLimit = setTimeout(() => req.destroy(new Error(`Timed out after ${timeoutMs * 2}ms in total`)), timeoutMs * 2);
+    const done = <T,>(fn: (v: T) => void) => (v: T) => {
+      clearTimeout(hardLimit);
+      fn(v);
+    };
+    resolve = done(resolve);
+    reject = done(reject);
     const req = (isHttps ? https : http).request(
       {
         method: "GET",

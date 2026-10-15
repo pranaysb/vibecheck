@@ -170,6 +170,18 @@ try {
   await card.getByText("1 review").waitFor();
   await card.getByText("5.0").waitFor();
   ok("public expert profile shows 1 review, 5.0");
+  await bystander.goto(`${base}/experts`);
+  await bystander.locator("li", { hasText: `E2E Expert ${tag}` }).getByRole("link", { name: "Profile and reviews" }).click();
+  await bystander.waitForURL(/\/experts\/[a-z0-9]+$/);
+  const profileUrl = bystander.url();
+  const stat = (label) => bystander.locator("dl > div", { hasText: label }).locator("dd");
+  if ((await stat("Reviews delivered").textContent())?.trim() !== "1") throw new Error("profile: delivered count");
+  if (!(await stat("Average rating").textContent())?.includes("5.0")) throw new Error("profile: average rating");
+  // The reviewed audit is a public URL audit, so its site name and summary are shown.
+  await bystander.locator("section[aria-labelledby=history] li", { hasText: "Fix first" }).filter({ hasText: target.replace(/^https?:\/\//, "").replace(/\/.*$/, "") }).waitFor();
+  await bystander.getByRole("link", { name: "Read the review" }).click();
+  await bystander.waitForURL(/\/reviews\//);
+  ok("expert profile page shows the record and links to the public review");
 
   // ---------- Moderation ----------
   await bystander.goto(reviewUrl);
@@ -187,6 +199,8 @@ try {
   await builder.goto(`${base}/experts`);
   await builder.locator("li", { hasText: `E2E Expert ${tag}` }).getByText("0 reviews").waitFor();
   ok("hidden review no longer counts toward the expert's record");
+  await bystander.goto(profileUrl);
+  await expectText(bystander, "No delivered reviews yet.", "hidden review is gone from the expert's profile page");
 
   // ---------- Re-run and compare ----------
   await builder.goto(urlAudit);
