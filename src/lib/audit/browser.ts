@@ -1,5 +1,6 @@
 import type { Browser, BrowserContext, Page, Route } from "playwright-core";
 import { validateTargetDestination } from "@/lib/security/ssrf";
+import { isNecessaryCookie, siteOf, trackerFor } from "./privacy";
 import type { CheckResult } from "./types";
 
 /** Uploaded sites are served to Chromium from memory under this never-resolvable origin. */
@@ -90,12 +91,13 @@ class BlockedRenderError extends Error {}
 
 async function settle(page: Page, url: string, fetchedStatus?: number) {
   // Wait for the document, not for "load": pages with endless trackers or ads may never fire it.
-  const go = () => page.goto(url, { waitUntil: "domcontentloaded", timeout: 20_000 });
-  // One retry for dropped connections (ERR_CONNECTION_RESET and friends), not for real errors.
-  const res = await go().catch(async (err: Error) => {
-    if (!/ERR_CONNECTION_(RESET|CLOSED|ABORTED)|ERR_NETWORK_CHANGED|ERR_TIMED_OUT/.test(err.message)) throw err;
+  const go = (timeout: number) => page.goto(url, { waitUntil: "domcontentloaded", timeout });
+  // One retry for dropped or stalled connections, not for real errors. A fresh attempt opens a new connection,
+  // which often lands on a healthy edge server when a host has several addresses.
+  const res = await go(20_000).catch(async (err: Error) => {
+    if (!/ERR_CONNECTION_(RESET|CLOSED|ABORTED)|ERR_NETWORK_CHANGED|ERR_TIMED_OUT|page\.goto: Timeout/.test(err.message)) throw err;
     await page.waitForTimeout(800);
-    return go();
+    return go(15_000);
   });
   // A 4xx/5xx document is not the page the user asked about; judging it would produce confident results
   // about the wrong document.
@@ -262,6 +264,13 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     let transferBytes = 0;
     let requests = 0;
 
+    const requestHosts = new Map<string, number>();
+    page.on("request", (req) => {
+      try {
+        const h = new URL(req.url()).hostname;
+        requestHosts.set(h, (requestHosts.get(h) ?? 0) + 1);
+      } catch {}
+    });
     page.on("console", (m) => m.type() === "error" && consoleErrors.push(m.text().slice(0, 200)));
     page.on("pageerror", (e) => consoleErrors.push(`Uncaught ${e.name}: ${e.message}`.slice(0, 200)));
     page.on("requestfinished", async (req) => {
@@ -288,6 +297,8 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     const renderedHtml = await page.content();
     const vitals = (await page.evaluate("window.__vc")) as { lcp: number; cls: number } | undefined;
     const contrast = await page.evaluate(contrastAudit);
+    const cookies = await desktop.cookies().catch(() => []);
+    const axe = await runAxe(page);
     screenshots.push({ kind: "desktop", ...DESKTOP, data: await page.screenshot({ type: "jpeg", quality: 72 }) });
 
     // ---------- Mobile pass ----------
@@ -398,6 +409,8 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
         fix: "Reserve space for images, embeds and late-loading fonts with explicit width/height or aspect-ratio.",
       });
     }
+    checks.push(axeCheck(axe));
+    checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
     return { ran: true, checks, renderedHtml, screenshots, requests, transferBytes };
   } catch (err) {
     if (err instanceof BlockedRenderError) return { ran: false, reason: err.message, checks: [], screenshots: [] };
@@ -405,7 +418,7 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     if (/page\.goto: Timeout/.test(msg)) {
       return {
         ran: false,
-        reason: "The page answered our HTTP request but never finished loading in a headless browser within 20 seconds. Some sites stall automated browsers on purpose (bot protection), so the in-browser checks were not run.",
+        reason: "The page answered our HTTP request but never finished loading in a headless browser, twice (20 and 15 seconds). Some sites stall automated browsers on purpose (bot protection), so the in-browser checks were not run.",
         checks: [],
         screenshots,
       };
@@ -416,4 +429,93 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     await mobile?.close().catch(() => {});
     await browser.close().catch(() => {});
   }
+}
+
+const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+/** Rules that dedicated checks above already score, so a single problem isn't counted twice. */
+const AXE_COVERED = ["color-contrast", "image-alt", "label", "button-name", "link-name", "html-has-lang", "meta-viewport", "target-size", "duplicate-id", "duplicate-id-aria", "duplicate-id-active"];
+
+interface AxeSummary {
+  violations: { id: string; impact: string | null; help: string; nodes: number; targets: string[] }[];
+  passes: number;
+  incomplete: number;
+  version: string;
+}
+
+/** Runs axe-core's WCAG 2.2 A/AA rules in the rendered page. Playwright's evaluate is not subject to the page's CSP. */
+async function runAxe(page: Page): Promise<AxeSummary | string> {
+  try {
+    const { default: axe } = await import("axe-core");
+    await page.evaluate(axe.source);
+    const run = page.evaluate(
+      async ({ tags, covered }) => {
+        const w = window as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; impact: string | null; help: string; nodes: { target: unknown[] }[] }[]; passes: unknown[]; incomplete: unknown[]; testEngine: { version: string } }> } };
+        const r = await w.axe.run(document, { runOnly: { type: "tag", values: tags }, rules: Object.fromEntries(covered.map((id) => [id, { enabled: false }])), resultTypes: ["violations"] });
+        return {
+          violations: r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length, targets: v.nodes.slice(0, 2).map((n) => String(n.target.join(" "))) })),
+          passes: r.passes.length,
+          incomplete: r.incomplete.length,
+          version: r.testEngine.version,
+        };
+      },
+      { tags: AXE_TAGS, covered: AXE_COVERED }
+    );
+    return await Promise.race([run, new Promise<string>((resolve) => setTimeout(() => resolve("axe-core did not finish within 20 seconds."), 20_000))]);
+  } catch (err) {
+    return `axe-core could not run in this page (${(err as Error).message.split("\n")[0]}).`;
+  }
+}
+
+const IMPACT_RANK: Record<string, number> = { critical: 0, serious: 1, moderate: 2, minor: 3 };
+
+export function axeCheck(axe: AxeSummary | string): CheckResult {
+  const base = { id: "a11y-axe", category: "accessibility", severity: "high", method: "browser", title: "WCAG 2.2 A/AA automated scan (axe-core)" } as const;
+  if (typeof axe === "string") return { ...base, status: "skip", detail: axe };
+  const v = [...axe.violations].sort((a, b) => (IMPACT_RANK[a.impact ?? "minor"] ?? 4) - (IMPACT_RANK[b.impact ?? "minor"] ?? 4));
+  const severe = v.filter((x) => x.impact === "critical" || x.impact === "serious");
+  const elements = v.reduce((n, x) => n + x.nodes, 0);
+  return {
+    ...base,
+    status: severe.length ? "fail" : v.length ? "warn" : "pass",
+    detail: v.length
+      ? `axe-core ${axe.version} found ${v.length} WCAG rule(s) violated across ${elements} element(s) (${severe.length} serious or critical), with ${axe.passes} rules passing. Rules scored by other checks here (contrast, alt text, labels, names, tap targets) are excluded.`
+      : `axe-core ${axe.version} ran the WCAG 2.0–2.2 A/AA rules on the rendered desktop page: ${axe.passes} passed, none violated.${axe.incomplete ? ` ${axe.incomplete} need a human to judge.` : ""}`,
+    evidence: v.length ? v.slice(0, 10).map((x) => `${x.impact ?? "minor"} · ${x.id}: ${x.help} (${x.nodes}×, e.g. ${x.targets[0] ?? "?"})`) : undefined,
+    fix: v.length ? `Each rule id is explained at dequeuniversity.com/rules/axe/${axe.version.split(".").slice(0, 2).join(".")}/<rule-id>. Automated rules catch roughly a third of WCAG issues; keyboard and screen-reader testing by a person covers the rest.` : undefined,
+  };
+}
+
+export function privacyCheck(pageHost: string, requestHosts: Map<string, number>, cookies: { name: string; domain: string; expires: number }[], isUpload: boolean): CheckResult {
+  const first = siteOf(pageHost);
+  const trackers = new Map<string, { hosts: Set<string>; requests: number }>();
+  for (const [host, n] of requestHosts) {
+    if (siteOf(host) === first) continue;
+    const name = trackerFor(host);
+    if (!name) continue;
+    const t = trackers.get(name) ?? { hosts: new Set(), requests: 0 };
+    t.hosts.add(host);
+    t.requests += n;
+    trackers.set(name, t);
+  }
+  const thirdPartyCookies = cookies.filter((c) => (isUpload || siteOf(c.domain) !== first) && !isNecessaryCookie(c.name));
+  const days = (c: { expires: number }) => (c.expires > 0 ? Math.round((c.expires * 1000 - Date.now()) / 86_400_000) : 0);
+  const found = trackers.size > 0 || thirdPartyCookies.length > 0;
+  return {
+    id: "priv-trackers",
+    category: "privacy",
+    severity: "medium",
+    method: "browser",
+    title: "No tracking before consent",
+    status: found ? "warn" : "pass",
+    detail: found
+      ? `Before any click or consent, the page contacted ${trackers.size} tracking service(s) and ${thirdPartyCookies.length} third-party cookie(s) were set. In the EU and UK (GDPR and ePrivacy), non-essential tracking needs consent first.`
+      : `No known advertising, cross-site analytics or session-replay services were contacted and no third-party cookies were set on load (${requestHosts.size} hosts contacted).`,
+    evidence: found
+      ? [
+          ...[...trackers].map(([name, t]) => `${name}: ${t.requests} request(s) to ${[...t.hosts].slice(0, 3).join(", ")}`),
+          ...thirdPartyCookies.slice(0, 6).map((c) => `cookie ${c.name} on ${c.domain.replace(/^\./, "")}${days(c) > 0 ? `, kept ${days(c)} days` : ", session"}`),
+        ]
+      : undefined,
+    fix: found ? "Load these tags only after the visitor accepts (most consent tools and Google Consent Mode can gate them), or switch to a cookieless analytics service." : undefined,
+  };
 }

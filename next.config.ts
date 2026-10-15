@@ -9,7 +9,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min"],
+  serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min", "axe-core"],
   outputFileTracingIncludes: {
     "/**": ["./node_modules/playwright-core/**/*", "./node_modules/playwright-core/browsers.json"],
   },

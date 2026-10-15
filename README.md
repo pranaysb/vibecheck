@@ -11,7 +11,7 @@ Audit a website three ways (a live URL, a public GitHub repo, or a `.zip` upload
 
 | Input | What runs |
 | --- | --- |
-| Live URL | Pinned-IP HTTP fetch (TLS, redirects, headers, cookies), probes for `/.env`, `/.git`, source maps, `robots.txt`, `sitemap.xml`; secret scan of HTML and same-origin JS; headless Chromium at 1280px and 390px (contrast, overflow, tap targets, LCP, CLS, console errors, failed requests, screenshots); HTML structure checks on the rendered DOM. |
+| Live URL | Pinned-IP HTTP fetch (TLS, redirects, headers, cookies), probes for `/.env`, `/.git`, source maps, `robots.txt`, `sitemap.xml`; secret scan of HTML and same-origin JS; headless Chromium at 1280px and 390px (contrast, overflow, tap targets, LCP, CLS, console errors, failed requests, screenshots); a full WCAG 2.2 A/AA scan with [axe-core](https://github.com/dequelabs/axe-core); trackers and third-party cookies loaded before any consent; HTML structure checks on the rendered DOM; then a polite crawl of up to 20 more pages (honours robots.txt, stops when rate-limited) for broken links, duplicate titles, missing descriptions, headings and alt text. |
 | GitHub / .zip | Secret and `.env` scan of every text file; lockfiles (npm, pnpm, yarn, pip, poetry, uv) checked against [OSV.dev](https://osv.dev); if a built `index.html` exists, every HTML file is checked, broken local references are found, and the site is rendered in Chromium from memory. Source-only web projects (Vite, Next.js, Astro, SvelteKit, …) are first installed and built in a [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) microVM; static output is audited like an upload, and server apps are started and audited while running. |
 
 **Score.** The score is the weighted share of checks that ran and passed: critical 10, high 6, medium 3, low 1; a warning earns half. A failed critical check caps the score at 40. Checks that couldn't run are excluded, never counted as passes.
@@ -63,7 +63,8 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 - **Retention.** A daily Vercel Cron (`/api/cron/cleanup`, authorized by `CRON_SECRET`) deletes files and screenshots 90 days after an audit unless a review is in progress, fails abandoned audits, removes orphaned uploads, and prunes rate-limit counters.
 - **Rate limiting.** Counters live in Postgres (`RateLimit`), so limits hold across serverless instances.
 - **Moderation.** Users report reviews or experts; admins dismiss, hide reviews, or revoke experts from `/admin`. Everyone involved gets an in-app notification.
-- **CI.** Every push runs lint, typecheck, tests (against Postgres), build, and a smoke test that audits a real site in Chromium (`scripts/smoke.mjs`, also usable against any deployment).
+- **CI.** Every push runs lint, typecheck, tests (against Postgres), build, and a smoke test that audits a real site in Chromium (`scripts/smoke.mjs`, also usable against any deployment). After each production deploy, `.github/workflows/production-smoke.yml` runs the same smoke test against the live site.
+- **Health.** `GET /api/health` answers 200 when the database responds and 503 when it doesn't, for uptime monitors.
 
 ## Deploying
 

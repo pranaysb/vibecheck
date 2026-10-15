@@ -3,6 +3,7 @@ import { headerChecks } from "./header-checks";
 import { htmlChecks } from "./html-checks";
 import { findSecrets } from "./secrets";
 import { runBrowserAudit, type BrowserRun } from "./browser";
+import { canonicalOf, crawlChecks, crawlSite, MAX_PAGES } from "./crawl";
 import type { AuditMeta, CheckResult, ProgressFn } from "./types";
 import { parse } from "node-html-parser";
 
@@ -197,7 +198,7 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
     probe(`${origin}/.git/HEAD`, 1024),
     probe(`${origin}/.git/config`, 4096),
     probe(`${origin}/robots.txt`, 32_768),
-    probe(`${origin}/sitemap.xml`, 4096),
+    probe(`${origin}/sitemap.xml`, 512 * 1024), // read in full: the crawler visits the pages it lists
   ]);
   const envText = env && env.status === 200 && !looksLikeHtml(env.body) ? env.body.toString("utf8") : "";
   const envExposed = /^[A-Z][A-Z0-9_]{2,}\s*=/m.test(envText);
@@ -305,6 +306,30 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   const docHtml = browser.renderedHtml ?? html;
   meta.title = parse(docHtml).querySelector("title")?.textContent.trim() || undefined;
   checks.push(...htmlChecks([{ label: finalUrl, html: docHtml }], { isHttps }));
+
+  // 7. The rest of the site
+  step(`Crawling up to ${MAX_PAGES} more pages on ${new URL(finalUrl).host}`);
+  const startFacts = parse(docHtml);
+  const crawl = await crawlSite({
+    startUrl: finalUrl,
+    startHtml: docHtml,
+    robots: robots?.status === 200 && !looksLikeHtml(robots.body) ? robots.body.toString("utf8") : null,
+    sitemap: sitemapOk ? sitemap!.body.toString("utf8") : null,
+  });
+  checks.push(
+    ...crawlChecks(crawl, {
+      url: finalUrl,
+      title: meta.title ?? "",
+      description: startFacts.querySelector('meta[name="description" i]')?.getAttribute("content")?.trim() ?? "",
+      canonical: canonicalOf(docHtml, finalUrl),
+    })
+  );
+  meta.crawl = {
+    throttled: crawl.throttled,
+    unvisited: crawl.unvisited,
+    disallowed: crawl.disallowed,
+    pages: crawl.pages.map((p) => ({ url: p.url, status: p.status, title: p.shell ? undefined : p.title, error: p.status === null ? p.error : undefined })),
+  };
 
   return { checks, meta, finalUrl, screenshots: browser.screenshots };
 }

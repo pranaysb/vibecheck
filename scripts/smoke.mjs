@@ -10,7 +10,7 @@ const check = (ok, msg) => {
   if (!ok) failed = true;
 };
 
-const pages = { "/": 200, "/experts": 200, "/methodology": 200, "/privacy": 200, "/terms": 200, "/sign-in": 200, "/dashboard": 307, "/admin": 307, "/audits/does-not-exist": 404 };
+const pages = { "/": 200, "/api/health": 200, "/experts": 200, "/methodology": 200, "/privacy": 200, "/terms": 200, "/sign-in": 200, "/dashboard": 307, "/admin": 307, "/audits/does-not-exist": 404 };
 for (const [path, want] of Object.entries(pages)) {
   const res = await fetch(base + path, { redirect: "manual" });
   check(res.status === want, `${path} → ${res.status} (want ${want})`);

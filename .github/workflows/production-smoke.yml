@@ -1,0 +1,18 @@
+name: Production smoke
+
+# Vercel reports each deployment back to GitHub; once production is live, audit a real site through it.
+on:
+  deployment_status:
+
+jobs:
+  smoke:
+    if: github.event.deployment_status.state == 'success' && startsWith(github.event.deployment.environment, 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Pages, health and one real audit (headless Chromium required)
+        run: node scripts/smoke.mjs https://vibecheck-ten-omega.vercel.app --require-browser

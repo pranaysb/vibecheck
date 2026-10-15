@@ -1,4 +1,4 @@
-export type Category = "security" | "performance" | "accessibility" | "seo" | "reliability" | "code";
+export type Category = "security" | "privacy" | "performance" | "accessibility" | "seo" | "reliability" | "code";
 export type Severity = "critical" | "high" | "medium" | "low";
 /** `skip` = not applicable or could not run; excluded from the score. */
 export type Status = "pass" | "warn" | "fail" | "skip";
@@ -20,6 +20,7 @@ export interface CheckResult {
 
 export const CATEGORY_LABEL: Record<Category, string> = {
   security: "Security",
+  privacy: "Privacy",
   performance: "Performance",
   accessibility: "Accessibility",
   seo: "Search & sharing",
@@ -82,6 +83,7 @@ export interface AuditMeta {
   /** Source-only projects are installed and built in a Vercel Sandbox before the site checks run. */
   build?: { ran: boolean; ok?: boolean; reason?: string; packageManager?: string; framework?: string | null; ms?: number; outputDir?: string; mode?: "server" };
   steps?: { label: string; ms: number }[];
+  crawl?: { throttled?: boolean; unvisited: number; disallowed: number; pages: { url: string; status: number | null; title?: string; error?: string }[] };
 }
 
 export type ProgressFn = (label: string) => void;

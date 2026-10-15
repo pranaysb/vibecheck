@@ -210,6 +210,28 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
             </section>
           )}
 
+          {meta.crawl && meta.crawl.pages.length > 0 && (
+            <details className="mt-10 card px-5 py-4">
+              <summary className="cursor-pointer text-sm font-medium">
+                Pages crawled ({meta.crawl.pages.length + 1}){meta.crawl.unvisited > 0 && <span className="text-muted font-normal"> · {meta.crawl.unvisited} more not visited</span>}
+                {meta.crawl.disallowed > 0 && <span className="text-muted font-normal"> · {meta.crawl.disallowed} skipped by robots.txt</span>}
+              </summary>
+              <ul className="mt-3 divide-y divide-line text-sm">
+                {[{ url: audit.finalUrl ?? audit.target, status: meta.statusCode ?? null, title: meta.title, error: undefined as string | undefined }, ...meta.crawl.pages].map((p) => {
+                  const u = new URL(p.url);
+                  const bad = p.status === null || p.status >= 400;
+                  return (
+                    <li key={p.url} className="flex items-baseline gap-3 py-2 min-w-0">
+                      <span className={`font-mono text-xs w-10 shrink-0 ${bad ? "text-fail" : "text-muted"}`}>{p.status ?? "—"}</span>
+                      <span className="font-mono text-xs truncate min-w-0" title={p.url}>{u.pathname + u.search}</span>
+                      <span className="text-muted truncate min-w-0 hidden sm:inline">{p.title ?? p.error ?? ""}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          )}
+
           {/* Expert review */}
           <section className="mt-12 card p-6" aria-labelledby="expert">
             <div className="flex flex-wrap items-start justify-between gap-4">
