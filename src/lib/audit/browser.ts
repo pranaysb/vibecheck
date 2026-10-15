@@ -30,6 +30,14 @@ const BROWSER_BUDGET_MS = 100_000;
 const MOBILE_PERF_BUDGET_MS = 85_000;
 const MOBILE = { width: 390, height: 844 };
 
+/**
+ * WebGL off. Serverless functions have no GPU, so Chromium renders WebGL in software, and a page with an animated
+ * 3D hero can pin the only CPU, starving the audit itself (on production even Node timers fired late). Canvas
+ * content is decorative here: it is never an LCP candidate, and no check reads it. Applied everywhere so local
+ * and production results agree.
+ */
+const NO_3D = ["--disable-3d-apis", "--disable-webgl", "--disable-webgl2"];
+
 async function launch(): Promise<Browser> {
   const { chromium } = await import("playwright-core");
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
@@ -38,7 +46,7 @@ async function launch(): Promise<Browser> {
     const pack =
       process.env.CHROMIUM_PACK_URL ??
       `https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.${process.arch === "arm64" ? "arm64" : "x64"}.tar`;
-    return chromium.launch({ executablePath: await sparticuz.executablePath(pack), args: sparticuz.args, headless: true });
+    return chromium.launch({ executablePath: await sparticuz.executablePath(pack), args: [...sparticuz.args, ...NO_3D], headless: true });
   }
   let executablePath: string | undefined = process.env.CHROMIUM_PATH;
   if (!executablePath) {
@@ -48,7 +56,7 @@ async function launch(): Promise<Browser> {
       executablePath = undefined;
     }
   }
-  return chromium.launch({ executablePath, headless: true, args: ["--disable-dev-shm-usage"] });
+  return chromium.launch({ executablePath, headless: true, args: ["--disable-dev-shm-usage", ...NO_3D] });
 }
 
 /** Routes every request: uploaded files from memory, public hosts after SSRF validation, everything else blocked. */
