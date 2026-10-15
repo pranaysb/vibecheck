@@ -37,6 +37,7 @@ const MOBILE = { width: 390, height: 844 };
  * and production results agree.
  */
 const NO_3D = ["--disable-3d-apis", "--disable-webgl", "--disable-webgl2"];
+const UNFAITHFUL = ["--disable-web-security", "--allow-running-insecure-content"];
 
 async function launch(): Promise<Browser> {
   const { chromium } = await import("playwright-core");
@@ -46,7 +47,17 @@ async function launch(): Promise<Browser> {
     const pack =
       process.env.CHROMIUM_PACK_URL ??
       `https://github.com/Sparticuz/chromium/releases/download/v153.0.0/chromium-v153.0.0-pack.${process.arch === "arm64" ? "arm64" : "x64"}.tar`;
-    return chromium.launch({ executablePath: await sparticuz.executablePath(pack), args: [...sparticuz.args, ...NO_3D], headless: true });
+    const executablePath = await sparticuz.executablePath(pack);
+    // The package's defaults turn off the same-origin policy and mixed-content blocking, which would hide
+    // exactly the CORS and insecure-content failures real visitors hit; an auditor's browser must enforce them.
+    const args = sparticuz.args.filter((a: string) => !UNFAITHFUL.includes(a));
+    try {
+      // Multi-process first: with --single-process the CPU throttling of the phone pass also slows the browser
+      // itself, and one renderer crash takes the whole browser down.
+      return await chromium.launch({ executablePath, args: [...args.filter((a: string) => a !== "--single-process"), ...NO_3D], headless: true });
+    } catch {
+      return chromium.launch({ executablePath, args: [...args, ...NO_3D], headless: true });
+    }
   }
   let executablePath: string | undefined = process.env.CHROMIUM_PATH;
   if (!executablePath) {
