@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Google_Sans_Code, Google_Sans_Flex } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { siteUrl } from "@/lib/site";
@@ -14,9 +14,24 @@ export const metadata: Metadata = {
   openGraph: { title: "VibeCheck", description: "Automated audit + human expert review for websites.", type: "website" },
 };
 
-// Self-hosted at build time by next/font: no request to Google from visitors' browsers.
-const sans = Google_Sans_Flex({ subsets: ["latin"], weight: "variable", axes: ["opsz"], variable: "--font-google-sans", display: "swap" });
-const mono = Google_Sans_Code({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-google-sans-code", display: "swap" });
+// Bundled in the repo (src/app/fonts, SIL Open Font License 1.1): builds never depend on reaching Google Fonts,
+// and visitors' browsers never contact Google. Latin subsets of the variable fonts.
+const sans = localFont({
+  src: "./fonts/GoogleSansFlex-latin.woff2",
+  weight: "1 1000",
+  style: "normal",
+  variable: "--font-google-sans",
+  display: "swap",
+  fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
+});
+const mono = localFont({
+  src: "./fonts/GoogleSansCode-latin.woff2",
+  weight: "300 800",
+  style: "normal",
+  variable: "--font-google-sans-code",
+  display: "swap",
+  fallback: ["ui-monospace", "Menlo", "monospace"],
+});
 
 export const viewport: Viewport = {
   themeColor: [
