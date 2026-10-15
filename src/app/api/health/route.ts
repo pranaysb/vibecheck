@@ -1,3 +1,4 @@
+import { availableParallelism } from "node:os";
 import { prisma } from "@/lib/db";
 import { blobEnabled } from "@/lib/storage";
 
@@ -13,7 +14,7 @@ export async function GET() {
     db = true;
   } catch {}
   return Response.json(
-    { ok: db, db, dbMs: Date.now() - started, storage: blobEnabled() ? "blob" : "database", commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null },
+    { ok: db, db, dbMs: Date.now() - started, storage: blobEnabled() ? "blob" : "database", cpus: availableParallelism(), commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null },
     { status: db ? 200 : 503, headers: { "cache-control": "no-store" } }
   );
 }
