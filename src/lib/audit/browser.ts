@@ -93,6 +93,14 @@ async function newContext(browser: Browser, viewport: { width: number; height: n
   return ctx;
 }
 
+/**
+ * Screenshots are evidence, not results: with animations frozen and a short timeout, and if a page still can't
+ * be captured (heavy WebGL on a GPU-less server can stall it), the checks stand without the picture.
+ */
+async function capture(page: Page): Promise<Buffer | null> {
+  return page.screenshot({ type: "jpeg", quality: 72, animations: "disabled", caret: "hide", timeout: 12_000 }).catch(() => null);
+}
+
 /** Thrown when the site answers the headless browser with an error page (usually bot protection). */
 class BlockedRenderError extends Error {}
 
@@ -318,7 +326,8 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     phase = "running axe-core";
     const axe = await runAxe(page);
     phase = "taking the desktop screenshot";
-    screenshots.push({ kind: "desktop", ...DESKTOP, data: await page.screenshot({ type: "jpeg", quality: 72 }) });
+    const shot = await capture(page);
+    if (shot) screenshots.push({ kind: "desktop", ...DESKTOP, data: shot });
 
     // ---------- Mobile pass ----------
     mobile = await newContext(browser, MOBILE, true, site);
@@ -328,7 +337,9 @@ export async function runBrowserAudit(target: { url: string; fetchedStatus?: num
     await mpage.waitForTimeout(500);
     phase = "checking the phone layout";
     const m = await mpage.evaluate(mobileAudit);
-    screenshots.push({ kind: "mobile", ...MOBILE, data: await mpage.screenshot({ type: "jpeg", quality: 72 }) });
+    phase = "taking the phone screenshot";
+    const mshot = await capture(mpage);
+    if (mshot) screenshots.push({ kind: "mobile", ...MOBILE, data: mshot });
 
     // ---------- Checks ----------
     checks.push({

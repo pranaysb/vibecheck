@@ -76,6 +76,13 @@ export async function POST(req: Request) {
           /* client went away; the audit still completes and is saved */
         }
       };
+      // Rendering can take a minute with no progress events; some proxies and mobile networks drop a silent
+      // connection, so send a keep-alive line the client ignores.
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(JSON.stringify({ type: "ping" }) + "\n"));
+        } catch {}
+      }, 10_000);
       try {
         await runAudit(input, user?.id ?? null, send);
         // The raw upload is no longer needed once its files are extracted (or the audit failed).
@@ -83,6 +90,7 @@ export async function POST(req: Request) {
       } catch (err) {
         send({ type: "error", message: (err as Error).message });
       } finally {
+        clearInterval(keepAlive);
         try {
           controller.close();
         } catch {}
