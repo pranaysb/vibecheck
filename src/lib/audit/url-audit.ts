@@ -307,21 +307,22 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
   meta.title = parse(docHtml).querySelector("title")?.textContent.trim() || undefined;
   checks.push(...htmlChecks([{ label: finalUrl, html: docHtml }], { isHttps }));
 
-  // 7. The rest of the site, while a throttled phone measures load performance (one waits on the network, the
-  // other on the browser, so running them together costs little and saves up to a minute).
-  step(browser.ran ? `Crawling up to ${MAX_PAGES} more pages while measuring a throttled phone load` : `Crawling up to ${MAX_PAGES} more pages on ${new URL(finalUrl).host}`);
+  // 7. The rest of the site.
+  step(`Crawling up to ${MAX_PAGES} more pages on ${new URL(finalUrl).host}`);
   const startFacts = parse(docHtml);
-  const [crawl, mobilePerf] = await Promise.all([
-    crawlSite({
-      startUrl: finalUrl,
-      startHtml: docHtml,
-      robots: robots?.status === 200 && !looksLikeHtml(robots.body) ? robots.body.toString("utf8") : null,
-      sitemap: sitemapOk ? sitemap!.body.toString("utf8") : null,
-    }),
-    // Skip it when the browser couldn't render the page at all (bot protection, timeouts): it would fail the same way.
-    browser.ran ? runMobilePerf(finalUrl, browser.desktopLcp) : Promise.resolve([]),
-  ]);
-  checks.push(...mobilePerf);
+  const crawl = await crawlSite({
+    startUrl: finalUrl,
+    startHtml: docHtml,
+    robots: robots?.status === 200 && !looksLikeHtml(robots.body) ? robots.body.toString("utf8") : null,
+    sitemap: sitemapOk ? sitemap!.body.toString("utf8") : null,
+  });
+
+  // 8. Throttled phone performance, alone: on a single-CPU server anything running alongside inflates the
+  // measured CPU work. Skipped when the browser couldn't render the page at all (it would fail the same way).
+  if (browser.ran) {
+    step("Measuring a throttled phone load (Lighthouse mobile profile)");
+    checks.push(...(await runMobilePerf(finalUrl, browser.desktopLcp)));
+  }
   checks.push(
     ...crawlChecks(crawl, {
       url: finalUrl,
