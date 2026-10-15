@@ -78,7 +78,19 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
       </div>
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-3xl sm:text-4xl font-semibold break-words min-w-0">{audit.label}</h1>
-        {canRerun && <RerunButton source={audit.source as "URL" | "GITHUB"} target={audit.target} />}
+        <div className="flex flex-wrap items-center gap-2">
+          {audit.status === "COMPLETED" && (
+            <>
+              <a href={`/api/audits/${audit.id}/export?format=md`} className="btn btn-ghost btn-sm" download title="The report as Markdown, ready to paste into a GitHub issue or pull request">
+                Export .md
+              </a>
+              <a href={`/api/audits/${audit.id}/export?format=json`} className="btn btn-ghost btn-sm" download title="Every check and its evidence as JSON">
+                JSON
+              </a>
+            </>
+          )}
+          {canRerun && <RerunButton source={audit.source as "URL" | "GITHUB"} target={audit.target} />}
+        </div>
       </div>
       {meta.title && meta.title !== audit.label && <p className="mt-1 text-muted">{meta.title}</p>}
       <p className="mt-2 text-sm text-muted break-all">

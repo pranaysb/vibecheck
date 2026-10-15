@@ -74,8 +74,12 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
       return { checks, meta, screenshots: [] };
     }
     if (e.code === "ECONNREFUSED") throw new AuditInputError(`${new URL(target).hostname} refused the connection. Is the site running and reachable from the internet?`);
-    if (/timed out/i.test(e.message)) throw new AuditInputError(`${new URL(target).hostname} didn't respond within 10 seconds.`);
-    throw err;
+    const host = new URL(target).hostname;
+    if (/timed out/i.test(e.message)) throw new AuditInputError(`${host} didn't respond within 10 seconds, twice. If the site loads for you, try again in a minute.`);
+    // Reset/closed connections and TLS hangups, after one retry: say what happened without socket jargon.
+    if (/ECONNRESET|EPIPE|ECONNABORTED|socket hang up/i.test(`${e.code} ${e.message}`)) throw new AuditInputError(`${host} dropped the connection twice before sending the page. That's usually a temporary network problem or bot protection; try again in a minute.`);
+    if (/EHOSTUNREACH|ENETUNREACH/i.test(`${e.code}`)) throw new AuditInputError(`${host} can't be reached from the internet right now.`);
+    throw new AuditInputError(`VibeCheck couldn't load ${host} (${e.message.replace(/^Could not reach [^:]+:\s*/, "")}).`);
   }
   const finalUrl = page.url;
 

@@ -56,6 +56,10 @@ try {
   await expectText(builder, "of 100", `URL audit of ${target} completed`);
   if (await builder.getByText("Browser checks did not run").count()) throw new Error("browser checks did not run on the URL audit");
   ok("browser checks ran (screenshots + rendered checks)");
+  const md = await builder.request.get(`${urlAudit.replace("/audits/", "/api/audits/")}/export?format=md`);
+  const mdText = md.ok() ? await md.text() : "";
+  if (!mdText.startsWith("# VibeCheck audit:") || !mdText.includes("/100**")) throw new Error(`Markdown export: ${md.status()} ${mdText.slice(0, 80)}`);
+  ok("report exports as Markdown for issues and PRs");
 
   const zip = zipSync({
     "site/index.html": strToU8(`<!doctype html><html lang="en"><head><title>E2E upload ${tag}</title><link rel="stylesheet" href="style.css"></head><body><h1 id="hello">Hello from the upload</h1><img src="missing.png"></body></html>`),
@@ -99,6 +103,11 @@ try {
   await expectText(builder, "GitHub", null);
   await expectText(builder, "README present", `GitHub import of ${repo} audited`);
 
+  await builder.goto(`${base}/dashboard`);
+  await builder.getByRole("heading", { name: "Your sites" }).waitFor();
+  await builder.locator("#sites ~ ul li, section[aria-labelledby=sites] li").filter({ hasText: repo }).first().waitFor();
+  ok("dashboard lists each audited site with its latest score");
+
   // ---------- Builder requests a review of the URL audit ----------
   await builder.goto(urlAudit);
   await builder.getByRole("button", { name: "Request an expert review" }).click();
@@ -123,6 +132,10 @@ try {
   await application.getByRole("button", { name: "Approve" }).click();
   await admin.locator("li", { hasText: emails.expert }).getByText("Approved").waitFor();
   ok("admin approved the expert");
+  await admin.goto(`${base}/notifications`);
+  await expectText(admin, `New expert application from E2E Expert ${tag}`, "admin was notified of the new application");
+  await expert.goto(`${base}/notifications`);
+  await expectText(expert, "waiting in your review queue", "approved expert was told how many requests are waiting");
 
   // ---------- Expert claims and reviews ----------
   await expert.goto(`${base}/expert`);

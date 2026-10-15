@@ -1,4 +1,4 @@
-import { test, describe } from "node:test";
+import { after, test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "../src/lib/db";
 import { fileReport, settleReport } from "../src/lib/moderation";
@@ -79,7 +79,10 @@ describe("moderation and account deletion (database)", async () => {
     assert.equal(url.ownerId, null);
     assert.equal(await prisma.reviewRequest.count({ where: { requesterId: builder.id } }), 0);
     assert.equal(await prisma.notification.count({ where: { userId: builder.id } }), 0);
+  });
 
+  // Cleanup runs even when an assertion fails, so a failed run never leaves rows behind.
+  after(async () => {
     await prisma.audit.deleteMany({ where: { label: { startsWith: tag } } });
     await prisma.user.deleteMany({ where: { email: { startsWith: tag } } });
     await prisma.rateLimit.deleteMany({ where: { key: { startsWith: "report:" } } });

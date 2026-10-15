@@ -1,4 +1,4 @@
-import { test, describe } from "node:test";
+import { after, test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "../src/lib/db";
 import { runRetention } from "../src/lib/retention";
@@ -21,6 +21,13 @@ describe("retention (database)", async () => {
   const day = 86400_000;
   const now = new Date();
   const shot = (auditId: string) => ({ auditId, kind: "desktop", width: 1, height: 1, data: new Uint8Array([1, 2, 3]) });
+
+  // Cleanup runs even when an assertion fails, so a failed run never leaves rows behind.
+  after(async () => {
+    await prisma.audit.deleteMany({ where: { label: { startsWith: tag } } });
+    await prisma.user.deleteMany({ where: { email: { startsWith: tag } } });
+    await prisma.$disconnect();
+  });
 
   test("deletes expired files, spares in-progress reviews and recent audits, fails stuck runs", async () => {
     const user = await prisma.user.create({ data: { email: `${tag}@vibecheck.test`, name: "Retention test" } });
@@ -60,8 +67,5 @@ describe("retention (database)", async () => {
     assert.equal((await prisma.reviewRequest.findUniqueOrThrow({ where: { id: freshClaim.id } })).status, "CLAIMED", "recent claims are kept");
     assert.equal(await prisma.notification.count({ where: { userId: { in: [user.id, expert.id] } } }), 2, "expert and requester are told");
 
-    await prisma.audit.deleteMany({ where: { label: { startsWith: tag } } });
-    await prisma.user.deleteMany({ where: { email: { startsWith: tag } } });
-    await prisma.$disconnect();
   });
 });

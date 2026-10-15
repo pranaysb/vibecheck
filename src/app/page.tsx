@@ -39,7 +39,7 @@ export default async function Home() {
           Know what&rsquo;s wrong with your site before your users do.
         </h1>
         <p className="mt-5 text-lg text-muted max-w-2xl leading-relaxed">
-          Point VibeCheck at a live URL, a GitHub repo, or a .zip. You get a deterministic audit in under a minute, then a
+          Point VibeCheck at a live URL, a GitHub repo, or a .zip. You get a deterministic audit in a minute or two, free during early access, then a
           written review from a human expert when you want a second pair of eyes.
         </p>
         <div className="mt-10">
@@ -57,7 +57,7 @@ export default async function Home() {
             {
               n: "01",
               t: "Automated audit",
-              d: "Real HTTP requests, a headless Chromium render at desktop and 390px, file scans, and OSV.dev dependency lookups. No AI guesses, no made-up scores. Same input, same result.",
+              d: "Real HTTP requests, a headless Chromium render at desktop and 390px, a throttled phone load like Lighthouse's, a crawl of up to 20 more pages, file scans, and OSV.dev dependency lookups. No AI guesses, no made-up scores.",
             },
             {
               n: "02",
@@ -92,7 +92,7 @@ export default async function Home() {
             <div key={c} className="bg-raised p-6">
               <div className="flex items-baseline justify-between">
                 <h3 className="font-semibold">{CATEGORY_LABEL[c]}</h3>
-                <span className="text-xs text-muted tabular-nums">{items.length} checks</span>
+                <span className="text-xs text-muted tabular-nums">{items.length} {items.length === 1 ? "check" : "checks"}</span>
               </div>
               <ul className="mt-3 space-y-1.5 text-sm text-muted">
                 {items.slice(0, 5).map((i) => (

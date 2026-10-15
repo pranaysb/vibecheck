@@ -28,6 +28,14 @@ export function AuditForm({ signedIn, maxUploadMb, uploadPrefix }: { signedIn: b
   const [failedId, setFailedId] = useState<string | null>(null);
   const [now, setNow] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
+  const progress = useRef<HTMLDivElement>(null);
+
+  // Keep the newest step (or the error) on screen; the list grows below the fold on laptop screens.
+  useEffect(() => {
+    if (!steps.length && !error) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    progress.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [steps.length, error]);
 
   useEffect(() => {
     if (!running) return;
@@ -141,14 +149,14 @@ export function AuditForm({ signedIn, maxUploadMb, uploadPrefix }: { signedIn: b
           </p>
         ) : (
           <p className="text-[13px] text-muted mt-3 px-1">
-            {tab === "url" && "Fetches the page, probes headers and exposed files, and renders it in Chromium at desktop and phone width."}
+            {tab === "url" && "Fetches the page, probes headers and exposed files, renders it in Chromium at desktop and phone width, measures a throttled phone load, and crawls up to 20 more pages. Takes about a minute."}
             {tab === "github" && "Downloads the default branch, scans for secrets, checks dependencies against OSV.dev, and renders any built index.html."}
             {tab === "zip" && `Up to ${maxUploadMb} MB. A build folder (dist/, out/, build/) gets rendered; source gets secret and dependency scans. node_modules is skipped.`}
           </p>
         )}
 
         {(steps.length > 0 || error) && (
-          <div className="mt-4 border-t border-line pt-4 px-1" aria-live="polite">
+          <div ref={progress} className="mt-4 border-t border-line pt-4 px-1 scroll-mb-6" aria-live="polite">
             <ol className="space-y-2">
               {steps.map((s, i) => {
                 const ms = (s.endedAt ?? now) - s.startedAt;

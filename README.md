@@ -40,7 +40,7 @@ Sign in with an email listed in `ADMIN_EMAILS` to get `/admin`, where you approv
 ### Checks
 
 ```bash
-npm test                 # unit + database tests (checks, scoring, secrets, archives, lockfiles, SSRF, storage, moderation)
+npm test                 # unit + database tests, on their own database (<your db>_test, created automatically; override with TEST_DATABASE_URL)
 npm run typecheck
 npm run lint
 npm run build
@@ -64,7 +64,8 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 - **Rate limiting.** Counters live in Postgres (`RateLimit`), so limits hold across serverless instances.
 - **Moderation.** Users report reviews or experts; admins dismiss, hide reviews, or revoke experts from `/admin`. Everyone involved gets an in-app notification.
 - **CI.** Every push runs lint, typecheck, tests (against Postgres), build, and a smoke test that audits a real site in Chromium (`scripts/smoke.mjs`, also usable against any deployment). After each production deploy, `.github/workflows/production-smoke.yml` runs the same smoke test against the live site.
-- **Health.** `GET /api/health` answers 200 when the database responds and 503 when it doesn't, for uptime monitors.
+- **Health.** `GET /api/health` answers 200 when the database responds and 503 when it doesn't, for uptime monitors. The admin page shows audit health for the last 24 hours: failure and browser-skip rates, median and slowest durations, and the most common problems with a link to the latest example.
+- **Exports.** Every completed report downloads as Markdown (for GitHub issues and PRs) or JSON from `/api/audits/<id>/export?format=md|json`, with the same visibility rules as the page.
 
 ## Deploying
 

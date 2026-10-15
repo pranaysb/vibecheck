@@ -7,7 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getUser, requireUser } from "@/lib/auth/session";
 import { FOCUS_AREAS } from "@/lib/access";
-import { notify } from "@/lib/notify";
+import { notify, notifyAdmins, notifyExperts } from "@/lib/notify";
 import type { FormState } from "@/lib/form";
 
 // ---------- Expert applications ----------
@@ -44,6 +44,7 @@ export async function applyAsExpert(_: FormState, form: FormData): Promise<FormS
     create: { userId: user.id, ...parsed.data },
     update: { ...parsed.data, status: "PENDING", decidedAt: null },
   });
+  await notifyAdmins(`${existing ? "Updated" : "New"} expert application from ${user.name}`, "/admin", parsed.data.headline);
   revalidatePath("/admin");
   return { ok: "Application submitted. An admin will review your links and approve or decline it." };
 }
@@ -53,12 +54,20 @@ export async function decideExpert(form: FormData) {
   if (!user.isAdmin) throw new Error("Admins only.");
   const id = String(form.get("id"));
   const decision = form.get("decision") === "approve" ? "APPROVED" : "REJECTED";
+  const reason = String(form.get("reason") ?? "").trim().slice(0, 500);
   const profile = await prisma.expertProfile.update({ where: { id }, data: { status: decision, decidedAt: new Date() } });
+  const open = decision === "APPROVED" ? await prisma.reviewRequest.count({ where: { status: "OPEN", requesterId: { not: profile.userId } } }) : 0;
   await notify(
     profile.userId,
     decision === "APPROVED" ? "You're approved as an expert" : "Your expert application wasn't approved",
     decision === "APPROVED" ? "/expert" : "/experts/apply",
-    decision === "APPROVED" ? "Open requests are waiting in your review queue." : "You can update your application and resubmit."
+    decision === "APPROVED"
+      ? open
+        ? `${open} open request${open === 1 ? " is" : "s are"} waiting in your review queue.`
+        : "Your review queue is empty right now; you'll be notified when a request matching your areas arrives."
+      : reason
+        ? `Reason: ${reason} You can update your application and resubmit.`
+        : "You can update your application and resubmit."
   );
   revalidatePath("/admin");
   revalidatePath("/experts");
@@ -86,6 +95,7 @@ export async function requestReview(_: FormState, form: FormData): Promise<FormS
     ...(audit.ownerId ? [] : [prisma.audit.update({ where: { id: auditId }, data: { ownerId: user.id } })]),
     prisma.reviewRequest.create({ data: { auditId, requesterId: user.id, focus: parsed.data.focus, notes: parsed.data.notes } }),
   ]);
+  await notifyExperts(parsed.data.focus, user.id, `New review request: ${audit.label}`, "/expert", `Focus: ${parsed.data.focus.join(", ")}`);
   revalidatePath(`/audits/${auditId}`);
   revalidatePath("/expert");
   return { ok: "Request posted. Approved experts can now see it in their queue." };

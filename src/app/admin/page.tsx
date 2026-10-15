@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/session";
 import { decideExpert } from "@/app/actions/reviews";
 import { resolveReport } from "@/app/actions/moderation";
 import { timeAgo } from "@/components/audit-ui";
+import { auditHealth } from "@/lib/ops";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin", robots: { index: false } };
@@ -12,6 +13,7 @@ export default async function Admin() {
   const user = await requireUser("/admin");
   if (!user.isAdmin) notFound();
 
+  const health = await auditHealth(24);
   const [pending, decided, counts] = await Promise.all([
     prisma.expertProfile.findMany({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" }, include: { user: { select: { name: true, email: true, createdAt: true } } } }),
     prisma.expertProfile.findMany({ where: { status: { not: "PENDING" } }, orderBy: { decidedAt: "desc" }, take: 30, include: { user: { select: { name: true, email: true } } } }),
@@ -44,6 +46,43 @@ export default async function Admin() {
           </div>
         ))}
       </dl>
+
+      <section className="mt-12" aria-labelledby="health">
+        <h2 id="health" className="text-base font-semibold mb-1">Audit health, last 24 hours</h2>
+        <p className="text-sm text-muted mb-4">
+          Whether the engine is working for real visitors. A rising failure or browser-skip rate, or a new problem at the top of the list, is the first sign something broke.
+        </p>
+        <dl className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-line border border-line rounded-xl overflow-hidden">
+          {(
+            [
+              ["Audits", String(health.total)],
+              ["Failed", health.total ? `${health.failed} (${Math.round((health.failed / health.total) * 100)}%)` : "0"],
+              ["Browser skipped", health.completed ? `${health.browserSkipped} (${Math.round((health.browserSkipped / health.completed) * 100)}%)` : "0"],
+              ["Median time", health.p50Ms ? `${Math.round(health.p50Ms / 1000)}s` : "—"],
+              ["Slowest 5%", health.p95Ms ? `${Math.round(health.p95Ms / 1000)}s+` : "—"],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k} className="bg-raised p-4">
+              <dt className="text-[13px] text-muted">{k}</dt>
+              <dd className="mt-1 text-xl font-semibold tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        {health.stuck > 0 && <p className="mt-3 text-sm text-fail">{health.stuck} audit(s) have been running for over 10 minutes; the daily cleanup marks them failed.</p>}
+        {health.problems.length > 0 ? (
+          <ul className="mt-4 card divide-y divide-line text-sm">
+            {health.problems.map((p) => (
+              <li key={p.message} className="flex items-baseline gap-3 px-4 py-2.5 min-w-0">
+                <span className="tabular-nums text-muted w-8 shrink-0">{p.count}×</span>
+                <span className="min-w-0 flex-1 break-words">{p.message}</span>
+                <a href={`/audits/${p.latestId}`} className="shrink-0 text-xs underline underline-offset-4 text-muted hover:text-fg">latest</a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 card p-4 text-sm text-muted">No failures or skipped browser passes.</p>
+        )}
+      </section>
 
       <section className="mt-12">
         <h2 className="text-base font-semibold mb-1">Reports ({reports.length})</h2>
@@ -114,8 +153,10 @@ export default async function Admin() {
                       ))}
                     </ul>
                   </div>
-                  <form action={decideExpert} className="flex gap-2">
+                  <form action={decideExpert} className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <input type="hidden" name="id" value={p.id} />
+                    <label className="sr-only" htmlFor={`reason-${p.id}`}>Reason, if declining (sent to the applicant)</label>
+                    <input id={`reason-${p.id}`} name="reason" maxLength={500} placeholder="Reason, if declining" className="field h-8 py-1 text-sm w-full sm:w-56" />
                     <button name="decision" value="reject" className="btn btn-secondary btn-sm" type="submit">Decline</button>
                     <button name="decision" value="approve" className="btn btn-primary btn-sm" type="submit">Approve</button>
                   </form>

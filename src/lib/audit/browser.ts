@@ -626,7 +626,7 @@ export function privacyCheck(pageHost: string, requestHosts: Map<string, number>
     status: found ? "warn" : "pass",
     detail: found
       ? `Before any click or consent, the page contacted ${trackers.size} tracking service(s) and ${thirdPartyCookies.length} third-party cookie(s) were set. In the EU and UK (GDPR and ePrivacy), non-essential tracking needs consent first.`
-      : `No known advertising, cross-site analytics or session-replay services were contacted and no third-party cookies were set on load (${requestHosts.size} hosts contacted).`,
+      : `No known advertising, cross-site analytics or session-replay services were contacted and no third-party cookies were set on load (${requestHosts.size} ${requestHosts.size === 1 ? "host" : "hosts"} contacted).`,
     evidence: found
       ? [
           ...[...trackers].map(([name, t]) => `${name}: ${t.requests} request(s) to ${[...t.hosts].slice(0, 3).join(", ")}`),
@@ -884,7 +884,10 @@ export function mobilePerfChecks(run: ThrottledRun, desktopLcp?: number, cores =
           severity: "medium",
           title: "Total Blocking Time (mobile)",
           status: grade(run.tbt, 200, 600),
-          detail: `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), so taps and scrolls went unanswered. Good is 200 ms or less; over 600 ms is poor.`,
+          detail:
+            run.tbt === 0
+              ? "No long tasks blocked the main thread between first paint and the page becoming interactive (Time to Interactive), so taps and scrolls were answered right away. Good is 200 ms or less."
+              : `Between first paint and the page becoming interactive (Time to Interactive), the main thread was blocked for ${run.tbt} ms (time beyond 50 ms in each long task), during which taps and scrolls wait. Good is 200 ms or less; over 600 ms is poor.`,
           evidence: run.cpuScale !== undefined && run.cpuScale < 1 ? [`The audit server's CPU was slower than the ${TARGET_CPU_INDEX} phone target, so long-task durations were scaled by ${run.cpuScale.toFixed(2)} before computing this, as Lighthouse's simulated throttling does.`] : undefined,
           fix: run.tbt > 200 ? "Split large JavaScript bundles, defer third-party scripts, and move heavy work off the main thread." : undefined,
         },

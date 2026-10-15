@@ -1,4 +1,5 @@
-import { CATEGORY_LABEL, METHOD_LABEL, SEVERITY_WEIGHT, type Category, type CheckResult, type Status } from "@/lib/audit/types";
+import { topPriorities } from "@/lib/audit/report";
+import { CATEGORY_LABEL, METHOD_LABEL, type Category, type CheckResult, type Status } from "@/lib/audit/types";
 
 export function scoreTone(score: number | null) {
   if (score === null) return "text-skip";
@@ -102,10 +103,7 @@ export function CategorySummary({ checks }: { checks: CheckResult[] }) {
 }
 
 /** The failures that cost the most score, in the order a builder should tackle them. */
-export function topPriorities(checks: CheckResult[], limit = 5): CheckResult[] {
-  const impact = (c: CheckResult) => SEVERITY_WEIGHT[c.severity] * (c.status === "fail" ? 1 : 0.5);
-  return checks.filter((c) => c.status === "fail" || c.status === "warn").sort((a, b) => impact(b) - impact(a)).slice(0, limit);
-}
+export { topPriorities } from "@/lib/audit/report";
 
 export function FixFirst({ checks }: { checks: CheckResult[] }) {
   const top = topPriorities(checks);

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { notify } from "@/lib/notify";
+import { notify, notifyAdmins } from "@/lib/notify";
 import { rateLimit } from "@/lib/security/rate-limit";
 
 export type ReportTargetType = "REVIEW" | "EXPERT";
@@ -23,6 +23,7 @@ export async function fileReport(reporterId: string, input: { targetType: Report
   const existing = await prisma.report.findUnique({ where: { reporterId_targetType_targetId: { reporterId, targetType, targetId } } });
   if (existing) return { ok: "You've already reported this. An admin will look at it." };
   await prisma.report.create({ data: { reporterId, targetType, targetId, reason, details } });
+  await notifyAdmins(`New report: ${String(reason).toLowerCase().replace(/_/g, " ")} (${String(targetType).toLowerCase()})`, "/admin", details ?? undefined);
   return { ok: "Thanks. An admin will review your report." };
 }
 
