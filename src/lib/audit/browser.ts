@@ -371,13 +371,15 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
 
     await settle(page, url, "url" in target ? target.fetchedStatus : undefined);
     await page.waitForTimeout(800);
-    const renderedHtml = await page.content();
-    const vitals = (await page.evaluate("window.__vc")) as { lcp: number; cls: number } | undefined;
+    // Every call into the page is time-limited: a page whose main thread never frees up (common for WebGL-heavy
+    // pages on a GPU-less server) would otherwise stall the audit. A null result means "not measured".
+    const renderedHtml = (await settleWithin(10_000, page.content())) ?? undefined;
+    const vitals = ((await settleWithin(5_000, page.evaluate("window.__vc"))) ?? undefined) as { lcp: number; cls: number } | undefined;
     progress.set("measuring text contrast");
-    const contrast = await page.evaluate(contrastAudit);
+    const contrast = await settleWithin(20_000, page.evaluate(contrastAudit));
     const cookies = await desktop.cookies().catch(() => []);
     progress.set("running axe-core");
-    const axe = await runAxe(page);
+    const axe = (await settleWithin(30_000, runAxe(page))) ?? "axe-core didn't finish: the page kept its main thread busy for 30 seconds.";
 
     // ---------- Mobile pass ----------
     // Independent of the desktop pass: if the phone layout won't load, only the two phone checks are lost.
@@ -390,27 +392,33 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
       await settle(mpage, url, "url" in target ? target.fetchedStatus : undefined);
       await mpage.waitForTimeout(500);
       progress.set("checking the phone layout");
-      m = await mpage.evaluate(mobileAudit);
+      m = await settleWithin(15_000, mpage.evaluate(mobileAudit));
+      if (!m) throw new Error("the page kept its main thread busy, so the layout couldn't be read within 15 seconds");
     } catch (err) {
-      mobileError = /Timeout/.test((err as Error).message) ? "the 390px phone layout never finished loading (twice: 20 and 15 seconds)" : `the 390px phone layout failed to load (${(err as Error).message.split("\n")[0]})`;
+      const msg = (err as Error).message.split("\n")[0];
+      mobileError = /page\.goto: Timeout/.test(msg) ? "the 390px phone layout never finished loading (twice: 20 and 15 seconds)" : `the 390px phone layout couldn't be measured (${msg})`;
       mpage = null;
     }
     const phoneSkip = (id: string, title: string): CheckResult => ({ id, category: "accessibility", severity: id === "resp-overflow" ? "medium" : "low", method: "browser", title, status: "skip", detail: `Not measured: ${mobileError}. The desktop checks still ran.` });
 
     // ---------- Checks ----------
-    checks.push({
-      id: "a11y-contrast",
-      category: "accessibility",
-      severity: "medium",
-      method: "browser",
-      title: "Text color contrast (WCAG 1.4.3)",
-      status: contrast.failures.length === 0 ? "pass" : contrast.failures.length <= 3 ? "warn" : "fail",
-      detail:
-        `${contrast.checked} rendered text elements measured against their composited background; ${contrast.failures.length} below the AA minimum (4.5:1, or 3:1 for large text).` +
-        (contrast.indeterminate ? ` ${contrast.indeterminate} sat on background images and were not measured.` : ""),
-      evidence: contrast.failures.slice(0, 8).map((f) => `${f.selector} "${f.text}" ${f.ratio}:1 (needs ${f.required}:1) ${f.fg} on ${f.bg}`),
-      fix: "Darken the text or lighten the background until the ratio clears the threshold.",
-    });
+    if (!contrast) {
+      checks.push({ id: "a11y-contrast", category: "accessibility", severity: "medium", method: "browser", title: "Text color contrast (WCAG 1.4.3)", status: "skip", detail: "Not measured: the page kept its main thread busy, so contrast couldn't be read within 20 seconds." });
+    } else {
+      checks.push({
+        id: "a11y-contrast",
+        category: "accessibility",
+        severity: "medium",
+        method: "browser",
+        title: "Text color contrast (WCAG 1.4.3)",
+        status: contrast.failures.length === 0 ? "pass" : contrast.failures.length <= 3 ? "warn" : "fail",
+        detail:
+          `${contrast.checked} rendered text elements measured against their composited background; ${contrast.failures.length} below the AA minimum (4.5:1, or 3:1 for large text).` +
+          (contrast.indeterminate ? ` ${contrast.indeterminate} sat on background images and were not measured.` : ""),
+        evidence: contrast.failures.slice(0, 8).map((f) => `${f.selector} "${f.text}" ${f.ratio}:1 (needs ${f.required}:1) ${f.fg} on ${f.bg}`),
+        fix: "Darken the text or lighten the background until the ratio clears the threshold.",
+      });
+    }
     if (!m) {
       checks.push(phoneSkip("resp-overflow", "No sideways scrolling on a 390px phone"), phoneSkip("resp-tap-targets", "Touch targets at least 24×24px (WCAG 2.5.8)"));
     } else {
