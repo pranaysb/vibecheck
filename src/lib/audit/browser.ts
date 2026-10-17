@@ -1,6 +1,7 @@
 import { availableParallelism } from "node:os";
 import type { Browser, BrowserContext, Page, Route } from "playwright-core";
 import { validateTargetDestination } from "@/lib/security/ssrf";
+import { designAudit, designChecks, focusAudit, phoneTextAudit } from "./design";
 import { isNecessaryCookie, siteOf, trackerFor } from "./privacy";
 import type { CheckResult } from "./types";
 
@@ -402,12 +403,18 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
     const cookies = await desktop.cookies().catch(() => []);
     progress.set("running axe-core");
     const axe = (await settleWithin(30_000, runAxe(page))) ?? "axe-core didn't finish: the page kept its main thread busy for 30 seconds.";
+    progress.set("checking visual design");
+    const design = await settleWithin(20_000, page.evaluate(designAudit));
+    progress.set("checking keyboard focus");
+    const focus = await settleWithin(20_000, focusAudit(page));
+    await settleWithin(2_000, page.evaluate(() => window.scrollTo(0, 0)));
 
     // ---------- Mobile pass ----------
     // Independent of the desktop pass: if the phone layout won't load, only the two phone checks are lost.
     mobile = await newContext(browser, MOBILE, true, site);
     let mpage: Page | null = await mobile.newPage();
     let m: Awaited<ReturnType<typeof mobileAudit>> | null = null;
+    let phoneText: Awaited<ReturnType<typeof phoneTextAudit>> | null = null;
     let mobileError = "";
     try {
       progress.set("loading the phone page");
@@ -416,6 +423,7 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
       progress.set("checking the phone layout");
       m = await settleWithin(15_000, mpage.evaluate(mobileAudit));
       if (!m) throw new Error("the page kept its main thread busy, so the layout couldn't be read within 15 seconds");
+      phoneText = await settleWithin(10_000, mpage.evaluate(phoneTextAudit));
     } catch (err) {
       const msg = (err as Error).message.split("\n")[0];
       mobileError = /page\.goto: Timeout/.test(msg) ? "the 390px phone layout never finished loading (twice: 20 and 15 seconds)" : `the 390px phone layout couldn't be measured (${msg})`;
@@ -517,6 +525,7 @@ async function browserAudit(target: BrowserTarget, progress: Progress): Promise<
       });
     }
     checks.push(axeCheck(axe));
+    checks.push(...designChecks(design, phoneText, focus));
     checks.push(privacyCheck(new URL(url).hostname, requestHosts, cookies, isUpload));
     const result: BrowserRun = { ran: true, checks, renderedHtml, screenshots, requests, transferBytes, desktopLcp: vitals?.lcp ? Math.round(vitals.lcp) : undefined };
     // Every measurement is in. Screenshots come last because they are the step most likely to wedge Chromium

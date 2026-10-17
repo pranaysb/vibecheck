@@ -72,6 +72,8 @@ try {
   await expectText(builder, "1 reference(s) point at files that are not in the upload", null);
   await builder.locator("summary", { hasText: "No broken local file references" }).click(); // expand the evidence
   await expectText(builder, "index.html → missing.png", ".zip upload audited; evidence names the broken reference");
+  await builder.locator("summary", { hasText: "Images load and keep their proportions" }).click();
+  await expectText(builder, "broken: img /missing.png", "rendered design check caught the broken image");
   const [preview] = await Promise.all([builder.waitForEvent("popup"), builder.getByRole("link", { name: "Open preview" }).click()]);
   await preview.waitForLoadState();
   const view = await preview.evaluate(() => ({ origin: window.origin, h1: document.querySelector("#hello")?.textContent, color: getComputedStyle(document.querySelector("#hello")).color }));

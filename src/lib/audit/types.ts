@@ -1,4 +1,4 @@
-export type Category = "security" | "privacy" | "performance" | "accessibility" | "seo" | "reliability" | "code";
+export type Category = "security" | "privacy" | "performance" | "accessibility" | "design" | "seo" | "reliability" | "code";
 export type Severity = "critical" | "high" | "medium" | "low";
 /** `skip` = not applicable or could not run; excluded from the score. */
 export type Status = "pass" | "warn" | "fail" | "skip";
@@ -23,6 +23,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   privacy: "Privacy",
   performance: "Performance",
   accessibility: "Accessibility",
+  design: "Design & UX",
   seo: "Search & sharing",
   reliability: "Reliability",
   code: "Code & dependencies",
