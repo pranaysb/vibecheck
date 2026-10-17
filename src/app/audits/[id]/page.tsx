@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { previewPath } from "@/lib/preview";
 import { getUser } from "@/lib/auth/session";
@@ -14,6 +15,7 @@ import { WatchButton } from "@/components/WatchButton";
 import { unwatchSite } from "@/app/actions/watch";
 import { SCORE_DROP_ALERT, WATCH_LIMIT } from "@/lib/watch-config";
 import { combinedHeaderFix } from "@/lib/audit/hosting";
+import { badgeSite } from "@/lib/badge-site";
 import { diffAudits } from "@/lib/audit/compare";
 import { VERDICT } from "@/components/review-ui";
 
@@ -75,6 +77,8 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
   const watch =
     isOwner && audit.source === "URL" && user ? await prisma.watch.findUnique({ where: { userId_target: { userId: user.id, target: audit.target } } }) : null;
   const canWatch = isOwner && audit.source === "URL" && audit.status === "COMPLETED";
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
   const canRerun = (audit.source === "URL" || (audit.source === "GITHUB" && Boolean(user))) && audit.status !== "RUNNING";
 
   return (
@@ -272,6 +276,27 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
               </ul>
             </details>
           )}
+
+          {audit.source === "URL" && audit.status === "COMPLETED" && (() => {
+            // What the user audited (not where it redirected), so the badge finds this site's audits.
+            const site = badgeSite(audit.target);
+            const badge = `${origin}/api/badge?site=${encodeURIComponent(site)}`;
+            const snippet = `[![VibeCheck score](${badge})](${origin}/latest?site=${encodeURIComponent(site)})`;
+            return (
+              <section className="mt-10 card p-5" aria-labelledby="badge">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 max-w-xl">
+                    <h2 id="badge" className="font-semibold">README badge</h2>
+                    <p className="mt-1 text-sm text-muted">Shows {site}&rsquo;s latest score and links to its latest report, so it stays current as you re-audit.</p>
+                  </div>
+                  <CopyButton text={snippet} selectId="badge-snippet" label="Copy Markdown" />
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/badge?site=${encodeURIComponent(site)}`} alt={`VibeCheck score badge for ${site}`} height={20} className="mt-3 h-5 w-auto" />
+                <pre className="mt-3 overflow-x-auto rounded-lg border border-line bg-surface p-3 text-[13px] font-mono"><code id="badge-snippet">{snippet}</code></pre>
+              </section>
+            );
+          })()}
 
           {canWatch && (
             <section className="mt-10 card p-5 flex flex-wrap items-center justify-between gap-4" aria-labelledby="watch">

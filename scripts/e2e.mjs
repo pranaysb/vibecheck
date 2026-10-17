@@ -60,6 +60,13 @@ try {
   const mdText = md.ok() ? await md.text() : "";
   if (!mdText.startsWith("# VibeCheck audit:") || !mdText.includes("/100**")) throw new Error(`Markdown export: ${md.status()} ${mdText.slice(0, 80)}`);
   ok("report exports as Markdown for issues and PRs");
+  const svg = await fetch(`${base}/api/badge?site=${encodeURIComponent(target)}`).then((r) => r.text());
+  if (!/VibeCheck: \d{1,3}\/100/.test(svg)) throw new Error(`badge: ${svg.slice(0, 120)}`);
+  const latest = await fetch(`${base}/latest?site=${encodeURIComponent(target)}`, { redirect: "manual" });
+  if (latest.status !== 302 || !/\/audits\/[a-z0-9]+$/.test(latest.headers.get("location") ?? "")) throw new Error(`latest: ${latest.status} ${latest.headers.get("location")}`);
+  const none = await fetch(`${base}/api/badge?site=never-audited-${tag}.example`).then((r) => r.text());
+  if (!none.includes("not audited")) throw new Error("badge for an unaudited site should say so");
+  ok("README badge shows the real latest score, links to the latest report, and says 'not audited' otherwise");
   await builder.goto(urlAudit);
   await builder.getByRole("button", { name: "Watch weekly" }).click();
   await expectText(builder, "Watching. VibeCheck re-audits this site about once a week", "builder started weekly re-audits of the URL");
@@ -141,6 +148,16 @@ try {
   await expectText(admin, `New expert application from E2E Expert ${tag}`, "admin was notified of the new application");
   await expert.goto(`${base}/notifications`);
   await expectText(expert, "waiting in your review queue", "approved expert was told how many requests are waiting");
+
+  // ---------- Queue filters ----------
+  await expert.goto(`${base}/expert?area=mine`);
+  await expert.locator("li", { hasText: `E2E ${tag}` }).waitFor();
+  await expert.goto(`${base}/expert?area=SEO`);
+  if (await expert.locator("li", { hasText: `E2E ${tag}` }).count()) throw new Error("SEO filter still lists a Security-only request");
+  await expectText(expert, "No open requests match this filter", null);
+  await expert.goto(`${base}/expert?area=Security&sort=newest`);
+  await expert.locator("li", { hasText: `E2E ${tag}` }).waitFor();
+  ok("expert queue filters by area (mine / one area) and sorts");
 
   // ---------- Expert claims and reviews ----------
   await expert.goto(`${base}/expert`);

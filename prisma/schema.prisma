@@ -96,6 +96,7 @@ model Audit {
 
   @@index([ownerId])
   @@index([createdAt])
+  @@index([target, createdAt])
   @@schema("vibecheck")
 }
 

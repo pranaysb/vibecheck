@@ -5,22 +5,42 @@ import { requireUser } from "@/lib/auth/session";
 import { claimRequest } from "@/app/actions/reviews";
 import { ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { VERDICT } from "@/components/review-ui";
+import { FOCUS_AREAS } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Review queue" };
 
-export default async function Queue({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function Queue({ searchParams }: { searchParams: Promise<{ error?: string; area?: string; sort?: string }> }) {
   const user = await requireUser("/expert");
   if (user.expertStatus !== "APPROVED") redirect("/experts/apply");
-  const { error } = await searchParams;
+  const { error, area: areaParam, sort: sortParam } = await searchParams;
+  const sort = sortParam === "newest" ? "newest" : "oldest";
 
   const include = { audit: { select: { id: true, label: true, source: true, score: true } }, requester: { select: { name: true } } } as const;
-  const profile = await prisma.expertProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
-  const [open, mine, done] = await Promise.all([
-    prisma.reviewRequest.findMany({ where: { status: "OPEN", requesterId: { not: user.id } }, orderBy: { createdAt: "asc" }, include }),
+  const profile = await prisma.expertProfile.findUnique({ where: { userId: user.id }, select: { id: true, expertise: true } });
+  const myAreas = profile?.expertise ?? [];
+  // "mine" = requests overlapping the areas this expert reviews; otherwise one area, or everything.
+  const area = areaParam === "mine" || (FOCUS_AREAS as readonly string[]).includes(areaParam ?? "") ? areaParam! : "all";
+  const areaFilter = area === "all" ? {} : { focus: { hasSome: area === "mine" ? myAreas : [area] } };
+  const [open, mine, done, allOpen] = await Promise.all([
+    prisma.reviewRequest.findMany({ where: { status: "OPEN", requesterId: { not: user.id }, ...areaFilter }, orderBy: { createdAt: sort === "newest" ? "desc" : "asc" }, include }),
     prisma.reviewRequest.findMany({ where: { status: "CLAIMED", expertId: user.id }, orderBy: { claimedAt: "asc" }, include }),
     prisma.expertReview.findMany({ where: { expertId: user.id }, orderBy: { createdAt: "desc" }, take: 20, include: { request: { include: { audit: { select: { label: true } } } } } }),
+    prisma.reviewRequest.findMany({ where: { status: "OPEN", requesterId: { not: user.id } }, select: { focus: true } }),
   ]);
+  const counts = new Map<string, number>();
+  for (const r of allOpen) for (const f of r.focus) counts.set(f, (counts.get(f) ?? 0) + 1);
+  const mineCount = allOpen.filter((r) => r.focus.some((f) => myAreas.includes(f))).length;
+  const href = (next: { area?: string; sort?: string }) => {
+    const q = new URLSearchParams();
+    const a = next.area ?? area;
+    const so = next.sort ?? sort;
+    if (a !== "all") q.set("area", a);
+    if (so !== "oldest") q.set("sort", so);
+    const qs = q.toString();
+    return `/expert${qs ? `?${qs}` : ""}#open`;
+  };
+  const chip = (active: boolean) => `chip ${active ? "bg-invert text-invert-fg border-transparent" : "hover:text-fg"}`;
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-14">
@@ -56,9 +76,45 @@ export default async function Queue({ searchParams }: { searchParams: Promise<{ 
       </section>
 
       <section className="mt-10" aria-labelledby="open">
-        <h2 id="open" className="text-base font-semibold mb-3">Open requests ({open.length})</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-3">
+          <h2 id="open" className="text-base font-semibold">
+            Open requests ({open.length}
+            {area !== "all" ? ` of ${allOpen.length}` : ""})
+          </h2>
+          <p className="text-sm text-muted">
+            Order:{" "}
+            <Link href={href({ sort: "oldest" })} className={sort === "oldest" ? "text-fg font-medium" : "underline underline-offset-4 hover:text-fg"} aria-current={sort === "oldest" ? "true" : undefined}>
+              waiting longest
+            </Link>{" "}
+            ·{" "}
+            <Link href={href({ sort: "newest" })} className={sort === "newest" ? "text-fg font-medium" : "underline underline-offset-4 hover:text-fg"} aria-current={sort === "newest" ? "true" : undefined}>
+              newest
+            </Link>
+          </p>
+        </div>
+        {allOpen.length > 0 && (
+          <nav aria-label="Filter by area" className="mb-4 flex flex-wrap gap-1.5">
+            <Link href={href({ area: "all" })} className={chip(area === "all")} aria-current={area === "all" ? "true" : undefined}>All {allOpen.length}</Link>
+            {myAreas.length > 0 && (
+              <Link href={href({ area: "mine" })} className={chip(area === "mine")} aria-current={area === "mine" ? "true" : undefined}>My areas {mineCount}</Link>
+            )}
+            {FOCUS_AREAS.filter((f) => counts.has(f)).map((f) => (
+              <Link key={f} href={href({ area: f })} className={chip(area === f)} aria-current={area === f ? "true" : undefined}>
+                {f} {counts.get(f)}
+              </Link>
+            ))}
+          </nav>
+        )}
         {open.length === 0 ? (
-          <p className="card p-5 text-sm text-muted">The queue is empty. New requests appear here as soon as they&rsquo;re posted.</p>
+          <p className="card p-5 text-sm text-muted">
+            {allOpen.length === 0 ? (
+              <>The queue is empty. New requests appear here as soon as they&rsquo;re posted.</>
+            ) : (
+              <>
+                No open requests match this filter. <Link href={href({ area: "all" })} className="underline underline-offset-4 text-fg">Show all {allOpen.length}</Link>.
+              </>
+            )}
+          </p>
         ) : (
           <ul className="space-y-3">
             {open.map((r) => (

@@ -66,6 +66,7 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 - **CI.** Every push runs lint, typecheck, tests (against Postgres), build, and a smoke test that audits a real site in Chromium (`scripts/smoke.mjs`, also usable against any deployment). After each production deploy, `.github/workflows/production-smoke.yml` runs the same smoke test against the live site.
 - **Health.** `GET /api/health` answers 200 when the database responds and 503 when it doesn't, for uptime monitors. The admin page shows audit health for the last 24 hours: failure and browser-skip rates, median and slowest durations, and the most common problems with a link to the latest example.
 - **Host-aware fixes.** The hosting platform is recognized from response headers (GitHub Pages, Vercel, Netlify, Cloudflare, CloudFront, Render, Fly.io, nginx, Apache), and header fixes are given as that platform's config: `vercel.json`, a `_headers` file, nginx or Apache lines. GitHub Pages, which can't send headers, gets `<meta>` tags where they work and says plainly where they can't. Reports also show every missing header as one copy-paste block.
+- **README badge.** `/api/badge?site=<site>` is an SVG with the site's latest completed public audit score (or "not audited"), and `/latest?site=<site>` redirects to that report; each report shows the Markdown snippet.
 - **Exports.** Every completed report downloads as Markdown (for GitHub issues and PRs) or JSON from `/api/audits/<id>/export?format=md|json`, with the same visibility rules as the page.
 
 ## Deploying
