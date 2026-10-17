@@ -5,7 +5,8 @@ import { getUser } from "@/lib/auth/session";
 import { AuditForm } from "@/components/AuditForm";
 import { MAX_DIRECT_UPLOAD_MB, blobEnabled, uploadPrefix } from "@/lib/storage";
 import { CATALOG } from "@/lib/audit/catalog";
-import { CATEGORY_LABEL, type Category } from "@/lib/audit/types";
+import { CATEGORY_LABEL, computeScore, type Category, type CheckResult } from "@/lib/audit/types";
+import { ScoreRing } from "@/components/audit-ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,70 @@ const getPublicCounts = unstable_cache(
   { revalidate: 300, tags: ["home-counts"] }
 );
 
+/**
+ * A real report shown beside the hero: the audit named by EXAMPLE_AUDIT_ID, if it exists, completed, and is a
+ * public URL audit. Nothing is shown otherwise; the numbers are never made up.
+ */
+const getExample = unstable_cache(
+  async () => {
+    const id = process.env.EXAMPLE_AUDIT_ID;
+    if (!id) return null;
+    const audit = await prisma.audit.findUnique({ where: { id }, select: { id: true, label: true, source: true, status: true, checks: true, createdAt: true } });
+    if (!audit || audit.source !== "URL" || audit.status !== "COMPLETED") return null;
+    const checks = (audit.checks ?? []) as unknown as CheckResult[];
+    return { id: audit.id, label: audit.label, createdAt: audit.createdAt.toISOString(), score: computeScore(checks).score, checks };
+  },
+  ["home-example"],
+  { revalidate: 600 }
+);
+
+function ExampleReport({ example }: { example: { id: string; label: string; createdAt: string; score: number | null; checks: CheckResult[] } }) {
+  const cats = (Object.keys(CATEGORY_LABEL) as Category[]).filter((c) => example.checks.some((k) => k.category === c && k.status !== "skip"));
+  return (
+    <Link href={`/audits/${example.id}`} className="block card p-5 hover:border-line-strong transition-colors" aria-label={`Example report: ${example.label}, ${example.score} out of 100`}>
+      <p className="eyebrow">A real report</p>
+      <div className="mt-4 flex items-center gap-4">
+        <ScoreRing score={example.score} size={72} />
+        <div className="min-w-0">
+          <p className="font-semibold truncate">{example.label}</p>
+          <p className="text-sm text-muted">Audited {new Date(example.createdAt).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}</p>
+        </div>
+      </div>
+      <ul className="mt-5 space-y-2.5">
+        {cats.map((cat) => {
+          const list = example.checks.filter((c) => c.category === cat && c.status !== "skip");
+          const n = Math.max(list.length, 1);
+          const pass = list.filter((c) => c.status === "pass").length;
+          const warn = list.filter((c) => c.status === "warn").length;
+          const fail = list.filter((c) => c.status === "fail").length;
+          return (
+            <li key={cat} className="text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted">{CATEGORY_LABEL[cat]}</span>
+                <span className="tabular-nums text-muted">{pass}/{list.length}</span>
+              </div>
+              <div className="mt-1 flex h-1 rounded-full overflow-hidden bg-line" aria-hidden="true">
+                <span className="bg-pass" style={{ width: `${(pass / n) * 100}%` }} />
+                <span className="bg-warn" style={{ width: `${(warn / n) * 100}%` }} />
+                <span className="bg-fail" style={{ width: `${(fail / n) * 100}%` }} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-5 text-sm">See the full report, with evidence →</p>
+    </Link>
+  );
+}
+
 export default async function Home() {
-  const [user, { experts, reviews }] = await Promise.all([getUser(), getPublicCounts()]);
+  const [user, { experts, reviews }, example] = await Promise.all([getUser(), getPublicCounts(), getExample()]);
   const byCategory = (Object.keys(CATEGORY_LABEL) as Category[]).map((c) => ({ c, items: CATALOG.filter((k) => k.category === c) }));
 
   return (
     <>
-      <section className="mx-auto max-w-3xl px-4 sm:px-6 pt-16 sm:pt-24 pb-14">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-24 pb-14 grid gap-12 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
+        <div className="min-w-0 max-w-3xl">
         <p className="chip mb-6">
           <span className="size-1.5 rounded-full bg-pass" aria-hidden="true" />
           {CATALOG.length} checks · every result shows its evidence
@@ -49,6 +107,8 @@ export default async function Home() {
             uploadPrefix={user && blobEnabled() ? uploadPrefix(user.id) : null}
           />
         </div>
+        </div>
+        {example && <ExampleReport example={example} />}
       </section>
 
       <section className="border-t border-line bg-surface">
@@ -105,6 +165,15 @@ export default async function Home() {
               </ul>
             </div>
           ))}
+          {byCategory.length % 3 !== 0 && (
+            <Link href="/methodology" className={`bg-raised p-6 hover:bg-surface transition-colors flex flex-col justify-between gap-4 ${byCategory.length % 3 === 1 ? "lg:col-span-2" : ""}`}>
+              <div>
+                <h3 className="font-semibold">How every check works</h3>
+                <p className="mt-2 text-sm text-muted max-w-md">The exact method, thresholds and severity behind each of the {CATALOG.length} checks, and what an automated check can&rsquo;t tell you.</p>
+              </div>
+              <span className="text-sm">Read the methodology →</span>
+            </Link>
+          )}
         </div>
       </section>
 
