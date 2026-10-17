@@ -10,6 +10,9 @@ import { CategorySummary, CheckGroups, FixFirst, ScoreRing, SOURCE_LABEL, timeAg
 import { RequestReviewForm } from "./RequestReviewForm";
 import { RerunButton } from "./RerunButton";
 import { CopyButton } from "@/components/CopyButton";
+import { WatchButton } from "@/components/WatchButton";
+import { unwatchSite } from "@/app/actions/watch";
+import { SCORE_DROP_ALERT, WATCH_LIMIT } from "@/lib/watch-config";
 import { combinedHeaderFix } from "@/lib/audit/hosting";
 import { diffAudits } from "@/lib/audit/compare";
 import { VERDICT } from "@/components/review-ui";
@@ -68,6 +71,10 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
   const diff = previous ? diffAudits(prevChecks, checks) : null;
   const improved = diff ? [...diff.fixed.map((c) => ({ c, note: "now passing" })), ...diff.changed.filter((x) => x.from === "fail").map((x) => ({ c: x.check, note: "fail → warning" }))] : [];
   const worse = diff ? [...diff.regressed.map((c) => ({ c, note: c.status === "fail" ? "now failing" : "now a warning" })), ...diff.changed.filter((x) => x.from === "warn").map((x) => ({ c: x.check, note: "warning → fail" }))] : [];
+  // Weekly re-audits: offered on the owner's completed live-URL audits.
+  const watch =
+    isOwner && audit.source === "URL" && user ? await prisma.watch.findUnique({ where: { userId_target: { userId: user.id, target: audit.target } } }) : null;
+  const canWatch = isOwner && audit.source === "URL" && audit.status === "COMPLETED";
   const canRerun = (audit.source === "URL" || (audit.source === "GITHUB" && Boolean(user))) && audit.status !== "RUNNING";
 
   return (
@@ -264,6 +271,34 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
                 })}
               </ul>
             </details>
+          )}
+
+          {canWatch && (
+            <section className="mt-10 card p-5 flex flex-wrap items-center justify-between gap-4" aria-labelledby="watch">
+              <div className="min-w-0 max-w-xl">
+                <h2 id="watch" className="font-semibold">Weekly re-audits</h2>
+                {watch ? (
+                  <p className="mt-1 text-sm text-muted">
+                    {watch.pausedAt
+                      ? `Paused after ${watch.consecutiveFailures} failed runs. Resume it from your dashboard once the site is reachable.`
+                      : `Watching. VibeCheck re-audits this site about once a week; the next run is around ${watch.nextRunAt.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}. You're notified when a check gets worse or the score drops ${SCORE_DROP_ALERT}+ points.`}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted">
+                    Re-audit this site about once a week and get notified when a check gets worse or the score drops {SCORE_DROP_ALERT}+ points. Timing-based checks, which vary between runs, are compared but don&rsquo;t trigger alerts. Up to {WATCH_LIMIT} sites.
+                  </p>
+                )}
+              </div>
+              {watch ? (
+                <form action={unwatchSite}>
+                  <input type="hidden" name="id" value={watch.id} />
+                  <input type="hidden" name="auditId" value={audit.id} />
+                  <button type="submit" className="btn btn-ghost btn-sm">Stop watching</button>
+                </form>
+              ) : (
+                <WatchButton auditId={audit.id} />
+              )}
+            </section>
           )}
 
           {/* Expert review */}

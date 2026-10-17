@@ -60,6 +60,9 @@ try {
   const mdText = md.ok() ? await md.text() : "";
   if (!mdText.startsWith("# VibeCheck audit:") || !mdText.includes("/100**")) throw new Error(`Markdown export: ${md.status()} ${mdText.slice(0, 80)}`);
   ok("report exports as Markdown for issues and PRs");
+  await builder.goto(urlAudit);
+  await builder.getByRole("button", { name: "Watch weekly" }).click();
+  await expectText(builder, "Watching. VibeCheck re-audits this site about once a week", "builder started weekly re-audits of the URL");
 
   const zip = zipSync({
     "site/index.html": strToU8(`<!doctype html><html lang="en"><head><title>E2E upload ${tag}</title><link rel="stylesheet" href="style.css"></head><body><h1 id="hello">Hello from the upload</h1><img src="missing.png"></body></html>`),
@@ -207,6 +210,25 @@ try {
   await builder.getByRole("button", { name: "Run again" }).click();
   await builder.waitForURL((u) => /\/audits\/[a-z0-9]+$/.test(u.pathname) && u.toString() !== urlAudit, { timeout: AUDIT_TIMEOUT });
   await expectText(builder, "Since your audit", "re-run shows what changed since the previous audit");
+
+  // ---------- Weekly re-audit through the real daily cron ----------
+  if (process.env.CRON_SECRET) {
+    const due = await fetch(`${base}/api/e2e/watch-due`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ secret, email: emails.builder, regression: true }) }).then((r) => r.json());
+    if (due.due !== 1) throw new Error(`watch-due: ${JSON.stringify(due)}`);
+    const cron = await fetch(`${base}/api/cron/reaudit`, { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` }, signal: AbortSignal.timeout(AUDIT_TIMEOUT) }).then((r) => r.json());
+    if (cron.due < 1 || cron.ran < 1) throw new Error(`cron: ${JSON.stringify(cron)}`);
+    const unauthorized = await fetch(`${base}/api/cron/reaudit`).then((r) => r.status);
+    if (unauthorized !== 401) throw new Error(`cron without the secret answered ${unauthorized}`);
+    ok(`daily cron re-audited the watched site (${cron.ran} run) and refuses calls without the secret`);
+    await builder.goto(`${base}/notifications`);
+    if (due.flipped) await expectText(builder, "got worse", `builder was alerted that "${due.flipped}" regressed`);
+    else ok("no stable check to regress on this site, so no alert expected");
+    await builder.goto(`${base}/dashboard`);
+    await builder.locator("section[aria-labelledby=watches] li").filter({ hasText: "last ran" }).waitFor();
+    ok("dashboard shows the weekly re-audit's last run and next date");
+  } else {
+    console.log("  (CRON_SECRET not set: skipping the weekly re-audit steps)");
+  }
 
   // ---------- Account deletion ----------
   for (const [who, page] of [["bystander", bystander], ["expert", expert], ["builder", builder]]) {

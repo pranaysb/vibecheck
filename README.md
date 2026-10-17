@@ -70,7 +70,7 @@ E2E_AUTH_SECRET=dev-only E2E_ADMIN_EMAIL=admin@example.test \
 
 ## Deploying
 
-- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `CRON_SECRET`, the four `CLERK` variables, and connect a **private** Blob store (`vercel blob create-store <name> --access private`). Run `npm run db:push` yourself; the build never changes the schema.
+- Set `DATABASE_URL`, `ADMIN_EMAILS`, `SESSION_SECRET`, `CRON_SECRET`, the four `CLERK` variables, and connect a **private** Blob store (`vercel blob create-store <name> --access private`). On Vercel, `vercel-build` runs `scripts/db-sync.mjs` first: it applies additive schema changes to that environment's database (through the unpooled URL) and fails the build on anything that would lose data, leaving the previous deployment live. Elsewhere, run `npm run db:push` yourself.
 - Clerk session tokens must include the claim `{"email": "{{user.primary_email_address}}"}` so email changes reach `ADMIN_EMAILS` matching.
 - A Clerk production instance needs a domain you own; until then the deployment can run on Clerk development keys ("Development mode" badge, user cap).
 

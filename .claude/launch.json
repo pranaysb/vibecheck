@@ -24,7 +24,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "E2E_AUTH_SECRET=local-e2e-only ADMIN_EMAILS=admin@vibecheck.test npx next start -p 3200"
+        "E2E_AUTH_SECRET=local-e2e-only CRON_SECRET=local-cron-only ADMIN_EMAILS=admin@vibecheck.test npx next start -p 3200"
       ],
       "port": 3200
     }

@@ -5,6 +5,8 @@ import { cancelRequest } from "@/app/actions/reviews";
 import { ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { VERDICT } from "@/components/review-ui";
 import { DeleteAccount } from "./DeleteAccount";
+import { resumeWatch, unwatchSite } from "@/app/actions/watch";
+import { SCORE_DROP_ALERT, WATCH_LIMIT } from "@/lib/watch-config";
 
 /** Score history, oldest to newest, as a tiny line on a fixed 0–100 scale. */
 function Sparkline({ values }: { values: number[] }) {
@@ -25,15 +27,17 @@ const REQUEST_STATUS = { OPEN: "Waiting for an expert", CLAIMED: "In review", CO
 
 export default async function Dashboard() {
   const user = await requireUser("/dashboard");
-  const [audits, requests] = await Promise.all([
+  const [audits, requests, watches] = await Promise.all([
     prisma.audit.findMany({ where: { ownerId: user.id }, orderBy: { createdAt: "desc" }, take: 300, select: { id: true, label: true, target: true, source: true, status: true, score: true, createdAt: true } }),
     prisma.reviewRequest.findMany({
       where: { requesterId: user.id },
       orderBy: { createdAt: "desc" },
       include: { audit: { select: { label: true } }, expert: { select: { name: true } }, review: { select: { id: true, verdict: true, rating: true } } },
     }),
+    prisma.watch.findMany({ where: { userId: user.id }, orderBy: { createdAt: "asc" } }),
   ]);
 
+  const watchedTargets = new Set(watches.map((w) => w.target));
   // One row per site: newest run, newest score, change since the previous completed run, recent trend.
   const byTarget = new Map<string, typeof audits>();
   for (const a of audits) byTarget.set(a.target, [...(byTarget.get(a.target) ?? []), a]);
@@ -97,6 +101,44 @@ export default async function Dashboard() {
         )}
       </section>
 
+      {watches.length > 0 && (
+        <section className="mt-12" aria-labelledby="watches">
+          <h2 id="watches" className="text-base font-semibold mb-1">Weekly re-audits</h2>
+          <p className="text-sm text-muted mb-3">You&rsquo;re notified when a check gets worse or the score drops {SCORE_DROP_ALERT}+ points. Up to {WATCH_LIMIT} sites.</p>
+          <ul className="card divide-y divide-line">
+            {watches.map((w) => (
+              <li key={w.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
+                <div className="min-w-0 flex-1">
+                  {w.lastAuditId ? (
+                    <Link href={`/audits/${w.lastAuditId}`} className="font-medium hover:underline underline-offset-4 break-all">{w.label}</Link>
+                  ) : (
+                    <p className="font-medium break-all">{w.label}</p>
+                  )}
+                  <p className="text-sm text-muted">
+                    {w.pausedAt ? (
+                      <span className="text-fail">Paused after {w.consecutiveFailures} failed runs</span>
+                    ) : (
+                      <>Next run around {w.nextRunAt.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" })}</>
+                    )}
+                    {w.lastRunAt && <> · last ran {timeAgo(w.lastRunAt)}</>}
+                  </p>
+                </div>
+                {w.pausedAt && (
+                  <form action={resumeWatch}>
+                    <input type="hidden" name="id" value={w.id} />
+                    <button type="submit" className="btn btn-secondary btn-sm">Resume</button>
+                  </form>
+                )}
+                <form action={unwatchSite}>
+                  <input type="hidden" name="id" value={w.id} />
+                  <button type="submit" className="btn btn-ghost btn-sm">Stop</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-12" aria-labelledby="sites">
         <h2 id="sites" className="text-base font-semibold mb-3">Your sites</h2>
         {sites.length === 0 ? (
@@ -115,6 +157,7 @@ export default async function Dashboard() {
                       {SOURCE_LABEL[site.latest.source]} · {site.count} {site.count === 1 ? "audit" : "audits"} · last {timeAgo(site.latest.createdAt)}
                       {site.latest.status === "RUNNING" && <span className="text-fg"> · running now</span>}
                       {site.latest.status === "FAILED" && <span className="text-fail"> · last run failed</span>}
+                      {watchedTargets.has(site.target) && <span> · watched weekly</span>}
                     </p>
                   </div>
                   {site.delta !== null && site.delta !== 0 && (

@@ -26,6 +26,7 @@ model User {
   expertReviews   ExpertReview[]
   reports         Report[]
   notifications   Notification[]
+  watches         Watch[]
 
   @@schema("vibecheck")
 }
@@ -39,20 +40,19 @@ enum ExpertStatus {
 }
 
 model ExpertProfile {
-  id         String       @id @default(cuid())
-  userId     String       @unique
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  headline   String
-  bio        String       @db.Text
-  expertise  String[]
-  links      String[]
-  status     ExpertStatus @default(PENDING)
-  decidedAt  DateTime?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id        String       @id @default(cuid())
+  userId    String       @unique
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline  String
+  bio       String       @db.Text
+  expertise String[]
+  links     String[]
+  status    ExpertStatus @default(PENDING)
+  decidedAt DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([status])
-
   @@schema("vibecheck")
 }
 
@@ -73,22 +73,22 @@ enum AuditStatus {
 }
 
 model Audit {
-  id         String      @id @default(cuid())
-  source     AuditSource
-  target     String
-  finalUrl   String?
-  label      String
-  status     AuditStatus @default(RUNNING)
-  error      String?     @db.Text
-  score      Int?
-  checks     Json?
-  meta       Json?
-  durationMs Int?
+  id            String      @id @default(cuid())
+  source        AuditSource
+  target        String
+  finalUrl      String?
+  label         String
+  status        AuditStatus @default(RUNNING)
+  error         String?     @db.Text
+  score         Int?
+  checks        Json?
+  meta          Json?
+  durationMs    Int?
   /// Set when retention deleted this audit's files and screenshots (results are kept).
   filesPurgedAt DateTime?
-  ownerId    String?
-  owner      User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  createdAt  DateTime    @default(now())
+  ownerId       String?
+  owner         User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
 
   files       AuditFile[]
   screenshots Screenshot[]
@@ -96,14 +96,13 @@ model Audit {
 
   @@index([ownerId])
   @@index([createdAt])
-
   @@schema("vibecheck")
 }
 
 model AuditFile {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   auditId     String
-  audit       Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  audit       Audit   @relation(fields: [auditId], references: [id], onDelete: Cascade)
   path        String
   contentType String
   size        Int
@@ -112,14 +111,13 @@ model AuditFile {
   data        Bytes?
 
   @@unique([auditId, path])
-
   @@schema("vibecheck")
 }
 
 model Screenshot {
-  id      String @id @default(cuid())
+  id      String  @id @default(cuid())
   auditId String
-  audit   Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  audit   Audit   @relation(fields: [auditId], references: [id], onDelete: Cascade)
   kind    String
   width   Int
   height  Int
@@ -127,7 +125,6 @@ model Screenshot {
   data    Bytes?
 
   @@unique([auditId, kind])
-
   @@schema("vibecheck")
 }
 
@@ -159,7 +156,6 @@ model ReviewRequest {
   @@index([status])
   @@index([requesterId])
   @@index([expertId])
-
   @@schema("vibecheck")
 }
 
@@ -172,23 +168,22 @@ enum Verdict {
 }
 
 model ExpertReview {
-  id          String        @id @default(cuid())
-  requestId   String        @unique
-  request     ReviewRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  expertId    String
-  expert      User          @relation(fields: [expertId], references: [id], onDelete: Cascade)
-  verdict     Verdict
-  summary     String        @db.Text
-  findings    Json
-  rating      Int?
-  ratingNote  String?       @db.Text
+  id         String        @id @default(cuid())
+  requestId  String        @unique
+  request    ReviewRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  expertId   String
+  expert     User          @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  verdict    Verdict
+  summary    String        @db.Text
+  findings   Json
+  rating     Int?
+  ratingNote String?       @db.Text
   /// Set when a moderator removes the review; it no longer counts toward the expert's record.
-  hiddenAt    DateTime?
-  hiddenNote  String?
-  createdAt   DateTime      @default(now())
+  hiddenAt   DateTime?
+  hiddenNote String?
+  createdAt  DateTime      @default(now())
 
   @@index([expertId])
-
   @@schema("vibecheck")
 }
 
@@ -255,5 +250,26 @@ model Notification {
   createdAt DateTime  @default(now())
 
   @@index([userId, readAt])
+  @@schema("vibecheck")
+}
+
+/// A live URL its owner asked VibeCheck to re-audit weekly; they're notified when something gets worse.
+model Watch {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Normalized URL, the same value as Audit.target.
+  target              String
+  label               String
+  createdAt           DateTime  @default(now())
+  nextRunAt           DateTime
+  lastRunAt           DateTime?
+  lastAuditId         String?
+  consecutiveFailures Int       @default(0)
+  /// Set after repeated failures; the owner can resume.
+  pausedAt            DateTime?
+
+  @@unique([userId, target])
+  @@index([nextRunAt])
   @@schema("vibecheck")
 }

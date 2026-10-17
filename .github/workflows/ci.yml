@@ -49,6 +49,8 @@ jobs:
           # Test-only sign-in for the e2e suite (never active on Vercel). CI-only value, not a secret.
           E2E_AUTH_SECRET: ci-e2e-only
           ADMIN_EMAILS: admin@e2e.test
+          # Lets the e2e suite trigger the daily re-audit cron. CI-only value, not a secret.
+          CRON_SECRET: ci-cron-only
           # Authenticated GitHub API calls for the repo-import step (60/h anonymous is shared per runner IP).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -61,6 +63,7 @@ jobs:
         env:
           E2E_AUTH_SECRET: ci-e2e-only
           E2E_ADMIN_EMAIL: admin@e2e.test
+          CRON_SECRET: ci-cron-only
         run: node scripts/e2e.mjs http://localhost:3000 --target=www.wikipedia.org
       - name: Server log
         if: failure()
