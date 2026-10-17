@@ -1,3 +1,4 @@
+import { combinedHeaderFix } from "./hosting";
 import { CATEGORY_LABEL, computeScore, METHOD_LABEL, SEVERITY_WEIGHT, type AuditMeta, type Category, type CheckResult } from "./types";
 
 /** Failures and warnings ordered by how much they cost the score. */
@@ -40,6 +41,10 @@ export function toMarkdown(a: ReportAudit, reportUrl: string): string {
     lines.push("## Fix these first", "");
     top.forEach((c, i) => lines.push(`${i + 1}. **${md(c.title)}** (${c.severity}): ${md(c.detail)}${c.fix ? `\n   - Fix: ${md(c.fix)}` : ""}`));
     lines.push("");
+  }
+  const block = combinedHeaderFix(a.checks, a.meta.host?.id);
+  if (block) {
+    lines.push("## Fix the security headers in one go", "", `Hosted on ${a.meta.host!.name}. Put this in ${block.title}:`, "", "```", block.code, "```", ...(block.note ? ["", block.note] : []), "");
   }
   for (const cat of Object.keys(CATEGORY_LABEL) as Category[]) {
     const list = a.checks.filter((c) => c.category === cat);

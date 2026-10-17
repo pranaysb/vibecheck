@@ -4,6 +4,7 @@ import { htmlChecks } from "./html-checks";
 import { findSecrets } from "./secrets";
 import { runBrowserAudit, runMobilePerf, type BrowserRun } from "./browser";
 import { canonicalOf, crawlChecks, crawlSite, MAX_PAGES } from "./crawl";
+import { applyHostAdvice, detectHost } from "./hosting";
 import type { AuditMeta, CheckResult, ProgressFn } from "./types";
 import { parse } from "node-html-parser";
 
@@ -342,7 +343,10 @@ export async function auditUrl(rawUrl: string, step: ProgressFn): Promise<AuditO
     pages: crawl.pages.map((p) => ({ url: p.url, status: p.status, title: p.shell ? undefined : p.title, error: p.status === null ? p.error : undefined })),
   };
 
-  return { checks, meta, finalUrl, screenshots: browser.screenshots };
+  // Header fixes are rewritten for the platform the site runs on, so they can actually be applied there.
+  const host = detectHost(page.headers);
+  if (host) meta.host = host;
+  return { checks: applyHostAdvice(checks, host), meta, finalUrl, screenshots: browser.screenshots };
 }
 
 /** Turns SSRF/DNS rejections into something a non-engineer can act on. */

@@ -9,6 +9,8 @@ import { computeScore, CRITICAL_CAP, type AuditMeta, type CheckResult } from "@/
 import { CategorySummary, CheckGroups, FixFirst, ScoreRing, SOURCE_LABEL, timeAgo } from "@/components/audit-ui";
 import { RequestReviewForm } from "./RequestReviewForm";
 import { RerunButton } from "./RerunButton";
+import { CopyButton } from "@/components/CopyButton";
+import { combinedHeaderFix } from "@/lib/audit/hosting";
 import { diffAudits } from "@/lib/audit/compare";
 import { VERDICT } from "@/components/review-ui";
 
@@ -101,6 +103,7 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
             {meta.github ? `${meta.github.repo} @ ${meta.github.ref}` : audit.finalUrl ?? audit.target}
           </a>
         )}
+        {meta.host && <span className="whitespace-nowrap"> · hosted on {meta.host.name}</span>}
       </p>
 
       {audit.status === "FAILED" || stale ? (
@@ -141,6 +144,25 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <FixFirst checks={checks} />
+          {(() => {
+            const block = combinedHeaderFix(checks, meta.host?.id);
+            if (!block) return null;
+            return (
+              <section className="mt-6 card p-5" aria-labelledby="header-fix">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 id="header-fix" className="font-semibold">Fix the security headers in one go</h2>
+                    <p className="mt-1 text-sm text-muted">
+                      This site is hosted on {meta.host!.name}. Put this in <span className="text-fg">{block.title}</span>:
+                    </p>
+                  </div>
+                  <CopyButton text={block.code} selectId="header-fix-code" />
+                </div>
+                <pre className="mt-3 overflow-x-auto rounded-lg border border-line bg-surface p-3 text-[13px] leading-relaxed font-mono"><code id="header-fix-code">{block.code}</code></pre>
+                {block.note && <p className="mt-2 text-sm text-muted">{block.note}</p>}
+              </section>
+            );
+          })()}
 
           {previous && diff && (
             <section className="mt-6 card p-5" aria-labelledby="changes">

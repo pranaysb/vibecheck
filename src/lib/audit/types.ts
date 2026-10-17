@@ -83,6 +83,8 @@ export interface AuditMeta {
   /** Source-only projects are installed and built in a Vercel Sandbox before the site checks run. */
   build?: { ran: boolean; ok?: boolean; reason?: string; packageManager?: string; framework?: string | null; ms?: number; outputDir?: string; mode?: "server" };
   steps?: { label: string; ms: number }[];
+  /** Hosting platform recognized from response headers; header fixes are tailored to it. */
+  host?: { id: string; name: string; evidence: string };
   crawl?: { throttled?: boolean; unvisited: number; disallowed: number; pages: { url: string; status: number | null; title?: string; error?: string }[] };
 }
 
