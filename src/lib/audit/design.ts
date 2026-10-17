@@ -382,7 +382,9 @@ export function designChecks(d: DesignFacts | null, phone: { small: string[]; sm
       detail:
         d.fonts.length > 3
           ? `${d.fonts.length} different typefaces each set at least 2% of the visible text; more than three usually looks unplanned.`
-          : `${d.fonts.length || 1} typeface${d.fonts.length === 1 ? "" : "s"} carry the visible text.`,
+          : (d.fonts.length || 1) === 1
+            ? "One typeface carries the visible text."
+            : `${d.fonts.length} typefaces carry the visible text.`,
       evidence: d.fonts.map((f) => `${f.family}: ${Math.round(f.share * 100)}% of text`),
       fix: d.fonts.length > 3 ? "Pick one typeface for text and at most one for headings or code." : undefined,
     });
