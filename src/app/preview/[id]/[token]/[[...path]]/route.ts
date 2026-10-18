@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string; token: string; path?: string[] }> }) {
   const { id, token, path = [] } = await ctx.params;
   if (!verifyPreviewToken(id, token)) return new Response("This preview link has expired. Reopen it from the audit page.", { status: 403 });
-  const audit = await prisma.audit.findUnique({ where: { id }, select: { source: true, meta: true } });
+  const audit = await prisma.audit.findUnique({ where: { id }, select: { source: true, meta: true, packKey: true } });
   if (!audit || audit.source === "URL") return new Response("Not found", { status: 404 });
 
   const root = (audit.meta as AuditMeta | null)?.files?.root;
@@ -25,7 +25,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string; to
 
   const candidates = [rel, rel + ".html", rel + "/index.html"].map((p) => prefix + p);
   const file = await prisma.auditFile.findFirst({ where: { auditId: id, path: { in: candidates } } });
-  const bytes = file ? await readStored(file) : null;
+  const bytes = file ? await readStored(file, { key: audit.packKey, entry: `files/${file.path}` }) : null;
   if (!file || !bytes) return new Response("Not found in upload", { status: 404 });
 
   let body: BodyInit = new Uint8Array(bytes);

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { deleteAuditObjects } from "@/lib/storage";
+import { auditObjectKeys } from "@/lib/storage-keys";
 
 /**
  * Deletes a user's VibeCheck data (see /privacy). Returns their Clerk id so the caller can remove the sign-in.
@@ -13,12 +14,13 @@ export async function deleteUserData(userId: string): Promise<string | null> {
   if (!row) return null;
   const fileAudits = await prisma.audit.findMany({ where: { ownerId: userId, source: { in: ["ZIP", "GITHUB"] } }, select: { id: true } });
   const ids = fileAudits.map((a) => a.id);
+  const keys = await auditObjectKeys(ids); // read before the rows are deleted
   await prisma.$transaction([
     prisma.reviewRequest.updateMany({ where: { expertId: userId, status: "CLAIMED" }, data: { status: "OPEN", expertId: null, claimedAt: null } }),
     prisma.reviewRequest.updateMany({ where: { review: { expertId: userId } }, data: { status: "OPEN", expertId: null, claimedAt: null } }),
     prisma.audit.deleteMany({ where: { id: { in: ids } } }),
     prisma.user.delete({ where: { id: userId } }),
   ]);
-  await deleteAuditObjects(ids).catch((err) => console.error("Blob cleanup after account deletion failed:", err));
+  await deleteAuditObjects(keys).catch((err) => console.error("Blob cleanup after account deletion failed:", err));
   return row.clerkId;
 }

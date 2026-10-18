@@ -3,7 +3,7 @@ import { runAudit, type AuditEvent, type AuditInput } from "@/lib/audit/run";
 import { AuditInputError, normalizeUrl } from "@/lib/audit/url-audit";
 import { rateLimit, extractTargetDomain, getClientIp } from "@/lib/security/rate-limit";
 import { isSameOrigin } from "@/lib/security/origin";
-import { deleteByPrefix, uploadPrefix } from "@/lib/storage";
+import { deleteKeys, uploadPrefix } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       try {
         await runAudit(input, user?.id ?? null, send);
         // The raw upload is no longer needed once its files are extracted (or the audit failed).
-        if (input.source === "ZIP" && "blobKey" in input) await deleteByPrefix([input.blobKey]).catch(() => {});
+        if (input.source === "ZIP" && "blobKey" in input) await deleteKeys([input.blobKey]).catch(() => {});
       } catch (err) {
         send({ type: "error", message: (err as Error).message });
       } finally {

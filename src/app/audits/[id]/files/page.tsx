@@ -10,13 +10,13 @@ export const metadata = { title: "Files", robots: { index: false } };
 
 export default async function FilesPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ path?: string }> }) {
   const [{ id }, { path }, user] = await Promise.all([params, searchParams, getUser()]);
-  const audit = await prisma.audit.findUnique({ where: { id }, select: { id: true, label: true, source: true, ownerId: true, requests: { select: { status: true, expertId: true } } } });
+  const audit = await prisma.audit.findUnique({ where: { id }, select: { id: true, label: true, source: true, ownerId: true, packKey: true, requests: { select: { status: true, expertId: true } } } });
   if (!audit || !user || !canViewAudit(audit, user)) notFound();
   if (!(audit.ownerId === user.id || user.isAdmin || user.expertStatus === "APPROVED")) notFound();
 
   const files = await prisma.auditFile.findMany({ where: { auditId: id }, select: { path: true, size: true, contentType: true }, orderBy: { path: "asc" } });
   const selected = path ? await prisma.auditFile.findUnique({ where: { auditId_path: { auditId: id, path } } }) : null;
-  const selectedBytes = selected ? await readStored(selected) : null;
+  const selectedBytes = selected ? await readStored(selected, { key: audit.packKey, entry: `files/${selected.path}` }) : null;
   const isText = selected && /^(text\/|application\/(json|xml|manifest))|svg/.test(selected.contentType);
 
   return (

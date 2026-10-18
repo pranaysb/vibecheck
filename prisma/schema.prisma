@@ -86,6 +86,9 @@ model Audit {
   durationMs    Int?
   /// Set when retention deleted this audit's files and screenshots (results are kept).
   filesPurgedAt DateTime?
+  /// One Blob object holding this audit's stored files and screenshots (files/<path>, shots/<kind>.jpg).
+  /// Older audits stored one object per file instead (AuditFile.blobKey / Screenshot.blobKey).
+  packKey       String?
   ownerId       String?
   owner         User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now())

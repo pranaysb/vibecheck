@@ -5,15 +5,7 @@ import { auditFiles, type StoredFile } from "./files-audit";
 import { downloadRepo, parseRepo } from "./github";
 import { computeScore, type AuditMeta, type CheckResult } from "./types";
 import { auditUrl, normalizeUrl } from "./url-audit";
-import { auditPrefix, blobEnabled, deleteByPrefix, getObject, putObject } from "@/lib/storage";
-
-/** Runs `fn` over items with at most `limit` in flight. */
-async function pool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
-  let i = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) await fn(items[i++]);
-  }));
-}
+import { blobEnabled, buildPack, deleteKeys, getObject, packKeyFor, putObject } from "@/lib/storage";
 
 export type AuditInput =
   | { source: "URL"; url: string }
@@ -99,20 +91,19 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
       if (github) meta.github = github;
     }
 
-    // Files and screenshots go to private Blob storage when it's connected; otherwise inline in Postgres.
+    // Files and screenshots go to private Blob storage as ONE object per audit when it's connected (each upload
+    // counts against the Hobby plan's monthly operations); otherwise inline in Postgres.
     const useBlob = blobEnabled();
     const fileRows = stored.map((f) => ({ auditId: audit.id, path: f.path, contentType: f.contentType, size: f.data.length, blobKey: null as string | null, data: new Uint8Array(f.data) as Uint8Array<ArrayBuffer> | null }));
     const shotRows = screenshots.map((s) => ({ auditId: audit.id, kind: s.kind, width: s.width, height: s.height, blobKey: null as string | null, data: new Uint8Array(s.data) as Uint8Array<ArrayBuffer> | null }));
+    let packKey: string | null = null;
     if (useBlob && (fileRows.length || shotRows.length)) {
       step("Saving files to storage");
-      await pool(fileRows, 16, async (r) => {
-        r.blobKey = await putObject(`${auditPrefix(audit.id)}files/${r.path}`, r.data!, r.contentType);
-        r.data = null;
-      });
-      await pool(shotRows, 2, async (r) => {
-        r.blobKey = await putObject(`${auditPrefix(audit.id)}shots/${r.kind}.jpg`, r.data!, "image/jpeg");
-        r.data = null;
-      });
+      packKey = packKeyFor(audit.id);
+      // Recorded before uploading, so cleanup can always find the object even if the function dies right after.
+      await prisma.audit.update({ where: { id: audit.id }, data: { packKey } });
+      await putObject(packKey, buildPack(stored, screenshots.map((s) => ({ kind: s.kind, data: s.data }))), "application/zip");
+      for (const r of [...fileRows, ...shotRows]) r.data = null;
     }
 
     // Scoring is the last timed step, so every earlier step (including saving) has its real duration.
@@ -143,7 +134,8 @@ export async function runAudit(input: AuditInput, ownerId: string | null, emit: 
     // Record the failure first: cleanup talks to storage, and a slow storage call must never delay the result.
     await prisma.audit.update({ where: { id: audit.id }, data: { status: "FAILED", error: message, durationMs: Math.round(performance.now() - started) } });
     emit({ type: "error", message, id: audit.id });
-    await Promise.race([deleteByPrefix([auditPrefix(audit.id)]).catch(() => {}), new Promise((r) => setTimeout(r, 15_000))]);
+    // Anything already uploaded for this audit is deleted by its exact key (free; listing is not).
+    await Promise.race([deleteKeys([packKeyFor(audit.id)]).catch(() => {}), new Promise((r) => setTimeout(r, 15_000))]);
   }
   return audit.id;
 }

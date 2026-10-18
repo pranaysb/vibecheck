@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
-import { list, del } from "@vercel/blob";
 import { pruneRateLimits } from "@/lib/security/rate-limit";
-import { blobEnabled, deleteAuditObjects } from "@/lib/storage";
+import { blobEnabled, deleteAuditObjects, deleteKeys, listUploads } from "@/lib/storage";
+import { auditObjectKeys } from "@/lib/storage-keys";
 import { notify } from "@/lib/notify";
 
 export const FILE_RETENTION_DAYS = 90;
@@ -31,7 +31,7 @@ export async function runRetention(now = new Date()) {
   });
   const expiredIds = expired.map((a) => a.id);
   if (expiredIds.length) {
-    await deleteAuditObjects(expiredIds);
+    await deleteAuditObjects(await auditObjectKeys(expiredIds));
     await prisma.$transaction([
       prisma.auditFile.deleteMany({ where: { auditId: { in: expiredIds } } }),
       prisma.screenshot.deleteMany({ where: { auditId: { in: expiredIds } } }),
@@ -41,7 +41,7 @@ export async function runRetention(now = new Date()) {
 
   const stuck = await prisma.audit.findMany({ where: { status: "RUNNING", createdAt: { lt: new Date(now.getTime() - 3600_000) } }, select: { id: true }, take: BATCH });
   if (stuck.length) {
-    await deleteAuditObjects(stuck.map((a) => a.id));
+    await deleteAuditObjects(await auditObjectKeys(stuck.map((a) => a.id)));
     await prisma.audit.updateMany({ where: { id: { in: stuck.map((a) => a.id) } }, data: { status: "FAILED", error: "The audit stopped responding and was abandoned." } });
   }
 
@@ -58,19 +58,11 @@ export async function runRetention(now = new Date()) {
     await notify(r.requesterId, `Your review request for ${r.audit.label} is back in the queue`, `/audits/${r.auditId}`, `The expert who claimed it didn't deliver within ${CLAIM_TIMEOUT_DAYS} days.`);
   }
 
+  // Uploads whose audit never ran (abandoned upload flows). One list call per 1000 objects, once a day.
   let orphanUploads = 0;
   if (blobEnabled()) {
-    const prefix = `${process.env.VERCEL_ENV ?? "local"}/uploads/`;
-    let cursor: string | undefined;
-    do {
-      const page = await list({ prefix, cursor, limit: 1000 });
-      const old = page.blobs.filter((b) => b.uploadedAt.getTime() < now.getTime() - 86400_000);
-      if (old.length) {
-        await del(old.map((b) => b.url));
-        orphanUploads += old.length;
-      }
-      cursor = page.hasMore ? page.cursor : undefined;
-    } while (cursor);
+    const old = (await listUploads(`${process.env.VERCEL_ENV ?? "local"}/uploads/`)).filter((b) => b.uploadedAt.getTime() < now.getTime() - 86400_000);
+    orphanUploads = await deleteKeys(old.map((b) => b.pathname));
   }
 
   const rateLimits = await pruneRateLimits(24 * 3600, now);
