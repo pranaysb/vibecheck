@@ -32,15 +32,15 @@ const getPublicCounts = unstable_cache(
 const getExample = unstable_cache(
   async () => {
     let id = process.env.EXAMPLE_AUDIT_ID;
-    if (!id || id === "cmvc7wyc60001l508qgfad42b") {
-      id = "cmvcke3l80009js07d36tp5kb";
+    if (!id || id === "cmvc7wyc60001l508qgfad42b" || id === "cmvcke3l80009js07d36tp5kb") {
+      id = "cmvi3a9n7000di107nebuae1w";
     }
     let audit = id
       ? await prisma.audit.findUnique({ where: { id }, select: { id: true, label: true, source: true, status: true, checks: true, createdAt: true } })
       : null;
-    if (!audit || audit.label === "pranaysb.me") {
+    if (!audit || audit.label === "pranaysb.me" || audit.label === "stripe.com") {
       audit = await prisma.audit.findFirst({
-        where: { source: "URL", status: "COMPLETED", NOT: { label: "pranaysb.me" } },
+        where: { source: "URL", status: "COMPLETED", NOT: { label: { in: ["pranaysb.me", "stripe.com"] } } },
         orderBy: { createdAt: "desc" },
         select: { id: true, label: true, source: true, status: true, checks: true, createdAt: true },
       });
